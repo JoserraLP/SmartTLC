@@ -1,0 +1,10 @@
+<additional>
+  <inductionLoop id="n_s_loop_0" lane="n1i_0" pos="480" freq="1800" file="out.xml"/>
+  <inductionLoop id="n_s_loop_1" lane="n1i_1" pos="480" freq="1800" file="out.xml"/>
+  <inductionLoop id="s_n_loop_0" lane="s1i_0" pos="480" freq="1800" file="out.xml" />
+  <inductionLoop id="s_n_loop_1" lane="s1i_1" pos="480" freq="1800" file="out.xml"/>
+  <inductionLoop id="e_w_loop_0" lane="e1i_0" pos="480" freq="1800" file="out.xml"/>
+  <inductionLoop id="e_w_loop_1" lane="e1i_1" pos="480" freq="1800" file="out.xml"/>
+  <inductionLoop id="w_e_loop_0" lane="w1i_0" pos="480" freq="1800" file="out.xml"/>
+  <inductionLoop id="w_e_loop_1" lane="w1i_1" pos="480" freq="1800" file="out.xml"/>
+</additional>
