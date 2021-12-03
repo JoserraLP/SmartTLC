@@ -1,0 +1,337 @@
+day,hour,traffic_type_n_s,traffic_type_e_w,traffic_type
+Monday,0:00,Very Low,Very Low,0
+Monday,0:30,Very Low,Very Low,0
+Monday,1:00,Very Low,Very Low,0
+Monday,1:30,Very Low,Very Low,0
+Monday,2:00,Very Low,Very Low,0
+Monday,2:30,Very Low,Very Low,0
+Monday,3:00,Very Low,Very Low,0
+Monday,3:30,Very Low,Very Low,0
+Monday,4:00,Very Low,Very Low,0
+Monday,4:30,Very Low,Very Low,0
+Monday,5:00,Very Low,Very Low,0
+Monday,5:30,Very Low,Very Low,0
+Monday,6:00,Low,Very Low,2
+Monday,6:30,Low,Very Low,2
+Monday,7:00,Med,Low,6
+Monday,7:30,Med,Low,6
+Monday,8:00,High,Med,10
+Monday,8:30,High,Med,10
+Monday,9:00,High,Med,10
+Monday,9:30,High,Low,9
+Monday,10:00,Med,Low,6
+Monday,10:30,Med,Low,6
+Monday,11:00,Med,Low,6
+Monday,11:30,Med,Low,6
+Monday,12:00,Med,Low,6
+Monday,12:30,Med,Med,7
+Monday,13:00,Med,Med,7
+Monday,13:30,High,High,11
+Monday,14:00,High,Med,10
+Monday,14:30,High,Med,10
+Monday,15:00,High,Med,10
+Monday,15:30,Med,Low,6
+Monday,16:00,Low,Low,3
+Monday,16:30,Low,Low,3
+Monday,17:00,Med,Low,6
+Monday,17:30,Med,Low,6
+Monday,18:00,Med,Low,6
+Monday,18:30,Low,Low,3
+Monday,19:00,Low,Low,3
+Monday,19:30,Low,Low,3
+Monday,20:00,High,Med,10
+Monday,20:30,High,Med,10
+Monday,21:00,Med,Low,6
+Monday,21:30,Med,Low,6
+Monday,22:00,Med,Low,6
+Monday,22:30,Low,Very Low,2
+Monday,23:00,Low,Very Low,2
+Monday,23:30,Very Low,Very Low,0
+Tuesday,0:00,Very Low,Very Low,0
+Tuesday,0:30,Very Low,Very Low,0
+Tuesday,1:00,Very Low,Very Low,0
+Tuesday,1:30,Very Low,Very Low,0
+Tuesday,2:00,Very Low,Very Low,0
+Tuesday,2:30,Very Low,Very Low,0
+Tuesday,3:00,Very Low,Very Low,0
+Tuesday,3:30,Very Low,Very Low,0
+Tuesday,4:00,Very Low,Very Low,0
+Tuesday,4:30,Very Low,Very Low,0
+Tuesday,5:00,Very Low,Very Low,0
+Tuesday,5:30,Very Low,Very Low,0
+Tuesday,6:00,Low,Very Low,2
+Tuesday,6:30,Low,Very Low,2
+Tuesday,7:00,Med,Low,6
+Tuesday,7:30,Med,Low,6
+Tuesday,8:00,High,Med,10
+Tuesday,8:30,High,Med,10
+Tuesday,9:00,High,Med,10
+Tuesday,9:30,High,Low,9
+Tuesday,10:00,Med,Low,6
+Tuesday,10:30,Med,Low,6
+Tuesday,11:00,Med,Low,6
+Tuesday,11:30,Med,Low,6
+Tuesday,12:00,Med,Low,6
+Tuesday,12:30,Med,Med,7
+Tuesday,13:00,Med,Med,7
+Tuesday,13:30,High,High,11
+Tuesday,14:00,High,Med,10
+Tuesday,14:30,High,Med,10
+Tuesday,15:00,High,Med,10
+Tuesday,15:30,Med,Low,6
+Tuesday,16:00,Low,Low,3
+Tuesday,16:30,Low,Low,3
+Tuesday,17:00,Med,Low,6
+Tuesday,17:30,Med,Low,6
+Tuesday,18:00,Med,Low,6
+Tuesday,18:30,Low,Low,3
+Tuesday,19:00,Low,Low,3
+Tuesday,19:30,Low,Low,3
+Tuesday,20:00,High,Med,10
+Tuesday,20:30,High,Med,10
+Tuesday,21:00,Med,Low,6
+Tuesday,21:30,Med,Low,6
+Tuesday,22:00,Med,Low,6
+Tuesday,22:30,Low,Low,3
+Tuesday,23:00,Low,Very Low,2
+Tuesday,23:30,Very Low,Very Low,0
+Wednesday,0:00,Very Low,Very Low,0
+Wednesday,0:30,Very Low,Very Low,0
+Wednesday,1:00,Very Low,Very Low,0
+Wednesday,1:30,Very Low,Very Low,0
+Wednesday,2:00,Very Low,Very Low,0
+Wednesday,2:30,Very Low,Very Low,0
+Wednesday,3:00,Very Low,Very Low,0
+Wednesday,3:30,Very Low,Very Low,0
+Wednesday,4:00,Very Low,Very Low,0
+Wednesday,4:30,Very Low,Very Low,0
+Wednesday,5:00,Very Low,Very Low,0
+Wednesday,5:30,Very Low,Very Low,0
+Wednesday,6:00,Low,Very Low,2
+Wednesday,6:30,Low,Low,3
+Wednesday,7:00,Med,Low,6
+Wednesday,7:30,Med,Low,6
+Wednesday,8:00,High,Med,10
+Wednesday,8:30,High,Med,10
+Wednesday,9:00,High,Med,10
+Wednesday,9:30,High,Low,9
+Wednesday,10:00,Med,Low,6
+Wednesday,10:30,Med,Low,6
+Wednesday,11:00,Med,Low,6
+Wednesday,11:30,Med,Low,6
+Wednesday,12:00,Med,Low,6
+Wednesday,12:30,Med,Med,7
+Wednesday,13:00,Med,Med,7
+Wednesday,13:30,High,High,11
+Wednesday,14:00,High,Med,10
+Wednesday,14:30,High,Med,10
+Wednesday,15:00,High,Med,10
+Wednesday,15:30,Med,Low,6
+Wednesday,16:00,Low,Low,3
+Wednesday,16:30,Low,Low,3
+Wednesday,17:00,Med,Low,6
+Wednesday,17:30,Med,Low,6
+Wednesday,18:00,Med,Low,6
+Wednesday,18:30,Low,Low,3
+Wednesday,19:00,Low,Low,3
+Wednesday,19:30,Low,Low,3
+Wednesday,20:00,High,Med,10
+Wednesday,20:30,High,Med,10
+Wednesday,21:00,Med,Low,6
+Wednesday,21:30,Med,Low,6
+Wednesday,22:00,Med,Low,6
+Wednesday,22:30,Low,Low,3
+Wednesday,23:00,Low,Low,3
+Wednesday,23:30,Very Low,Very Low,0
+Thursday,0:00,Very Low,Very Low,0
+Thursday,0:30,Very Low,Very Low,0
+Thursday,1:00,Very Low,Very Low,0
+Thursday,1:30,Very Low,Very Low,0
+Thursday,2:00,Very Low,Very Low,0
+Thursday,2:30,Very Low,Very Low,0
+Thursday,3:00,Very Low,Very Low,0
+Thursday,3:30,Very Low,Very Low,0
+Thursday,4:00,Very Low,Very Low,0
+Thursday,4:30,Very Low,Very Low,0
+Thursday,5:00,Very Low,Very Low,0
+Thursday,5:30,Very Low,Very Low,0
+Thursday,6:00,Low,Very Low,2
+Thursday,6:30,Med,Low,6
+Thursday,7:00,Med,Low,6
+Thursday,7:30,Med,Low,6
+Thursday,8:00,High,Med,10
+Thursday,8:30,High,Med,10
+Thursday,9:00,High,Med,10
+Thursday,9:30,High,Low,9
+Thursday,10:00,Med,Low,6
+Thursday,10:30,Med,Low,6
+Thursday,11:00,Med,Low,6
+Thursday,11:30,Med,Low,6
+Thursday,12:00,Med,Low,6
+Thursday,12:30,Med,Med,7
+Thursday,13:00,Med,Med,7
+Thursday,13:30,High,High,11
+Thursday,14:00,High,Med,10
+Thursday,14:30,High,Med,10
+Thursday,15:00,High,Med,10
+Thursday,15:30,Med,Low,6
+Thursday,16:00,Low,Low,3
+Thursday,16:30,Low,Low,3
+Thursday,17:00,Med,Low,6
+Thursday,17:30,Med,Low,6
+Thursday,18:00,Med,Low,6
+Thursday,18:30,Low,Low,3
+Thursday,19:00,Low,Low,3
+Thursday,19:30,Low,Low,3
+Thursday,20:00,High,Med,10
+Thursday,20:30,High,Med,10
+Thursday,21:00,High,Low,9
+Thursday,21:30,High,Med,10
+Thursday,22:00,Med,Med,7
+Thursday,22:30,Med,Low,6
+Thursday,23:00,Med,Low,6
+Thursday,23:30,Low,Very Low,2
+Friday,0:00,Very Low,Very Low,0
+Friday,0:30,Very Low,Very Low,0
+Friday,1:00,Very Low,Very Low,0
+Friday,1:30,Very Low,Very Low,0
+Friday,2:00,Very Low,Very Low,0
+Friday,2:30,Very Low,Very Low,0
+Friday,3:00,Very Low,Very Low,0
+Friday,3:30,Very Low,Very Low,0
+Friday,4:00,Very Low,Very Low,0
+Friday,4:30,Very Low,Very Low,0
+Friday,5:00,Very Low,Very Low,0
+Friday,5:30,Very Low,Very Low,0
+Friday,6:00,Low,Very Low,2
+Friday,6:30,Low,Low,3
+Friday,7:00,Med,Low,6
+Friday,7:30,Med,Low,6
+Friday,8:00,High,Med,10
+Friday,8:30,High,Med,10
+Friday,9:00,High,Med,10
+Friday,9:30,High,Low,9
+Friday,10:00,Med,Low,6
+Friday,10:30,Med,Low,6
+Friday,11:00,Med,Low,6
+Friday,11:30,Med,Low,6
+Friday,12:00,Med,Low,6
+Friday,12:30,Med,Med,7
+Friday,13:00,High,High,11
+Friday,13:30,High,High,11
+Friday,14:00,High,High,11
+Friday,14:30,High,Med,10
+Friday,15:00,High,Med,10
+Friday,15:30,Med,Low,6
+Friday,16:00,Med,Low,6
+Friday,16:30,Low,Low,3
+Friday,17:00,Med,Low,6
+Friday,17:30,Med,Low,6
+Friday,18:00,Med,Low,6
+Friday,18:30,Low,Low,3
+Friday,19:00,Med,Low,6
+Friday,19:30,Med,Low,6
+Friday,20:00,High,Med,10
+Friday,20:30,High,Med,10
+Friday,21:00,High,Low,9
+Friday,21:30,High,Med,10
+Friday,22:00,High,Med,10
+Friday,22:30,High,Med,10
+Friday,23:00,Med,Low,6
+Friday,23:30,Low,Low,3
+Saturday,0:00,Low,Low,3
+Saturday,0:30,Very Low,Very Low,0
+Saturday,1:00,Very Low,Very Low,0
+Saturday,1:30,Very Low,Very Low,0
+Saturday,2:00,Very Low,Very Low,0
+Saturday,2:30,Very Low,Very Low,0
+Saturday,3:00,Very Low,Very Low,0
+Saturday,3:30,Very Low,Very Low,0
+Saturday,4:00,Very Low,Very Low,0
+Saturday,4:30,Very Low,Very Low,0
+Saturday,5:00,Very Low,Very Low,0
+Saturday,5:30,Very Low,Very Low,0
+Saturday,6:00,Very Low,Very Low,0
+Saturday,6:30,Very Low,Very Low,0
+Saturday,7:00,Very Low,Very Low,0
+Saturday,7:30,Very Low,Very Low,0
+Saturday,8:00,Low,Very Low,2
+Saturday,8:30,Low,Very Low,2
+Saturday,9:00,Low,Very Low,2
+Saturday,9:30,Low,Low,3
+Saturday,10:00,Low,Low,3
+Saturday,10:30,Low,Low,3
+Saturday,11:00,Med,Low,6
+Saturday,11:30,Med,Low,6
+Saturday,12:00,Med,Low,6
+Saturday,12:30,Low,Low,3
+Saturday,13:00,Low,Low,3
+Saturday,13:30,Med,Med,7
+Saturday,14:00,Med,Med,7
+Saturday,14:30,Med,Med,7
+Saturday,15:00,Med,Low,6
+Saturday,15:30,Low,Low,3
+Saturday,16:00,Low,Low,3
+Saturday,16:30,Low,Low,3
+Saturday,17:00,Low,Low,3
+Saturday,17:30,Low,Low,3
+Saturday,18:00,Low,Low,3
+Saturday,18:30,Low,Low,3
+Saturday,19:00,Low,Low,3
+Saturday,19:30,Low,Low,3
+Saturday,20:00,Med,Low,6
+Saturday,20:30,Med,Med,7
+Saturday,21:00,Med,Med,7
+Saturday,21:30,Med,Low,6
+Saturday,22:00,Med,Low,6
+Saturday,22:30,Low,Low,3
+Saturday,23:00,Low,Low,3
+Saturday,23:30,Low,Very Low,2
+Sunday,0:00,Low,Very Low,2
+Sunday,0:30,Very Low,Very Low,0
+Sunday,1:00,Very Low,Very Low,0
+Sunday,1:30,Very Low,Very Low,0
+Sunday,2:00,Very Low,Very Low,0
+Sunday,2:30,Very Low,Very Low,0
+Sunday,3:00,Very Low,Very Low,0
+Sunday,3:30,Very Low,Very Low,0
+Sunday,4:00,Very Low,Very Low,0
+Sunday,4:30,Very Low,Very Low,0
+Sunday,5:00,Very Low,Very Low,0
+Sunday,5:30,Very Low,Very Low,0
+Sunday,6:00,Very Low,Very Low,0
+Sunday,6:30,Very Low,Very Low,0
+Sunday,7:00,Very Low,Very Low,0
+Sunday,7:30,Very Low,Very Low,0
+Sunday,8:00,Low,Very Low,2
+Sunday,8:30,Low,Very Low,2
+Sunday,9:00,Low,Very Low,2
+Sunday,9:30,Low,Very Low,2
+Sunday,10:00,Low,Low,3
+Sunday,10:30,Low,Low,3
+Sunday,11:00,Low,Low,3
+Sunday,11:30,Low,Low,3
+Sunday,12:00,Low,Low,3
+Sunday,12:30,Low,Low,3
+Sunday,13:00,Low,Low,3
+Sunday,13:30,Med,Low,6
+Sunday,14:00,Med,Low,6
+Sunday,14:30,Med,Low,6
+Sunday,15:00,Med,Low,6
+Sunday,15:30,Low,Low,3
+Sunday,16:00,Low,Low,3
+Sunday,16:30,Low,Low,3
+Sunday,17:00,Low,Low,3
+Sunday,17:30,Low,Low,3
+Sunday,18:00,Low,Low,3
+Sunday,18:30,Low,Low,3
+Sunday,19:00,Low,Low,3
+Sunday,19:30,Low,Low,3
+Sunday,20:00,Low,Low,3
+Sunday,20:30,Low,Low,3
+Sunday,21:00,Low,Low,3
+Sunday,21:30,Low,Low,3
+Sunday,22:00,Low,Low,3
+Sunday,22:30,Low,Low,3
+Sunday,23:00,Low,Very Low,2
+Sunday,23:30,Low,Very Low,2
