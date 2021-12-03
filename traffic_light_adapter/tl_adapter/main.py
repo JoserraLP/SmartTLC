@@ -76,7 +76,5 @@ if __name__ == "__main__":
     # Create the TraCI Traffic simulator
     traci_sim = TraCISimulator(sumo_conf=sim_args, time_pattern_file=exec_options.time_pattern)
 
-    adapter = Adapter(traci_sim)
-
-    adapter._traci_sim.simulate()
+    traci_sim.simulate()
 

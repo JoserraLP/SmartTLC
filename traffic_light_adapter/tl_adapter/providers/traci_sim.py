@@ -1,4 +1,5 @@
 import random
+import ast
 
 import paho.mqtt.client as mqtt
 
@@ -7,7 +8,7 @@ import traci
 from tl_adapter.generators.flows_generator import FlowsGenerator
 from tl_adapter.providers.utils import get_total_waiting_time_per_lane, get_num_passing_vehicles_detectors
 from tl_adapter.static.constants import FLOWS_VALUES, FLOWS_OUTPUT_DIR, TL_PROGRAMS, TIMESTEPS_TO_STORE_INFO, \
-    TIMESTEPS_PER_HALF_HOUR, MQTT_PORT, MQTT_URL
+    TIMESTEPS_PER_HALF_HOUR, MQTT_PORT, MQTT_URL, TRAFFIC_TYPE_TL_ALGORITHMS
 from tl_adapter.time_patterns.time_patterns import TimePattern
 
 
@@ -34,6 +35,7 @@ class TraCISimulator:
 
         # Initialize TraCI simulation to none, to use it in different methods
         self._traci = None
+        self._tl_program = TL_PROGRAMS[0]
 
         # Define flow generator and flows default values
         self._flow_generators = FlowsGenerator()
@@ -53,15 +55,28 @@ class TraCISimulator:
         # Create the MQTT client, its callbacks and its connection to the broker
         self._mqtt_client = mqtt.Client()
         self._mqtt_client.on_connect = self.on_connect
+        self._mqtt_client.on_message = self.on_message
         self._mqtt_client.connect(mqtt_url, mqtt_port)
         self._mqtt_client.loop_start()
-        
+
     @property
     def current_traffic_type(self):
         return self._current_traffic_type
 
     def on_connect(self, client, userdata, flags, rc):  # The callback for when the client connects to the broker
-        print(f"Connected with result code {str(rc)}")  # Print result of connection attempt
+        if rc == 0: # Connection stablished
+            # Subscribe to the traffic prediction topic
+            self._mqtt_client.subscribe('traffic_prediction')
+
+    def on_message(self, client, userdata, msg):  # The callback for when a PUBLISH message is received from the server.
+        # Parse message to dict
+        traffic_info = ast.literal_eval(msg.payload.decode('utf-8'))
+
+        # Retrieve predicted traffic type
+        traffic_type = int(traffic_info['traffic_prediction'])
+
+        # Retrieve the best TL pprogram to apply
+        self._tl_program = TRAFFIC_TYPE_TL_ALGORITHMS[str(traffic_type)]
 
     def simulate(self):
         """
@@ -110,7 +125,12 @@ class TraCISimulator:
         # Traci simulation
         # Iterate until simulation is ended
         while self._traci.simulation.getMinExpectedNumber() > 0:
-            # Retrieve all the info
+            if self._traci.trafficlight.getProgram('c1') != self._tl_program:
+                print(f'changing program from {self._traci.trafficlight.getProgram("c1")} to {self._tl_program}')
+                self._traci.trafficlight.setProgram('c1', self._tl_program)
+
+            # Retreive the current program
+            data['tl_program'] = self._traci.trafficlight.getProgram('c1')
 
             # Waiting time
             current_total_waiting_time = get_total_waiting_time_per_lane(traci)
@@ -201,7 +221,7 @@ class TraCISimulator:
             if cur_timestep % TIMESTEPS_TO_STORE_INFO == 0:
                 # Analize current traffic
                 self._current_traffic_type = self.analize_traffic_flow(data['passing_veh_n_s'], data['passing_veh_e_w'])
-                print(self._current_traffic_type)
+
                 # Publish data
                 self._mqtt_client.publish(topic='traffic_info', payload=str(data))
 
@@ -256,8 +276,18 @@ class TraCISimulator:
 
         return traffic_type
 
-    def apply_tl_program(self, traffic_type):
-        pass
+    def apply_tl_program(self, tl_program: str):
+        """
+        Apply a new program to the 'c1' junction.
+
+        :param tl_program: new traffic light program
+        :type tl_program: str
+        :return: None
+        """
+        # TODO replace to more than a single center 'c1'
+        print(self._traci.trafficlight.getProgram('c1'))
+        if self._traci.trafficlight.getProgram('c1') != tl_program:
+            self._traci.trafficlight.setProgram('c1', tl_program)
 
     def generate_traffic_flows(self, traffic_type: int, begin: int = 0, end: int = 1800):
         """

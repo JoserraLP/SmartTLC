@@ -23,12 +23,11 @@ FLOWS_OUTPUT_DIR = '../net-files/flows/flows.rou.xml'
 
 # All the possible TL programs
 # TL_PROGRAMS = ['static_program', 'actuated_program', 'actuated_program_time_gap', 'actuated_program_time_loss']
-TL_PROGRAMS = [f'static_program_{i}' for i in range(1, 11)]
+TL_PROGRAMS = [f'static_program_{i}' for i in range(1, 14)]
 
 
 # Timestep range for storing info into the dataset
-# TIMESTEPS_TO_STORE_INFO = 300  # 5 Cycles = 300 seconds
-TIMESTEPS_TO_STORE_INFO = 1800  #TODO test to check predictions
+TIMESTEPS_TO_STORE_INFO = 300  # 5 Cycles = 300 seconds
 TIMESTEPS_PER_HALF_HOUR = 1800  # Half hour is 1800 seconds
 TIMESTEPS_PER_MINUTE = 60
 
@@ -51,18 +50,18 @@ MQTT_PORT = 1883
 
 
 # Traffic Type VS TL Algorithm
-TRAFFIC_TYPE_TL_ALGORITHMS ={
-    '0': 'static_7',
-    '1': 'static_1',
-    '2': 'static_10',
-    '3': 'static_8',
-    '4': 'static_2',
-    '5': 'static_1',
-    '6': 'static_12',
-    '7': 'static_5',
-    '8': 'static_2',
-    '9': 'static_13',
-    '10': 'static_12',
-    '11': 'static_5',
+TRAFFIC_TYPE_TL_ALGORITHMS = {
+    '0': 'static_program_7',
+    '1': 'static_program_1',
+    '2': 'static_program_10',
+    '3': 'static_program_8',
+    '4': 'static_program_2',
+    '5': 'static_program_1',
+    '6': 'static_program_12',
+    '7': 'static_program_5',
+    '8': 'static_program_2',
+    '9': 'static_program_13',
+    '10': 'static_program_12',
+    '11': 'static_program_5',
 
 }
