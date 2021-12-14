@@ -1,16 +1,9 @@
 # IntelliJ generated folder
 .idea/
 
-# Delete Pycache files
-*.pyo
-*.pyc
+# Delete Recorder output files (csv)
+recorder/*.csv
 
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Delete .egg-info files
-*.egg-info
-
+# Delete docker-compose.yml
+docker-compose.yml
 
