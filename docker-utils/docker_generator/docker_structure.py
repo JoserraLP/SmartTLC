@@ -35,7 +35,7 @@ ALL_CONTAINERS = {
         'volumes': './telegraf/telegraf.conf:/etc/telegraf/telegraf.conf',
         'ipv4_address': '172.20.0.5'
     },
-    'traffic_light_predictor': {
+    'traffic_light_predictor_date': {
         'build': './traffic_light_predictor',
         'container_name': 'traffic_light_predictor',
         'env_file': 'traffic_light_predictor/eclipse-sumo-image/env.sumo',
@@ -44,9 +44,23 @@ ALL_CONTAINERS = {
         'volumes': './traffic_light_predictor:/etc/traffic_light_predictor/',
         'command': 'bash -c "pip3 install -r /etc/traffic_light_predictor/requirements.txt && '
                    'cd /etc/traffic_light_predictor/tl_predictor/ && dockerize -wait '
-                   'tcp://172.20.0.3:8086 -timeout 100s -wait-retry-interval 20s python3 {}"',
+                   'tcp://172.20.0.3:8086 -timeout 100s -wait-retry-interval 20s python3 ml_trainer.py --component -n 1'
+                   ' --middleware_host 172.20.0.2 --middleware_port 1883 -d"',
         'ipv4_address': '172.20.0.6'
-    },  # Added {} to parametrize execution
+    },
+    'traffic_light_predictor_context': {
+        'build': './traffic_light_predictor',
+        'container_name': 'traffic_light_predictor',
+        'env_file': 'traffic_light_predictor/eclipse-sumo-image/env.sumo',
+        'restart': 'on-failure',
+        'links': 'mosquitto',
+        'volumes': './traffic_light_predictor:/etc/traffic_light_predictor/',
+        'command': 'bash -c "pip3 install -r /etc/traffic_light_predictor/requirements.txt && '
+                   'cd /etc/traffic_light_predictor/tl_predictor/ && dockerize -wait '
+                   'tcp://172.20.0.3:8086 -timeout 100s -wait-retry-interval 20s python3 ml_trainer.py --component -n 1'
+                   ' --middleware_host 172.20.0.2 --middleware_port 1883"',
+        'ipv4_address': '172.20.0.6'
+    },
     'traffic_light_controller': {
         'build': './traffic_light_controller',
         'container_name': 'traffic_light_controller',
@@ -55,7 +69,7 @@ ALL_CONTAINERS = {
         'links': 'mosquitto',
         'volumes': './traffic_light_controller:/etc/traffic_light_controller/',
         'command': 'bash -c "pip3 install -r /etc/traffic_light_controller/requirements.txt && '
-                   'cd /etc/traffic_light_controller/tl_adapter/ && dockerize -wait '
+                   'cd /etc/traffic_light_controller/tl_controller/ && dockerize -wait '
                    'tcp://172.20.0.3:8086 -timeout 100s -wait-retry-interval 20s python3 {}"',
         'ipv4_address': '172.20.0.7'
     }  # Added {} to parametrize execution
