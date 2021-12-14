@@ -36,7 +36,7 @@ class TraCISimulator:
         # Initialize TraCI simulation to none, to use it in different methods
         self._traci = None
         # TL program to the middle one
-        self._tl_program = TL_PROGRAMS[int(len(TL_PROGRAMS/2))]
+        self._tl_program = TL_PROGRAMS[int(len(TL_PROGRAMS)/2)]
 
         # Define flow generator and flows default values
         self._flow_generators = FlowsGenerator()
