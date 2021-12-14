@@ -34,7 +34,7 @@ NUM_TRAFFIC_TYPES = 11
 DEFAULT_GUI_FLAG = False
 DEFAULT_NUMBER_OF_SIMULATIONS = 0
 DEFAULT_CLI_VISUALIZE_FLAG = False
-DEFAULT_CONFIG_FILE = '../net-files/default/generated.sumocfg'
+DEFAULT_CONFIG_FILE = '../net-files/config/simulation.sumocfg'
 DEFAULT_OUTPUT_FILE = '../output/simulation_calendar.csv'
 
 # Default time pattern file
