@@ -4,8 +4,8 @@ import sys
 
 from sumolib import checkBinary
 
-from tl_predictor.providers.traci_time_pattern_sim import TimePatternSimulator
-from tl_predictor.providers.traci_traffic_light_sim import TrafficTypeSimulator
+from tl_predictor.generators.dataset_generator_time_pattern import TimePatternGenerator
+from tl_predictor.generators.dataset_generator_traffic_light import TrafficTypeGenerator
 from tl_predictor.visualization.console_visualizer import ConsoleVisualizer
 import tl_predictor.static.constants as cnt
 
@@ -107,11 +107,11 @@ if __name__ == "__main__":
 
         if exec_options.num_sim != 0:
             # Create the TraCI Traffic Type simulator
-            traci_sim = TrafficTypeSimulator(sumo_conf=sim_args, num_sim=exec_options.num_sim)
+            traci_sim = TrafficTypeGenerator(sumo_conf=sim_args, num_sim=exec_options.num_sim)
 
         elif exec_options.time_pattern != '':
             # Create the TraCI Time Pattern simulator
-            traci_sim = TimePatternSimulator(sumo_conf=sim_args, time_pattern_file=exec_options.time_pattern)
+            traci_sim = TimePatternGenerator(sumo_conf=sim_args, time_pattern_file=exec_options.time_pattern)
         else:
             print('Error in the arguments')
             exit(-1)
