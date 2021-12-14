@@ -5,11 +5,11 @@ import paho.mqtt.client as mqtt
 
 import pandas as pd
 import traci
-from tl_adapter.generators.flows_generator import FlowsGenerator
-from tl_adapter.providers.utils import get_total_waiting_time_per_lane, get_num_passing_vehicles_detectors
-from tl_adapter.static.constants import FLOWS_VALUES, FLOWS_OUTPUT_DIR, TL_PROGRAMS, TIMESTEPS_TO_STORE_INFO, \
+from tl_controller.generators.flows_generator import FlowsGenerator
+from tl_controller.providers.utils import get_total_waiting_time_per_lane, get_num_passing_vehicles_detectors
+from tl_controller.static.constants import FLOWS_VALUES, FLOWS_OUTPUT_DIR, TL_PROGRAMS, TIMESTEPS_TO_STORE_INFO, \
     TIMESTEPS_PER_HALF_HOUR, MQTT_PORT, MQTT_URL, TRAFFIC_TYPE_TL_ALGORITHMS
-from tl_adapter.time_patterns.time_patterns import TimePattern
+from tl_controller.time_patterns.time_patterns import TimePattern
 
 
 class TraCISimulator:
@@ -35,7 +35,8 @@ class TraCISimulator:
 
         # Initialize TraCI simulation to none, to use it in different methods
         self._traci = None
-        self._tl_program = TL_PROGRAMS[0]
+        # TL program to the middle one
+        self._tl_program = TL_PROGRAMS[int(len(TL_PROGRAMS/2))]
 
         # Define flow generator and flows default values
         self._flow_generators = FlowsGenerator()
@@ -86,8 +87,8 @@ class TraCISimulator:
         """
         # Loop over the time pattern simulation
 
-        # Initial TL program to the first one
-        tl_program = TL_PROGRAMS[0]
+        # Initial TL program to the middle one
+        tl_program = TL_PROGRAMS[int(len(TL_PROGRAMS)/2)]
 
         # Define initial timestep
         cur_timestep = 0
@@ -109,11 +110,11 @@ class TraCISimulator:
         time_pattern_id = cur_timestep / TIMESTEPS_PER_HALF_HOUR
 
         # Initialize basic data schema
-        data = {'tl_id': 'c1', 'tl_program': tl_program,
-                'passing_veh_n_s': 0, 'passing_veh_e_w': 0}
+        data = {"tl_id": "c1", "tl_program": tl_program,
+                "passing_veh_n_s": 0, "passing_veh_e_w": 0}
 
         # Initialize the dict
-        total_waiting_time = {'c1': {'n': 0, 's': 0, 'e': 0, 'w': 0}}
+        total_waiting_time = {"c1": {'n': 0, 's': 0, 'e': 0, 'w': 0}}
         prev_total_waiting_time_per_lane = get_total_waiting_time_per_lane(traci)
 
         # Initialize the set
@@ -125,12 +126,14 @@ class TraCISimulator:
         # Traci simulation
         # Iterate until simulation is ended
         while self._traci.simulation.getMinExpectedNumber() > 0:
+            # If there are the same or very close -> analyzer TODO
+            # It there are not the same -> more relevant the analyzer but taking care of the predictor -> Distance > 3 -> Take 2/3 closest to the analyzer type
             if self._traci.trafficlight.getProgram('c1') != self._tl_program:
                 print(f'changing program from {self._traci.trafficlight.getProgram("c1")} to {self._tl_program}')
                 self._traci.trafficlight.setProgram('c1', self._tl_program)
 
             # Retreive the current program
-            data['tl_program'] = self._traci.trafficlight.getProgram('c1')
+            data["tl_program"] = self._traci.trafficlight.getProgram('c1')
 
             # Waiting time
             current_total_waiting_time = get_total_waiting_time_per_lane(traci)
@@ -170,12 +173,12 @@ class TraCISimulator:
 
             # Get number of vehicles
             num_passing_vehicles_detectors = get_num_passing_vehicles_detectors(self._traci, vehicles_passed)
-            data['passing_veh_e_w'] += num_passing_vehicles_detectors['e_w']
-            data['passing_veh_n_s'] += num_passing_vehicles_detectors['n_s']
+            data["passing_veh_e_w"] += num_passing_vehicles_detectors['e_w']
+            data["passing_veh_n_s"] += num_passing_vehicles_detectors['n_s']
 
             # Process data
-            data['waiting_time_veh_n_s'] = total_waiting_time['c1']['n'] + total_waiting_time['c1']['s']
-            data['waiting_time_veh_e_w'] = total_waiting_time['c1']['w'] + total_waiting_time['c1']['e']
+            data["waiting_time_veh_n_s"] = total_waiting_time['c1']['n'] + total_waiting_time['c1']['s']
+            data["waiting_time_veh_e_w"] = total_waiting_time['c1']['w'] + total_waiting_time['c1']['e']
 
             # Calculate the time pattern id
             time_pattern_id = cur_timestep / TIMESTEPS_PER_HALF_HOUR
@@ -186,49 +189,49 @@ class TraCISimulator:
                 # Store year, month, week, day and hour
                 cur_hour = self._time_pattern.get_cur_hour(time_pattern_id)
                 if cur_hour:
-                    data['hour'] = cur_hour
+                    data["hour"] = cur_hour
 
                 cur_day = self._time_pattern.get_cur_day(time_pattern_id)
                 if cur_day:
-                    data['day'] = cur_day
+                    data["day"] = cur_day
                 else:
-                    data['day'] = 'monday'
+                    data["day"] = "monday"
 
                 cur_date_day = self._time_pattern.get_cur_date_day(time_pattern_id)
                 if cur_date_day:
-                    data['date_day'] = cur_date_day
+                    data["date_day"] = cur_date_day
                 else:
-                    data['date_day'] = '02'
+                    data["date_day"] = "02"
 
                 cur_week = self._time_pattern.get_cur_week(time_pattern_id)
                 if cur_week:
-                    data['date_week'] = cur_week
+                    data["date_week"] = cur_week
                 else:
-                    data['date_week'] = '01'
+                    data["date_week"] = "01"
 
                 cur_month = self._time_pattern.get_cur_month(time_pattern_id)
                 if cur_month:
-                    data['date_month'] = cur_month
+                    data["date_month"] = cur_month
                 else:
-                    data['date_month'] = '02'
+                    data["date_month"] = "02"
 
                 cur_year = self._time_pattern.get_cur_year(time_pattern_id)
                 if cur_year:
-                    data['date_year'] = cur_year
+                    data["date_year"] = cur_year
                 else:
-                    data['date_year'] = '2021'
+                    data["date_year"] = "2021"
 
             if cur_timestep % TIMESTEPS_TO_STORE_INFO == 0:
                 # Analize current traffic
                 self._current_traffic_type = self.analize_traffic_flow(data['passing_veh_n_s'], data['passing_veh_e_w'])
 
                 # Publish data
-                self._mqtt_client.publish(topic='traffic_info', payload=str(data))
+                self._mqtt_client.publish(topic='traffic_info', payload=str(data).replace('\'', '\"').replace(" ", ""))
 
                 # Reset counters
                 data['passing_veh_n_s'] = 0
                 data['passing_veh_e_w'] = 0
-                total_waiting_time = {'c1': {'n': 0, 's': 0, 'e': 0, 'w': 0}}
+                total_waiting_time = {"c1": {'n': 0, 's': 0, 'e': 0, 'w': 0}}
 
             # Simulate a step
             self._traci.simulationStep()

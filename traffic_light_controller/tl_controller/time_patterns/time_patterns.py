@@ -1,6 +1,6 @@
 import pandas as pd
 
-from tl_adapter.static.constants import DEFAULT_TIME_PATTERN_FILE
+from tl_controller.static.constants import DEFAULT_TIME_PATTERN_FILE
 
 
 class TimePattern:

@@ -45,7 +45,7 @@ DEFAULT_OUTPUT_FILE = '../output/simulation.csv'
 DEFAULT_TIME_PATTERN_FILE = '../time_patterns/calendar.csv'
 
 # MQTT broker data
-MQTT_URL = 'localhost'
+MQTT_URL = '172.20.0.2'
 MQTT_PORT = 1883
 
 

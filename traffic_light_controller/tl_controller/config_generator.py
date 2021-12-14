@@ -1,6 +1,6 @@
 import optparse
 
-from tl_study.generators.tl_program_generator import TrafficLightProgramGenerator
+from tl_controller.generators.tl_program_generator import TrafficLightProgramGenerator
 
 
 def get_options():

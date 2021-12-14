@@ -1,6 +1,6 @@
 import xml.etree.cElementTree as ET
 
-from tl_study.generators.base_generator import BaseGenerator
+from tl_controller.generators.base_generator import BaseGenerator
 
 
 class TrafficLightProgramGenerator(BaseGenerator):
