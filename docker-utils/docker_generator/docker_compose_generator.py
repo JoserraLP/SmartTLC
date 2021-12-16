@@ -148,7 +148,7 @@ class DockerGenerator:
         if "command" in container:
             # TODO add execution options to container generator
             # Append execution params for both traffic_light_predictor and traffic_light_controller
-            if 'traffic_light_controller' == container_name:
+            if 'traffic_light_controller' in container_name:
                 container_str += "    command: {}\n".format(container['command'].format(
                     DOCKER_EXECUTION_OPTIONS['traffic_light_controller']['monday']))
             else:

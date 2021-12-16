@@ -72,6 +72,18 @@ ALL_CONTAINERS = {
                    'cd /etc/traffic_light_controller/tl_controller/ && dockerize -wait '
                    'tcp://172.20.0.3:8086 -timeout 100s -wait-retry-interval 20s python3 {}"',
         'ipv4_address': '172.20.0.7'
+    },  # Added {} to parametrize execution
+    'traffic_light_controller_analyzer': {
+        'build': './traffic_light_controller',
+        'container_name': 'traffic_light_controller',
+        'env_file': 'traffic_light_controller/eclipse-sumo-image/env.sumo',
+        'restart': 'on-failure',
+        'links': 'mosquitto',
+        'volumes': './traffic_light_controller:/etc/traffic_light_controller/',
+        'command': 'bash -c "pip3 install -r /etc/traffic_light_controller/requirements.txt && '
+                   'cd /etc/traffic_light_controller/tl_controller/ && dockerize -wait '
+                   'tcp://172.20.0.3:8086 -timeout 100s -wait-retry-interval 20s python3 {} -a"',
+        'ipv4_address': '172.20.0.7'
     }  # Added {} to parametrize execution
 
 }
