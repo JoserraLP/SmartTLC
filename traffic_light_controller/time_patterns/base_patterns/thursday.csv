@@ -39,7 +39,7 @@ hour,traffic_type_n_s,traffic_type_e_w,traffic_type
 18:30,Low,Low,3
 19:00,Low,Low,3
 19:30,Low,Low,3
-20:00,High,Med,10
+20:00,Med,Med,7
 20:30,High,Med,10
 21:00,High,Low,9
 21:30,High,Med,10

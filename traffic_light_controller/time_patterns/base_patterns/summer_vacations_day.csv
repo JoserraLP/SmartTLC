@@ -15,10 +15,10 @@ hour,traffic_type_n_s,traffic_type_e_w,traffic_type
 6:30,Very Low,Very Low,0
 7:00,Very Low,Very Low,0
 7:30,Very Low,Very Low,0
-8:00,Low,Low,3
+8:00,Low,Very Low,2
 8:30,Med,Low,6
 9:00,Med,Med,7
-9:30,Low,Low,3
+9:30,Med,Low,6
 10:00,Low,Low,3
 10:30,Low,Low,3
 11:00,Low,Low,3
@@ -38,12 +38,12 @@ hour,traffic_type_n_s,traffic_type_e_w,traffic_type
 18:00,Low,Low,3
 18:30,Low,Low,3
 19:00,Low,Low,3
-19:30,Low,Low,3
+19:30,Med,Low,6
 20:00,Med,Med,7
 20:30,Med,Med,7
 21:00,Med,Low,6
 21:30,Med,Low,6
 22:00,Med,Low,6
 22:30,Low,Low,3
-23:00,Low,Low,3
+23:00,Low,Very Low,2
 23:30,Very Low,Very Low,0
