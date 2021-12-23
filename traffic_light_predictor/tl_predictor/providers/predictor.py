@@ -87,4 +87,4 @@ class Predictor:
         prediction['traffic_prediction'] = self._model_predictor.predict(traffic_data, num_models=self._num_models)[0]
 
         # Publish the message
-        self._mqtt_client.publish(topic=PREDICTION_TOPIC, payload=str(prediction))
+        self._mqtt_client.publish(topic=PREDICTION_TOPIC, payload=str(prediction).replace('\'', '"').replace(' ', ''))

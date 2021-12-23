@@ -1,16 +1,16 @@
 # Flows variables and its values
 FLOWS_VALUES = {
     'high': {
-        'vehsPerHour': 1000,
-        'vehs_range': 100
+        'vehsPerHour': 500,
+        'vehs_range': 150
     },
     'med': {
-        'vehsPerHour': 400,
-        'vehs_range': 50
+        'vehsPerHour': 150,
+        'vehs_range': 45
     },
     'low': {
         'vehsPerHour': 20,
-        'vehs_range': 10
+        'vehs_range': 6
     },
     'very_low': {
         'vehsPerHour': 3,
@@ -63,13 +63,13 @@ TRANSLATE_DICT = {
 
 # Random ranges for noise generation on calendar
 # Variance for vacation swap
-RANDOM_VACATION_SWAP_RANGE = 1  # 15 days
+RANDOM_VACATION_SWAP_RANGE = 15  # 15 days
 # Variance for traffic type
 RANDOM_TRAFFIC_TYPE_LOWER_BOUND = -3
 RANDOM_TRAFFIC_TYPE_UPPER_BOUND = 3
 RANDOM_TRAFFIC_TYPE_RANGE = 48 * 3  # 48 rows per 3 days
 # Variance for vacations day swap to usual
-RANDOM_VACATION_TO_USUAL_DAY_RANGE = 1  # 10 days
+RANDOM_VACATION_TO_USUAL_DAY_RANGE = 15  # 15 days
 
 # ML constants
 KNN_MAX_NEIGHBORS = 15
