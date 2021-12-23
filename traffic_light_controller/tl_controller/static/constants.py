@@ -44,10 +44,14 @@ DEFAULT_OUTPUT_FILE = '../output/simulation.csv'
 # Default time pattern file
 DEFAULT_TIME_PATTERN_FILE = '../time_patterns/calendar.csv'
 
-# MQTT broker data
+# MQTT constants
 MQTT_URL = '172.20.0.2'
 MQTT_PORT = 1883
+TRAFFIC_INFO_TOPIC = 'traffic_info'
+PREDICTION_TOPIC = 'traffic_prediction'
 
+# Threshold for analyzer and prediction error
+ERROR_THRESHOLD = 3
 
 # Traffic Type VS TL Algorithm
 TRAFFIC_TYPE_TL_ALGORITHMS = {
@@ -63,5 +67,4 @@ TRAFFIC_TYPE_TL_ALGORITHMS = {
     '9': 'static_program_13',
     '10': 'static_program_12',
     '11': 'static_program_5',
-
 }
