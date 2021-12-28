@@ -5,10 +5,10 @@ import paho.mqtt.client as mqtt
 import pandas as pd
 import traci
 from tl_controller.generators.flows_generator import FlowsGenerator
-from tl_controller.providers.analyzer import Analyzer
+from tl_controller.providers.adapter import TrafficLightAdapter
 from tl_controller.providers.utils import get_total_waiting_time_per_lane, get_num_passing_vehicles_detectors
 from tl_controller.static.constants import FLOWS_VALUES, FLOWS_OUTPUT_DIR, TL_PROGRAMS, TIMESTEPS_TO_STORE_INFO, \
-    TIMESTEPS_PER_HALF_HOUR, MQTT_PORT, MQTT_URL, TRAFFIC_TYPE_TL_ALGORITHMS, PREDICTION_TOPIC, ERROR_THRESHOLD
+    TIMESTEPS_PER_HALF_HOUR, MQTT_PORT, MQTT_URL, TRAFFIC_TYPE_TL_ALGORITHMS, PREDICTION_TOPIC, ANALYSIS_TOPIC
 from tl_controller.time_patterns.time_patterns import TimePattern
 
 
@@ -17,8 +17,7 @@ class TraCISimulator:
     Dataset generator from the TraCI simulations
     """
 
-    def __init__(self, sumo_conf, time_pattern_file: str = '', mqtt_url: str = MQTT_URL, mqtt_port: int = MQTT_PORT,
-                 analyzer: bool = False):
+    def __init__(self, sumo_conf, time_pattern_file: str = '', mqtt_url: str = MQTT_URL, mqtt_port: int = MQTT_PORT):
         # TODO add time pattern default file
         """
         TraCISimulator initializer.
@@ -39,8 +38,9 @@ class TraCISimulator:
         self._traci = None
         # TL program to the middle one
         self._tl_program = TL_PROGRAMS[int(len(TL_PROGRAMS) / 2)]
-        self._analyzer_tl_program = self._predictor_tl_program = self._predictor_traffic_type = \
-            self._analyzer_traffic_type = None
+
+        # Initialize the Traffic Light Adapter
+        self._adapter = TrafficLightAdapter()
 
         # Define flow generator and flows default values
         self._flow_generators = FlowsGenerator()
@@ -57,34 +57,10 @@ class TraCISimulator:
         self.very_low_vehs_per_hour = FLOWS_VALUES['very_low']['vehsPerHour']
         self.very_low_vehs_range = FLOWS_VALUES['very_low']['vehs_range']
 
-        # Create Analyzer
-        if analyzer:
-            self._analyzer = Analyzer()
-        else:
-            self._analyzer = None
-
         # Create the MQTT client, its callbacks and its connection to the broker
         self._mqtt_client = mqtt.Client()
-        self._mqtt_client.on_connect = self.on_connect
-        self._mqtt_client.on_message = self.on_message
         self._mqtt_client.connect(mqtt_url, mqtt_port)
         self._mqtt_client.loop_start()
-
-    def on_connect(self, client, userdata, flags, rc):  # The callback for when the client connects to the broker
-        if rc == 0:  # Connection established
-            # Subscribe to the traffic prediction topic
-            self._mqtt_client.subscribe(PREDICTION_TOPIC)
-
-    def on_message(self, client, userdata, msg):  # The callback for when a PUBLISH message is received from the server.
-        # Parse message to dict
-        traffic_info = ast.literal_eval(msg.payload.decode('utf-8'))
-
-        # Retrieve predicted traffic type
-        traffic_type = int(traffic_info['traffic_prediction'])
-        self._predictor_traffic_type = traffic_type
-
-        # Retrieve the best TL program to apply
-        self._predictor_tl_program = TRAFFIC_TYPE_TL_ALGORITHMS[str(traffic_type)]
 
     def simulate(self):
         """
@@ -119,32 +95,13 @@ class TraCISimulator:
         # Initialize the set
         vehicles_passed = set()
 
-        if self._analyzer:
-            # Get current traffic type with 0 passing vehicles as it is the beginning
-            self._analyzer_traffic_type = self._analyzer.analyze_current_traffic_flow(0, 0)
-
         # Traci simulation
         # Iterate until simulation is ended
         while self._traci.simulation.getMinExpectedNumber() > 0:
-            if self._analyzer_tl_program and not self._predictor_tl_program:
-                self._tl_program = self._analyzer_tl_program
-            elif self._predictor_tl_program and not self._analyzer_tl_program:
-                self._tl_program = self._predictor_tl_program
-            else:
-                # Calculate the difference between the traffic types
-                if self._analyzer_traffic_type and self._predictor_traffic_type:
-                    error_distance = self._analyzer_traffic_type - self._predictor_traffic_type
-                    if abs(error_distance) <= ERROR_THRESHOLD:
-                        # The analyzer is right, use its value
-                        self._tl_program = self._analyzer_tl_program
-                    else:
-                        # The analyzer might be wrong, get a "neutral" value -> 1/3 closest to the analyzer as it is in
-                        # real time
-                        new_traffic_type = int(error_distance / 3 + self._analyzer_traffic_type)
-                        if new_traffic_type > 0:
-                            self._tl_program = TL_PROGRAMS[new_traffic_type]
+            self._tl_program = self._adapter.get_new_tl_program()
 
-            self.apply_tl_program(self._tl_program)
+            if self._tl_program is not None:
+                self.apply_tl_program(self._tl_program)
 
             # Retrieve the current program
             data["tl_program"] = self._traci.trafficlight.getProgram('c1')
@@ -217,12 +174,6 @@ class TraCISimulator:
                 else:
                     data["date_day"] = "02"
 
-                cur_week = self._time_pattern.get_cur_week(time_pattern_id)
-                if cur_week:
-                    data["date_week"] = cur_week
-                else:
-                    data["date_week"] = "01"
-
                 cur_month = self._time_pattern.get_cur_month(time_pattern_id)
                 if cur_month:
                     data["date_month"] = cur_month
@@ -236,12 +187,6 @@ class TraCISimulator:
                     data["date_year"] = "2021"
 
             if cur_timestep % TIMESTEPS_TO_STORE_INFO == 0:
-                if self._analyzer:
-                    # Analyze current traffic
-                    self._analyzer_traffic_type = self._analyzer.analyze_current_traffic_flow(data['passing_veh_n_s'],
-                                                                                              data['passing_veh_e_w'])
-                    self._analyzer_tl_program = TL_PROGRAMS[self._analyzer_traffic_type]
-
                 # Publish data
                 self._mqtt_client.publish(topic='traffic_info', payload=str(data).replace('\'', '\"').replace(" ", ""))
 
@@ -257,11 +202,12 @@ class TraCISimulator:
 
         # Close TraCI simulation in order to start another one in the next iteration
         self._traci.close()
+        self._adapter.close_connection()
         self._mqtt_client.loop_stop()
 
     def apply_tl_program(self, tl_program: str):
         """
-        Apply a new program to the 'c1' junction.
+        Apply a new program to the 'c1' junction if it is not the same.
 
         :param tl_program: new traffic light program
         :type tl_program: str

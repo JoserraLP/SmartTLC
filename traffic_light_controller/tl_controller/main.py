@@ -37,8 +37,6 @@ def get_options():
                                 default=cnt.DEFAULT_GUI_FLAG, help="run the commandline version of sumo")
     simulation_group.add_option("-c", "--config", dest="config", action='store',
                                 metavar="FILE", help="sumo configuration file location")
-    simulation_group.add_option("-a", "--analyzer", dest="analyzer", action="store_true",
-                                default=False, help="enable analyzer on the simulation.")
     simulation_group.add_option("-t", "--time-pattern", dest="time_pattern", metavar='FILE', action="store",
                                 help="time pattern input file")
     optParser.add_option_group(simulation_group)
@@ -75,7 +73,6 @@ if __name__ == "__main__":
     }
 
     # Create the TraCI Traffic simulator
-    traci_sim = TraCISimulator(sumo_conf=sim_args, time_pattern_file=exec_options.time_pattern,
-                               analyzer=exec_options.analyzer)
+    traci_sim = TraCISimulator(sumo_conf=sim_args, time_pattern_file=exec_options.time_pattern)
 
     traci_sim.simulate()

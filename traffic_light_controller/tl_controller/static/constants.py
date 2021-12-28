@@ -49,6 +49,7 @@ MQTT_URL = '172.20.0.2'
 MQTT_PORT = 1883
 TRAFFIC_INFO_TOPIC = 'traffic_info'
 PREDICTION_TOPIC = 'traffic_prediction'
+ANALYSIS_TOPIC = 'traffic_analysis'
 
 # Threshold for analyzer and prediction error
 ERROR_THRESHOLD = 3
