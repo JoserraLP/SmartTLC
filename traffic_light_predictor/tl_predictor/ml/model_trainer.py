@@ -115,6 +115,7 @@ class ModelTrainer:
                 for max_depth in range(2, RF_MAX_DEPTH, 2):
                     self.train_model('random_forest', k_fold_dataset=k_fold_dataset, k_fold_index=index,
                                      max_depth=max_depth, num_estimators=num_estimators)
+
         return self._performances
 
     def train_model(self, model_name: str, k_fold_dataset: dict, k_fold_index: int, num_neighbors: int = -1,
