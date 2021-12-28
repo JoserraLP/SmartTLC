@@ -69,3 +69,23 @@ TRAFFIC_TYPE_TL_ALGORITHMS = {
     '10': 'static_program_12',
     '11': 'static_program_5',
 }
+
+# VERY LOW = 1
+# LOW = 2
+# MED = 4
+# HIGH = 8
+# Proportion is NS/EW
+TRAFFIC_TYPE_PHASE_PROPORTION = {
+    '0': 1,
+    '1': 0.5,
+    '2': 2,
+    '3': 1,
+    '4': 0.5,
+    '5': 0.25,
+    '6': 2,
+    '7': 1,
+    '8': 0.5,
+    '9': 4,
+    '10': 2,
+    '11': 1
+}

@@ -73,6 +73,8 @@ class Predictor:
         """
         # Parse to message input dict
         traffic_info = ast.literal_eval(msg.payload.decode('utf-8'))
+        # Retrieve traffic light id
+        tl_id = traffic_info['tl_id']
         # Convert to dataframe
         traffic_data = pd.DataFrame([list(traffic_info.values())], columns=list(traffic_info.keys()))
         # Remove unused model features
@@ -81,15 +83,16 @@ class Predictor:
         # Remove the number of vehicles passing features
         if self._date:
             traffic_data = traffic_data.drop(labels=['passing_veh_e_w', 'passing_veh_n_s'], axis=1)
-        '''
         else:
-            traffic_data['passing_veh_e_w'] = traffic_data['passing_veh_e_w']*6 # 6 because it is 6 six times (5 minutes * 6 = 30 minutes)
-            traffic_data['passing_veh_n_s'] = traffic_data['passing_veh_n_s']*6
-        '''
+            traffic_data['passing_veh_e_w'] = traffic_data['passing_veh_e_w']*5
+            traffic_data['passing_veh_n_s'] = traffic_data['passing_veh_n_s']*5
+
+        # 6 because it is 6 six times (5 minutes * 6 = 30 minutes)
 
         # Set prediction into the published message
         prediction = PREDICTION_SCHEMA
         prediction['traffic_prediction'] = self._model_predictor.predict(traffic_data, num_models=self._num_models)[0]
+        prediction['tl_id'] = tl_id
 
         # Publish the message
         self._mqtt_client.publish(topic=PREDICTION_TOPIC, payload=str(prediction).replace('\'', '"').replace(' ', ''))

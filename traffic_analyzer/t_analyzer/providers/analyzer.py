@@ -78,6 +78,7 @@ class TrafficAnalyzer:
         # Set the analysis into the published message
         analysis = ANALYZER_SCHEMA
         analysis['traffic_analysis'] = analyzed_type
+        analysis['tl_id'] = traffic_info['tl_id']
 
         # Publish the message
         self._mqtt_client.publish(topic=ANALYZER_TOPIC, payload=str(analysis).replace('\'', '"').replace(' ', ''))
