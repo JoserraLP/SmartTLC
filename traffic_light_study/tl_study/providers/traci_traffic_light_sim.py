@@ -2,7 +2,7 @@ import traci
 
 from tl_study.providers.traci_sim import TraCISimulator
 from tl_study.providers.utils import get_total_waiting_time_per_lane, get_num_passing_vehicles_detectors
-from tl_study.static.constants import NUM_TRAFFIC_TYPES, TL_PROGRAMS
+from tl_study.static.constants import NUM_TRAFFIC_TYPES, TL_PROGRAMS, MAXIMUM_TIME_BOUND_PHASE
 
 
 class TrafficTypeSimulator(TraCISimulator):
@@ -10,15 +10,20 @@ class TrafficTypeSimulator(TraCISimulator):
     Dataset generator from the TraCI simulations
     """
 
-    def __init__(self, sumo_conf):
+    def __init__(self, sumo_conf, tl_interval: int = -1):
         """
         TraCISimulator initializer.
 
         :param sumo_conf: SUMO configuration
+        :param tl_interval: traffic light phase time intervals.
+            Default to -1 that means use the default proportion tl algorithm
+        :type tl_interval: int
         """
 
         # SUMO configuration files
         super().__init__(sumo_conf)
+        # Store the TL interval
+        self._tl_interval = tl_interval
 
     def simulate(self):
         """
@@ -26,10 +31,16 @@ class TrafficTypeSimulator(TraCISimulator):
 
         :return: None
         """
+        if self._tl_interval != -1:
+            tl_programs = [f'static_program_{i+1}' for i in
+                           range(0, int(MAXIMUM_TIME_BOUND_PHASE / self._tl_interval) + 1)]
+        else:
+            tl_programs = TL_PROGRAMS
+
         # Loop for all the simulations
-        for sim_id in range(0, (NUM_TRAFFIC_TYPES+1) * len(TL_PROGRAMS)):
+        for sim_id in range(0, (NUM_TRAFFIC_TYPES+1) * len(tl_programs)):
             # Retrieve simulation TL program
-            tl_program = TL_PROGRAMS[int(sim_id / (NUM_TRAFFIC_TYPES + 1))]
+            tl_program = tl_programs[int(sim_id / (NUM_TRAFFIC_TYPES + 1))]
             # Retrieve simulation traffic type
             traffic_type = sim_id % (NUM_TRAFFIC_TYPES + 1)
 
@@ -46,8 +57,7 @@ class TrafficTypeSimulator(TraCISimulator):
             # SUMO is started as a subprocess and then the python script connects and runs
             # FIXME added waiting time memory 1800 to check if the accumulated time is better, the time of the simulation
             # FIXME is not neccesary as it not used the accumulated time
-            traci.start(
-                [self._sumo_binary, "-c", self._config_file, "--no-warnings", "--waiting-time-memory", str(300)])
+            traci.start([self._sumo_binary, "-c", self._config_file, "--no-warnings"])
 
             # Store traci instance into the class
             self._traci = traci

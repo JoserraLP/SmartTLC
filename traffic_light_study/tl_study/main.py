@@ -39,6 +39,9 @@ def get_options():
                                 default=cnt.DEFAULT_GUI_FLAG, help="run the commandline version of sumo")
     simulation_group.add_option("-c", "--config", dest="config", action='store',
                                 metavar="FILE", help="sumo configuration file location")
+    simulation_group.add_option("-i", "--interval", dest="interval", action='store',
+                                help="interval of seconds to be used in the traffic light generator. "
+                                     "If not specified, use the default proportion")
     simulation_group.add_option("-o", "--output-file", dest="output_file", metavar='FILE', action="store",
                                 help="output file")
     optParser.add_option_group(simulation_group)
@@ -93,8 +96,14 @@ if __name__ == "__main__":
             'sumo_binary': sumo_binary
         }
 
+        # Retrieve tl interval
+        if exec_options.interval:
+            tl_interval = int(exec_options.interval)
+        else:
+            tl_interval = -1
+
         # Create the TraCI Traffic Type simulator
-        traci_sim = TrafficTypeSimulator(sumo_conf=sim_args)
+        traci_sim = TrafficTypeSimulator(sumo_conf=sim_args, tl_interval=tl_interval)
 
         # Perform simulations
         traci_sim.simulate()

@@ -1,81 +1,33 @@
 <?xml version="1.0" ?>
 <additional>
    <tlLogic id="c1" programID="static_program_1" type="static">
-      <phase duration="10" state="GGrrGGrr"/>
+      <phase duration="16" state="GGrrGGrr"/>
       <phase duration="5" state="yyrryyrr"/>
-      <phase duration="70" state="rrGGrrGG"/>
+      <phase duration="64" state="rrGGrrGG"/>
       <phase duration="5" state="rryyrryy"/>
    </tlLogic>
    <tlLogic id="c1" programID="static_program_2" type="static">
-      <phase duration="15" state="GGrrGGrr"/>
+      <phase duration="26" state="GGrrGGrr"/>
       <phase duration="5" state="yyrryyrr"/>
-      <phase duration="65" state="rrGGrrGG"/>
+      <phase duration="54" state="rrGGrrGG"/>
       <phase duration="5" state="rryyrryy"/>
    </tlLogic>
    <tlLogic id="c1" programID="static_program_3" type="static">
-      <phase duration="20" state="GGrrGGrr"/>
-      <phase duration="5" state="yyrryyrr"/>
-      <phase duration="60" state="rrGGrrGG"/>
-      <phase duration="5" state="rryyrryy"/>
-   </tlLogic>
-   <tlLogic id="c1" programID="static_program_4" type="static">
-      <phase duration="25" state="GGrrGGrr"/>
-      <phase duration="5" state="yyrryyrr"/>
-      <phase duration="55" state="rrGGrrGG"/>
-      <phase duration="5" state="rryyrryy"/>
-   </tlLogic>
-   <tlLogic id="c1" programID="static_program_5" type="static">
-      <phase duration="30" state="GGrrGGrr"/>
-      <phase duration="5" state="yyrryyrr"/>
-      <phase duration="50" state="rrGGrrGG"/>
-      <phase duration="5" state="rryyrryy"/>
-   </tlLogic>
-   <tlLogic id="c1" programID="static_program_6" type="static">
-      <phase duration="35" state="GGrrGGrr"/>
-      <phase duration="5" state="yyrryyrr"/>
-      <phase duration="45" state="rrGGrrGG"/>
-      <phase duration="5" state="rryyrryy"/>
-   </tlLogic>
-   <tlLogic id="c1" programID="static_program_7" type="static">
       <phase duration="40" state="GGrrGGrr"/>
       <phase duration="5" state="yyrryyrr"/>
       <phase duration="40" state="rrGGrrGG"/>
       <phase duration="5" state="rryyrryy"/>
    </tlLogic>
-   <tlLogic id="c1" programID="static_program_8" type="static">
-      <phase duration="45" state="GGrrGGrr"/>
+   <tlLogic id="c1" programID="static_program_4" type="static">
+      <phase duration="53" state="GGrrGGrr"/>
       <phase duration="5" state="yyrryyrr"/>
-      <phase duration="35" state="rrGGrrGG"/>
+      <phase duration="27" state="rrGGrrGG"/>
       <phase duration="5" state="rryyrryy"/>
    </tlLogic>
-   <tlLogic id="c1" programID="static_program_9" type="static">
-      <phase duration="50" state="GGrrGGrr"/>
+   <tlLogic id="c1" programID="static_program_5" type="static">
+      <phase duration="64" state="GGrrGGrr"/>
       <phase duration="5" state="yyrryyrr"/>
-      <phase duration="30" state="rrGGrrGG"/>
-      <phase duration="5" state="rryyrryy"/>
-   </tlLogic>
-   <tlLogic id="c1" programID="static_program_10" type="static">
-      <phase duration="55" state="GGrrGGrr"/>
-      <phase duration="5" state="yyrryyrr"/>
-      <phase duration="25" state="rrGGrrGG"/>
-      <phase duration="5" state="rryyrryy"/>
-   </tlLogic>
-   <tlLogic id="c1" programID="static_program_11" type="static">
-      <phase duration="60" state="GGrrGGrr"/>
-      <phase duration="5" state="yyrryyrr"/>
-      <phase duration="20" state="rrGGrrGG"/>
-      <phase duration="5" state="rryyrryy"/>
-   </tlLogic>
-   <tlLogic id="c1" programID="static_program_12" type="static">
-      <phase duration="65" state="GGrrGGrr"/>
-      <phase duration="5" state="yyrryyrr"/>
-      <phase duration="15" state="rrGGrrGG"/>
-      <phase duration="5" state="rryyrryy"/>
-   </tlLogic>
-   <tlLogic id="c1" programID="static_program_13" type="static">
-      <phase duration="70" state="GGrrGGrr"/>
-      <phase duration="5" state="yyrryyrr"/>
-      <phase duration="10" state="rrGGrrGG"/>
+      <phase duration="16" state="rrGGrrGG"/>
       <phase duration="5" state="rryyrryy"/>
    </tlLogic>
 </additional>

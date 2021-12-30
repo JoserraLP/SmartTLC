@@ -21,10 +21,17 @@ FLOWS_VALUES = {
 # Output directory where the flows will be stored
 FLOWS_OUTPUT_DIR = '../net-files/flows/flows.rou.xml'
 
-# All the possible TL programs
-# TL_PROGRAMS = ['static_program', 'actuated_program', 'actuated_program_time_gap', 'actuated_program_time_loss']
-TL_PROGRAMS = [f'static_program_{i}' for i in range(1, 14)]
+# Proportions
+TRAFFIC_PROPORTIONS = [0.25, 0.50, 1, 2, 4]
 
+# Default number of programs is 5 (same as proportions)
+TL_PROGRAMS = [f'static_program_{i+1}' for i in range(0, len(TRAFFIC_PROPORTIONS))]
+
+# Bounds on phase time
+LOWER_BOUND_TIME_PHASE = 20
+UPPER_BOUND_TIME_PHASE = 70
+MAXIMUM_TIME_PHASE = 80
+MAXIMUM_TIME_BOUND_PHASE = UPPER_BOUND_TIME_PHASE - LOWER_BOUND_TIME_PHASE
 
 # Timestep range for storing info into the dataset
 TIMESTEPS_TO_STORE_INFO = 1800  # Equal to 30 minutes
