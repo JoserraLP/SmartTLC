@@ -19,7 +19,7 @@ class TrafficLightProgramGenerator(BaseGenerator):
         # Currently the id is unique as there is only one TL
         self._cur_id = 'c1'
 
-    def add_static_program(self, phases: list, program_id: str = 'static_program', offset: int = 0):
+    def add_static_program(self, phases: list, program_id: str = 'static_program', offset: int = '0'):
         """
         Add a static program with given phases.
 
@@ -33,7 +33,7 @@ class TrafficLightProgramGenerator(BaseGenerator):
         """
         # Define the tl_logic tag
         tl_logic = ET.SubElement(self._root, "tlLogic", id=str(self._cur_id), programID=program_id,
-                                 type="static", offset=0)
+                                 type="static", offset=offset)
 
         # Iterate over the phases and store them
         for phase in phases:
