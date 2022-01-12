@@ -21,9 +21,17 @@ FLOWS_VALUES = {
 # Output directory where the flows will be stored
 FLOWS_OUTPUT_DIR = '../net-files/flows/flows.rou.xml'
 
-# All the possible TL programs
-# TL_PROGRAMS = ['static_program', 'actuated_program', 'actuated_program_time_gap', 'actuated_program_time_loss']
-TL_PROGRAMS = [f'static_program_{i}' for i in range(1, 14)]
+# Proportions
+TRAFFIC_PROPORTIONS = [0.25, 0.50, 1, 2, 4]
+
+# Default number of programs is 5 (same as proportions)
+TL_PROGRAMS = [f'static_program_{i+1}' for i in range(0, len(TRAFFIC_PROPORTIONS))]
+
+# Bounds on phase time
+LOWER_BOUND_TIME_PHASE = 20
+UPPER_BOUND_TIME_PHASE = 70
+MAXIMUM_TIME_PHASE = 80
+MAXIMUM_TIME_BOUND_PHASE = UPPER_BOUND_TIME_PHASE - LOWER_BOUND_TIME_PHASE
 
 
 # Timestep range for storing info into the dataset
@@ -42,7 +50,7 @@ DEFAULT_CONFIG_FILE = '../net-files/config/simulation.sumocfg'
 DEFAULT_OUTPUT_FILE = '../output/simulation.csv'
 
 # Default time pattern file
-DEFAULT_TIME_PATTERN_FILE = '../time_patterns/calendar.csv'
+DEFAULT_TIME_PATTERN_FILE = '../time_patterns/generated_calendar.csv'
 
 # MQTT constants
 MQTT_URL = '172.20.0.2'
@@ -55,6 +63,8 @@ ANALYSIS_TOPIC = 'traffic_analysis'
 ERROR_THRESHOLD = 3
 
 # Traffic Type VS TL Algorithm
+# Based on TL interval study
+'''
 TRAFFIC_TYPE_TL_ALGORITHMS = {
     '0': 'static_program_7',
     '1': 'static_program_1',
@@ -69,23 +79,20 @@ TRAFFIC_TYPE_TL_ALGORITHMS = {
     '10': 'static_program_12',
     '11': 'static_program_5',
 }
+'''
 
-# VERY LOW = 1
-# LOW = 2
-# MED = 4
-# HIGH = 8
-# Proportion is NS/EW
-TRAFFIC_TYPE_PHASE_PROPORTION = {
-    '0': 1,
-    '1': 0.5,
-    '2': 2,
-    '3': 1,
-    '4': 0.5,
-    '5': 0.25,
-    '6': 2,
-    '7': 1,
-    '8': 0.5,
-    '9': 4,
-    '10': 2,
-    '11': 1
+# Based on TL proportion study
+TRAFFIC_TYPE_TL_ALGORITHMS = {
+    '0': 'static_program_3',
+    '1': 'static_program_2',
+    '2': 'static_program_4',
+    '3': 'static_program_3',
+    '4': 'static_program_2',
+    '5': 'static_program_1',
+    '6': 'static_program_4',
+    '7': 'static_program_3',
+    '8': 'static_program_2',
+    '9': 'static_program_5',
+    '10': 'static_program_4',
+    '11': 'static_program_3',
 }

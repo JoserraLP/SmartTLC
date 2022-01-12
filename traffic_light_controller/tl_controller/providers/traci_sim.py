@@ -1,4 +1,4 @@
-import ast
+import math
 import random
 
 import paho.mqtt.client as mqtt
@@ -8,27 +8,40 @@ from tl_controller.generators.flows_generator import FlowsGenerator
 from tl_controller.providers.adapter import TrafficLightAdapter
 from tl_controller.providers.utils import get_total_waiting_time_per_lane, get_num_passing_vehicles_detectors
 from tl_controller.static.constants import FLOWS_VALUES, FLOWS_OUTPUT_DIR, TL_PROGRAMS, TIMESTEPS_TO_STORE_INFO, \
-    TIMESTEPS_PER_HALF_HOUR, MQTT_PORT, MQTT_URL, TRAFFIC_TYPE_TL_ALGORITHMS, PREDICTION_TOPIC, ANALYSIS_TOPIC
+    TIMESTEPS_PER_HALF_HOUR, MQTT_PORT, MQTT_URL, DEFAULT_TIME_PATTERN_FILE
 from tl_controller.time_patterns.time_patterns import TimePattern
 
 
 class TraCISimulator:
     """
-    Dataset generator from the TraCI simulations
+    Traffic Light Controller class
     """
 
-    def __init__(self, sumo_conf, time_pattern_file: str = '', mqtt_url: str = MQTT_URL, mqtt_port: int = MQTT_PORT):
-        # TODO add time pattern default file
+    def __init__(self, sumo_conf, time_pattern_file: str = '', dates: str = '', mqtt_url: str = MQTT_URL,
+                 mqtt_port: int = MQTT_PORT):
         """
         TraCISimulator initializer.
 
         :param sumo_conf: SUMO configuration
         :param time_pattern_file: time pattern input file. Default is ''.
         :type time_pattern_file: str
+        :param dates: time pattern input file. Default is ''.
+        :type dates: str
+        :param mqtt_url: MQTT middleware broker url. Default to '172.20.0.2'.
+        :type mqtt_url: str
+        :param mqtt_port: MQTT middleware broker port. Default to 1883.
+        :type mqtt_port: int
         """
 
-        # Retrieve time pattern file
-        self._time_pattern = TimePattern(file_dir=time_pattern_file)
+        if time_pattern_file != '':
+            # Retrieve time pattern file
+            self._time_pattern = TimePattern(file_dir=time_pattern_file)
+        elif dates != '':
+            # Retrieve time pattern from given dates
+            self._dates = dates
+            self._time_pattern = TimePattern(file_dir=DEFAULT_TIME_PATTERN_FILE)
+            start_date, end_date = dates.split('-')
+            self._time_pattern.retrieve_pattern_days(start_date=start_date, end_date=end_date)
 
         # SUMO configuration files
         self._config_file = sumo_conf['config_file']
@@ -98,9 +111,12 @@ class TraCISimulator:
         # Traci simulation
         # Iterate until simulation is ended
         while self._traci.simulation.getMinExpectedNumber() > 0:
+            # Get new TL program from the adapter
             self._tl_program = self._adapter.get_new_tl_program()
 
+            # If the adapter is available (it returns a new TL program)
             if self._tl_program is not None:
+                # Apply the new TL program selected by the adapter
                 self.apply_tl_program(self._tl_program)
 
             # Retrieve the current program
@@ -151,42 +167,43 @@ class TraCISimulator:
             data["waiting_time_veh_n_s"] = total_waiting_time['c1']['n'] + total_waiting_time['c1']['s']
             data["waiting_time_veh_e_w"] = total_waiting_time['c1']['w'] + total_waiting_time['c1']['e']
 
-            # Calculate the time pattern id
-            time_pattern_id = cur_timestep / TIMESTEPS_PER_HALF_HOUR
-
-            # If next time pattern
-            if time_pattern_id.is_integer() and time_pattern_id < len(self._time_pattern.pattern):
-
-                # Store year, month, week, day and hour
-                cur_hour = self._time_pattern.get_cur_hour(time_pattern_id)
-                if cur_hour:
-                    data["hour"] = cur_hour
-
-                cur_day = self._time_pattern.get_cur_day(time_pattern_id)
-                if cur_day:
-                    data["day"] = cur_day
-                else:
-                    data["day"] = "monday"
-
-                cur_date_day = self._time_pattern.get_cur_date_day(time_pattern_id)
-                if cur_date_day:
-                    data["date_day"] = cur_date_day
-                else:
-                    data["date_day"] = "02"
-
-                cur_month = self._time_pattern.get_cur_month(time_pattern_id)
-                if cur_month:
-                    data["date_month"] = cur_month
-                else:
-                    data["date_month"] = "02"
-
-                cur_year = self._time_pattern.get_cur_year(time_pattern_id)
-                if cur_year:
-                    data["date_year"] = cur_year
-                else:
-                    data["date_year"] = "2021"
-
+            # Store info each time interval
             if cur_timestep % TIMESTEPS_TO_STORE_INFO == 0:
+                # Calculate the time pattern id
+                time_pattern_id = math.floor(cur_timestep / TIMESTEPS_PER_HALF_HOUR)
+
+                # If next time pattern
+                if time_pattern_id < len(self._time_pattern.pattern):
+
+                    # Store year, month, week, day and hour
+                    cur_hour = self._time_pattern.get_cur_hour(time_pattern_id)
+                    if cur_hour:
+                        data["hour"] = cur_hour
+
+                    cur_day = self._time_pattern.get_cur_day(time_pattern_id)
+                    if cur_day:
+                        data["day"] = cur_day
+                    else:
+                        data["day"] = "monday"
+
+                    cur_date_day = self._time_pattern.get_cur_date_day(time_pattern_id)
+                    if cur_date_day:
+                        data["date_day"] = cur_date_day
+                    else:
+                        data["date_day"] = "02"
+
+                    cur_month = self._time_pattern.get_cur_month(time_pattern_id)
+                    if cur_month:
+                        data["date_month"] = cur_month
+                    else:
+                        data["date_month"] = "02"
+
+                    cur_year = self._time_pattern.get_cur_year(time_pattern_id)
+                    if cur_year:
+                        data["date_year"] = cur_year
+                    else:
+                        data["date_year"] = "2021"
+
                 # Publish data
                 self._mqtt_client.publish(topic='traffic_info', payload=str(data).replace('\'', '\"').replace(" ", ""))
 
@@ -198,9 +215,10 @@ class TraCISimulator:
             # Simulate a step
             self._traci.simulationStep()
 
+            # Increase simulation step
             cur_timestep += 1
 
-        # Close TraCI simulation in order to start another one in the next iteration
+        # Close TraCI simulation, the adapter connection and the MQTT client
         self._traci.close()
         self._adapter.close_connection()
         self._mqtt_client.loop_stop()
@@ -213,11 +231,11 @@ class TraCISimulator:
         :type tl_program: str
         :return: None
         """
-        # TODO replace to more than a single center 'c1'
+        # Future work -> replace to more than a single center 'c1'
         if self._traci.trafficlight.getProgram('c1') != tl_program:
             self._traci.trafficlight.setProgram('c1', tl_program)
 
-    def generate_traffic_flows(self, traffic_type: int, begin: int = 0, end: int = 1800):
+    def generate_traffic_flows(self, traffic_type: int, begin: int = 0, end: int = TIMESTEPS_PER_HALF_HOUR):
         """
         Generate the list of traffic flows based on the traffic type and create the related file.
 
@@ -237,9 +255,9 @@ class TraCISimulator:
 
         :param traffic_type: traffic type.
         :type traffic_type: int
-        :param begin: begin timestep per flow. Default is 0
+        :param begin: begin timestep per flow. Default is 0.
         :type begin: int
-        :param end: end timestep per flow. Default is1800
+        :param end: end timestep per flow. Default is 1800.
         :type end: int
         :return: None
         """
@@ -340,12 +358,17 @@ class TraCISimulator:
                  'from': 's1i', 'to': 'n1o'}
             ])
 
-        # TODO also generate random traffic that turns
+        # Future works -> generate random traffic that turns
 
         # Add flows to the flows generator
         self._flow_generators.add_flows(flows)
 
     def _store_flows(self):
+        """
+        Store the flows into the default output file.
+
+        :return: None
+        """
         # Store the flows
         self._flow_generators.store_flows()
         # Store the flows file at a given position
@@ -354,7 +377,17 @@ class TraCISimulator:
         self._flow_generators.clean_flows()
 
     def generate_traffic_flows_by_time_pattern(self, time_pattern: pd.DataFrame):
+        """
+        Generate the traffic flows and store it on the output file.
+
+        :param time_pattern: dataframe with the time pattern.
+        :type time_pattern: pd.DataFrame
+        :return: None
+        """
+        # Iter over the time pattern rows
         for index, row in time_pattern.iterrows():
+            # Generate the row traffic flow
             self.generate_traffic_flows(traffic_type=row['traffic_type'], begin=index * TIMESTEPS_PER_HALF_HOUR,
                                         end=TIMESTEPS_PER_HALF_HOUR * (index + 1))
+        # Store the flows in the output file
         self._store_flows()

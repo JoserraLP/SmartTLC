@@ -1,6 +1,7 @@
 import optparse
 import os
 import sys
+import time
 
 import tl_controller.static.constants as cnt
 from sumolib import checkBinary
@@ -38,7 +39,10 @@ def get_options():
     simulation_group.add_option("-c", "--config", dest="config", action='store',
                                 metavar="FILE", help="sumo configuration file location")
     simulation_group.add_option("-t", "--time-pattern", dest="time_pattern", metavar='FILE', action="store",
-                                help="time pattern input file")
+                                help="time pattern input file. Do not use it with the dates parameter.")
+    simulation_group.add_option("-d", "--dates", dest="dates", action="store",
+                                help="calendar dates from start to end to simulate. Format is dd/mm/yyyy-dd/mm/yyyy."
+                                     "")
     optParser.add_option_group(simulation_group)
 
     options, args = optParser.parse_args()
@@ -46,6 +50,9 @@ def get_options():
 
 
 if __name__ == "__main__":
+
+    # Wait 120 seconds until the other components are deployed
+    time.sleep(120)
 
     # Import required libraries
     import_required_libs()
@@ -72,7 +79,14 @@ if __name__ == "__main__":
         'sumo_binary': sumo_binary
     }
 
-    # Create the TraCI Traffic simulator
-    traci_sim = TraCISimulator(sumo_conf=sim_args, time_pattern_file=exec_options.time_pattern)
+    # Initialize to None
+    traci_sim = None
 
+    # Create the TraCI Traffic simulator based on time pattern or dates
+    if exec_options.time_pattern:
+        traci_sim = TraCISimulator(sumo_conf=sim_args, time_pattern_file=exec_options.time_pattern)
+    elif exec_options.dates:
+        traci_sim = TraCISimulator(sumo_conf=sim_args, dates=exec_options.dates)
+
+    # Start the simulation process
     traci_sim.simulate()

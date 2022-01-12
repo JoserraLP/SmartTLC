@@ -1,0 +1,49 @@
+hour,traffic_type_n_s,traffic_type_e_w,traffic_type
+0:00,Low,Very Low,2
+0:30,Low,Very Low,2
+1:00,Low,Very Low,2
+1:30,Low,Very Low,2
+2:00,Low,Very Low,2
+2:30,Very Low,Very Low,0
+3:00,Very Low,Low,1
+3:30,Very Low,Low,1
+4:00,Very Low,Very Low,0
+4:30,Low,Very Low,2
+5:00,Low,Very Low,2
+5:30,Very Low,Very Low,0
+6:00,Very Low,Very Low,0
+6:30,Low,Very Low,2
+7:00,Low,Very Low,2
+7:30,Low,Low,3
+8:00,Med,Low,6
+8:30,Med,Med,7
+9:00,Med,Med,7
+9:30,Med,Med,7
+10:00,Med,Med,7
+10:30,Low,Med,4
+11:00,Low,Med,4
+11:30,Low,Med,4
+12:00,Low,Low,3
+12:30,Low,Low,3
+13:00,Low,Low,3
+13:30,Med,Low,6
+14:00,Med,Med,7
+14:30,Med,Med,7
+15:00,Med,Med,7
+15:30,Med,Med,7
+16:00,High,Low,9
+16:30,High,Low,9
+17:00,High,Low,9
+17:30,Med,Low,6
+18:00,Low,Med,4
+18:30,Low,Med,4
+19:00,Med,Med,7
+19:30,Med,Med,7
+20:00,Med,Low,6
+20:30,Med,Low,6
+21:00,Low,Low,3
+21:30,Low,Low,3
+22:00,Low,Low,3
+22:30,Med,Low,6
+23:00,Med,Low,6
+23:30,Med,Low,6
