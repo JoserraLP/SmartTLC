@@ -45,17 +45,21 @@ if __name__ == "__main__":
         # Create the static phases
         if exec_options.proportion:
             for i in range(0, len(TRAFFIC_PROPORTIONS)):
-                #
+                # Calculate the time on EW direction by proportion
                 time_ew = MAXIMUM_TIME_PHASE / (TRAFFIC_PROPORTIONS[i] + 1)
+                # Store both duration values (NS and EW)
                 static_schema[0]['duration'] = str(math.floor(MAXIMUM_TIME_PHASE - time_ew))
                 static_schema[2]['duration'] = str(math.ceil(time_ew))
+                # Add the program to the generator
                 tl_generator.add_static_program(static_schema, f'static_program_{i + 1}')
         else:
             interval = int(exec_options.interval)
             # Iterate over the number of intervals
             for i in range(0, int(MAXIMUM_TIME_BOUND_PHASE / interval) + 1):
+                # Store both duration values (NS and EW)
                 static_schema[0]['duration'] = str(LOWER_BOUND_TIME_PHASE + i * interval)
                 static_schema[2]['duration'] = str(UPPER_BOUND_TIME_PHASE - i * interval)
+                # Add the program to the generator
                 tl_generator.add_static_program(static_schema, f'static_program_{i + 1}')
 
         # Save the programs into an output file
@@ -74,6 +78,7 @@ if __name__ == "__main__":
             'additional-files': "../topology/topology.tll.xml,../topology/topology.det.xml"
         }
 
+        # Set input configuration files
         sumo_config_generator.set_input_files(input_files)
 
         # Define simulation begin time
@@ -82,6 +87,7 @@ if __name__ == "__main__":
         # Define the report policy
         policy = {'verbose': 'true', 'no-step-log': 'true'}
 
+        # Set report policy
         sumo_config_generator.set_report_policy(policy)
 
         # Save the programs into an output file

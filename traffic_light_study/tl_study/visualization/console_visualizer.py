@@ -21,7 +21,7 @@ class ConsoleVisualizer:
                      'Your option: '
 
         self._select_dataset = f'Please insert the directory where the dataset (.csv) is stored. Default is ' \
-                               f' {DEFAULT_OUTPUT_FILE}'
+                               f' {DEFAULT_OUTPUT_FILE} \n'
 
         self._select_plot = 'Please select one of the following plots (introducing its number): \n' \
                             '1. Box plot\n' \

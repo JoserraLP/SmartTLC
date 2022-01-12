@@ -32,6 +32,7 @@ class TrafficTypeSimulator(TraCISimulator):
         :return: None
         """
         if self._tl_interval != -1:
+            # Generate static program names by traffic light interval
             tl_programs = [f'static_program_{i+1}' for i in
                            range(0, int(MAXIMUM_TIME_BOUND_PHASE / self._tl_interval) + 1)]
         else:
@@ -55,8 +56,6 @@ class TrafficTypeSimulator(TraCISimulator):
             self._store_flows()
 
             # SUMO is started as a subprocess and then the python script connects and runs
-            # FIXME added waiting time memory 1800 to check if the accumulated time is better, the time of the simulation
-            # FIXME is not neccesary as it not used the accumulated time
             traci.start([self._sumo_binary, "-c", self._config_file, "--no-warnings"])
 
             # Store traci instance into the class
