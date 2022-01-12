@@ -1,26 +1,47 @@
-import tl_predictor.static.constants as cnt
+import datetime
+import random
 
 import pandas as pd
-import datetime
-
-import random
+import tl_predictor.static.constants as cnt
 
 
 def check_vacation(date: pd.DataFrame):
+    """
+    Check if a given date is in vacation range.
+    * Summer vacation: from 20-07-2021 to 10-09-2021
+    * Winter vacation: from 21-12-2020 to 7-1-2021 and from  21-12-2021 to 7-1-2022
+    * Otherwise non vacation
+
+    :param date: date with fields (date_year, date_month and date_day)
+    :type date: pd.DataFrame
+
+    :return: 0 if summer vacation, 1 if winter vacation, -1 otherwise.
+    :rtype: int
+    """
     # Calculate the current date
     current_date = datetime.date(year=date['date_year'], month=date['date_month'], day=date['date_day'])
     # Check if date is between 20-7-2021 and 10-9-2021
     if datetime.date(year=2021, month=7, day=20) <= current_date <= datetime.date(year=2021, month=9, day=10):
         return 0  # Summer
     # Check if date is between 21-12-2020 and 7-1-2021 or 21-12-2021 and 7-1-2022
-    elif datetime.date(year=2020, month=12, day=21) <= current_date <= datetime.date(year=2021, month=1, day=7) or \
-            datetime.date(year=2021, month=12, day=21) <= current_date <= datetime.date(year=2022, month=1, day=7):
+    elif (datetime.date(year=2020, month=12, day=21) <= current_date <= datetime.date(year=2021, month=1, day=7)) or \
+            (datetime.date(year=2021, month=12, day=21) <= current_date <= datetime.date(year=2022, month=1, day=7)):
         return 1  # Winter
     else:
         return -1  # Non-vacation
 
 
 def append_dates_info(dataframe: pd.DataFrame, date: pd.DataFrame):
+    """
+    Append date information into a dataframe
+
+    :param dataframe: dataframe to append date to
+    :type dataframe: pd.DataFrame
+    :param date: date (represented in dataframe with values day, date_day, date_month, date_year) to append
+    :type date: pd.DataFrame
+
+    :return: dataframe with date added
+    """
     dataframe['day'] = date['day']
     dataframe['date_day'] = date['date_day']
     dataframe['date_month'] = date['date_month']
@@ -59,6 +80,9 @@ class TimePatternGenerator:
             'winter_vacations_day': pd.read_csv('../time_patterns/base_patterns/winter_vacations_day.csv',
                                                 usecols=['hour', 'traffic_type']),
         }
+
+        # Store working usual days
+        self._usual_days = ['monday', 'tuesday', 'friday', 'sunday', 'thursday', 'saturday', 'wednesday']
 
     def parse_calendar(self):
         """
@@ -99,7 +123,7 @@ class TimePatternGenerator:
         """
         Creates the calendar with the traffic type patterns.
 
-        :return:
+        :return: calendar pattern dataset
         """
         # Create pattern calendar
         pattern_calendar = pd.DataFrame()
@@ -137,7 +161,7 @@ class TimePatternGenerator:
         """
         Creates the calendar with the traffic type patterns adding some randomness.
 
-        :return:
+        :return: calendar pattern dataset
         """
         # Create pattern calendar
         pattern_calendar = pd.DataFrame()
@@ -155,31 +179,54 @@ class TimePatternGenerator:
 
             # It is usual or festive day
             if vacation_type == -1:
-                # Retrieve the given pattern
-                if date['festive'] == 'festive':
-                    base_pattern = append_dates_info(self._base_patterns['festive'], date)
+                # Retrieve random value for swapping vacation day.
+                # 0: swap to summer vacation day
+                # 1: swap to winter vacation day
+                swap_usual_to_vacation_day = random.randint(0, cnt.RANDOM_USUAL_TO_VACATION_DAY_RANGE)
+                # Swap a usual day as vacation
+                if swap_usual_to_vacation_day == 0:
+                    print(f'Swapping usual day {date["date_day"]}/{date["date_month"]} '
+                          f'-> to summer vacation day')
+                    base_pattern = append_dates_info(self._base_patterns['summer_vacations_day'], date)
+                elif swap_usual_to_vacation_day == 1:
+                    print(f'Swapping usual day {date["date_day"]}/{date["date_month"]} '
+                          f'-> to winter vacation day')
+                    base_pattern = append_dates_info(self._base_patterns['winter_vacations_day'], date)
                 else:
-                    base_pattern = append_dates_info(self._base_patterns[date['day']], date)
+                    # Retrieve the given pattern
+                    if date['festive'] == 'festive':
+                        base_pattern = append_dates_info(self._base_patterns['festive'], date)
+                    else:
+                        # Retrieve random value for swapping between usual days.
+                        swap_usual_day = random.randint(0, cnt.RANDOM_USUAL_REPLACE)
+                        # Swap value
+                        if swap_usual_day == 0:
+                            random_day_index = random.randint(0, len(self._usual_days)-1)
+                            random_day = self._usual_days[random_day_index]
+                            print(f'Swapping usual day {date["date_day"]}/{date["date_month"]} '
+                                  f'-> to usual day {random_day}')
+                            base_pattern = append_dates_info(self._base_patterns[random_day], date)
+                        else:
+                            base_pattern = append_dates_info(self._base_patterns[date['day']], date)
             # It is a vacation day
             else:
-                # Retrieve random value to swap the type of vacation.
-                # 0: Winter to summer
-                # 1: Summer to winter
-                swap_type_vacation_day = random.randint(0, cnt.RANDOM_VACATION_SWAP_RANGE)
-
                 # Retrieve random value for swapping usual day. 0: swap to usual day
                 swap_vacation_to_usual_day = random.randint(0, cnt.RANDOM_VACATION_TO_USUAL_DAY_RANGE)
 
+                # Retrieve random value to swap the type of vacation. 0: swap to opposite day
+                swap_type_vacation_day = random.randint(0, cnt.RANDOM_VACATION_SWAP_RANGE)
+
                 # Swap a vacation day as usual
                 if swap_vacation_to_usual_day == 0:
-                    # print(f'Swapping day {date["date_day"]}/{date["date_month"]} -> to usual day: {date["day"]}')
+                    print(
+                        f'Swapping vacation day {date["date_day"]}/{date["date_month"]} -> to usual day: {date["day"]}')
                     base_pattern = append_dates_info(self._base_patterns[date['day']], date)
                 # Summer vacation
                 elif vacation_type == 0:
                     # Swap from summer to winter
-                    if swap_type_vacation_day == 1:
-                        # print(f'Swapping summer vacation day {date["date_day"]}/{date["date_month"]} '
-                        #       f'-> to winter vacation day: {date["day"]}')
+                    if swap_type_vacation_day == 0:
+                        print(f'Swapping summer vacation day {date["date_day"]}/{date["date_month"]} '
+                              f'-> to winter vacation day')
                         base_pattern = append_dates_info(self._base_patterns['winter_vacations_day'], date)
                     # Leave as a summer day
                     else:
@@ -188,8 +235,8 @@ class TimePatternGenerator:
                 elif vacation_type == 1:
                     # Swap from winter to summer
                     if swap_type_vacation_day == 0:
-                        # print(f'Swapping winter vacation day {date["date_day"]}/{date["date_month"]} '
-                        #      f'-> to summer vacation day: {date["day"]}')
+                        print(f'Swapping winter vacation day {date["date_day"]}/{date["date_month"]} '
+                              f'-> to summer vacation day')
                         base_pattern = append_dates_info(self._base_patterns['summer_vacations_day'], date)
                     # Leave as winter day
                     else:

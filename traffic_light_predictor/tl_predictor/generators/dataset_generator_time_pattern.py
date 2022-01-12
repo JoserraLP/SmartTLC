@@ -29,6 +29,7 @@ class TimePatternGenerator(DatasetGenerator):
 
         super().__init__(sumo_conf)
 
+        # Store the time pattern
         self._time_pattern = TimePattern(file_dir=time_pattern_file)
 
         # High values
@@ -153,7 +154,17 @@ class TimePatternGenerator(DatasetGenerator):
         print(f'Total elapsed time in simulation: {elapsed_time}')
 
     def generate_traffic_flows_by_time_pattern(self, time_pattern: pd.DataFrame):
+        """
+        Generate the traffic flows and store it on the output file.
+
+        :param time_pattern: dataframe with the time pattern.
+        :type time_pattern: pd.DataFrame
+        :return: None
+        """
+        # Iter over the time pattern rows
         for index, row in time_pattern.iterrows():
+            # Generate the row traffic flow
             self.generate_traffic_flows(traffic_type=row['traffic_type'], begin=index * TIMESTEPS_TO_STORE_INFO,
                                         end=TIMESTEPS_TO_STORE_INFO * (index + 1))
+        # Store the flows in the output file
         self._store_flows()

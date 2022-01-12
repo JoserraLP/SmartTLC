@@ -84,10 +84,9 @@ class Predictor:
         if self._date:
             traffic_data = traffic_data.drop(labels=['passing_veh_e_w', 'passing_veh_n_s'], axis=1)
         else:
+            # Otherwise multiply by 5 because it fits the best to the actual traffic
             traffic_data['passing_veh_e_w'] = traffic_data['passing_veh_e_w']*5
             traffic_data['passing_veh_n_s'] = traffic_data['passing_veh_n_s']*5
-
-        # 6 because it is 6 six times (5 minutes * 6 = 30 minutes)
 
         # Set prediction into the published message
         prediction = PREDICTION_SCHEMA

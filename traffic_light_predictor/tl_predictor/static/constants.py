@@ -58,6 +58,7 @@ TRANSLATE_DICT = {
     'sábado': 'saturday',
     'domingo': 'sunday',
     'festivo': 'festive',
+    'Festivo': 'festive',
     'laborable': 'working'
 }
 
@@ -65,11 +66,15 @@ TRANSLATE_DICT = {
 # Variance for vacation swap
 RANDOM_VACATION_SWAP_RANGE = 15  # 15 days
 # Variance for traffic type
-RANDOM_TRAFFIC_TYPE_LOWER_BOUND = -3
-RANDOM_TRAFFIC_TYPE_UPPER_BOUND = 3
+RANDOM_TRAFFIC_TYPE_LOWER_BOUND = -2
+RANDOM_TRAFFIC_TYPE_UPPER_BOUND = 2
 RANDOM_TRAFFIC_TYPE_RANGE = 48 * 3  # 48 rows per 3 days
 # Variance for vacations day swap to usual
 RANDOM_VACATION_TO_USUAL_DAY_RANGE = 15  # 15 days
+# Variance for usual day swap to vacation
+RANDOM_USUAL_TO_VACATION_DAY_RANGE = 50  # 50 days
+# Variance for usual day
+RANDOM_USUAL_REPLACE = 14  # 14 days
 
 # ML constants
 KNN_MAX_NEIGHBORS = 15

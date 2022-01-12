@@ -219,12 +219,17 @@ class DatasetGenerator:
                  'from': 's1i', 'to': 'n1o'}
             ])
 
-        # TODO also generate random traffic that turns
+        # Future works -> also generate random traffic that turns
 
         # Add flows to the flows generator
         self._flow_generators.add_flows(flows)
 
     def _store_flows(self):
+        """
+        Store the flows into the default output file.
+
+        :return: None
+        """
         # Store the flows
         self._flow_generators.store_flows()
         # Store the flows file at a given position

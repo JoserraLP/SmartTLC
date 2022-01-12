@@ -21,6 +21,7 @@ class TrafficTypeGenerator(DatasetGenerator):
         # SUMO configuration files
         super().__init__(sumo_conf)
 
+        # Store number of simulations
         self._num_sim = num_sim
 
         # Calculate the number of simulation per each TL program
@@ -66,7 +67,7 @@ class TrafficTypeGenerator(DatasetGenerator):
             while self._traci.simulation.getMinExpectedNumber() > 0:
                 # Retrieve all the info
 
-                # Density
+                # Waiting time
                 north_waiting_time, east_waiting_time, south_waiting_time, west_waiting_time = \
                     get_num_vehicles_waiting_per_queue(self._traci)
 

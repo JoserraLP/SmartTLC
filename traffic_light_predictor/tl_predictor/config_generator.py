@@ -7,11 +7,6 @@ from tl_predictor.generators.tl_program_generator import TrafficLightProgramGene
 from tl_predictor.generators.time_pattern_generator import TimePatternGenerator
 from tl_predictor.static.constants import FLOWS_VALUES, DEFAULT_GENERATED_CALENDAR_FILE
 
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-
 def get_options():
     """
     Define options for the executable script.
@@ -90,6 +85,7 @@ if __name__ == "__main__":
             'additional-files': "../topology/topology.tll.xml,../topology/topology.det.xml"
         }
 
+        # Set input configuration files
         sumo_config_generator.set_input_files(input_files)
 
         # Define simulation begin time
@@ -98,12 +94,13 @@ if __name__ == "__main__":
         # Define the report policy
         policy = {'verbose': 'true', 'no-step-log': 'true'}
 
+        # Set report policy
         sumo_config_generator.set_report_policy(policy)
 
         # Save the programs into an output file
         sumo_config_generator.write_output_file(exec_options.sumo_config_file)
 
-    # Generate SUMO config file
+    # Generate flows file
     if exec_options.flows_config_file:
         # Define the generator
         flows_generator = FlowsGenerator()
@@ -161,12 +158,10 @@ if __name__ == "__main__":
 
     # Generate the time pattern csv from the calendar
     if exec_options.calendar_file:
+        # Create the time pattern generator
         time_pattern_generator = TimePatternGenerator(input_file=exec_options.calendar_file)
 
-        time_pattern_generator.parse_calendar()
-
-        pattern_calendar = time_pattern_generator.get_pattern_calendar()
-
+        # Get random pattern calendar
         random_pattern_calendar = time_pattern_generator.get_random_pattern_calendar()
 
         # Store one month only
@@ -175,18 +170,8 @@ if __name__ == "__main__":
         # Store all the year
         random_pattern_calendar.to_csv(DEFAULT_GENERATED_CALENDAR_FILE, index=False)
 
-        print(pd.concat([pattern_calendar, random_pattern_calendar]).drop_duplicates(keep=False).reset_index(drop=True))
+        # swapped_days =
+        # pd.concat([pattern_calendar, random_pattern_calendar]).drop_duplicates(keep=False).reset_index(drop=True)
 
-        '''
-        pattern_calendar.traffic_type.value_counts().plot(kind='bar')
-        plt.show()
-
-        random_pattern_calendar.traffic_type.value_counts().plot(kind='bar')
-        plt.show()
-        '''
-
-        '''
-        random_pattern_calendar.loc[0:960].reset_index().plot(x='index', y='traffic_type')
-        plt.show()
-        '''
+        # print(swapped_days)
 

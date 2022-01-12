@@ -10,17 +10,17 @@ class Storage:
         """
         Data fields are:
 
-        - Simulation ID\n
-        - TL ID\n
-        - TL Program\n
-        - Traffic type\n
-        - Queue density north and south\n
-        - Queue density east and west\n
-        - Year\n
-        - Month\n
-        - Week\n
-        - Day\n
-        - Hour\n
+        * Simulation ID\n
+        * TL ID\n
+        * TL Program\n
+        * Traffic type\n
+        * Queue density north and south\n
+        * Queue density east and west\n
+        * Year\n
+        * Month\n
+        * Week\n
+        * Day\n
+        * Hour\n
         """
         # Create empty dataset
         self._data = pd.DataFrame()

@@ -77,12 +77,14 @@ if __name__ == "__main__":
 
         # Remove the model files
         if exec_options.clean:
+            # Get kind of predictor selected
             if exec_options.date:
                 model_base_dir = MODEL_BASE_DIR_DATE
             else:
                 model_base_dir = MODEL_BASE_DIR_CONTEXT
 
-            if len(os.listdir(model_base_dir)) != 0:  # If the directory is not empty clean it
+            # If the directory is not empty clean it
+            if len(os.listdir(model_base_dir)) != 0:
                 for filename in os.listdir(model_base_dir):
                     file_path = os.path.join(model_base_dir, filename)
                     try:
@@ -99,6 +101,7 @@ if __name__ == "__main__":
         # Perform the training process of all the models with a k-fold process
         performances = model.train(k=2)
 
+        # Set performance file
         if exec_options.date:
             performance_file = MODEL_PERFORMANCE_FILE_DATE
         else:

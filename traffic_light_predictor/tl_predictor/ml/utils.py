@@ -2,9 +2,17 @@ from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
 import pickle
 import os
+import pandas as pd
 
+def check_file_extension(file_dir: str):
+    """
+    Check file name extension and return it with .pickle if not valid
 
-def check_file_extension(file_dir):
+    :param file_dir: file directory name
+    :type file_dir: str
+    :return: filename with .pickle extension
+    :rtype: str
+    """
     # Retrieve filename and extension
     filename, filename_ext = os.path.splitext(file_dir)
     # Parse to a .pickle extension
@@ -16,6 +24,15 @@ def check_file_extension(file_dir):
 
 
 def save_model(model: object, output_dir: str):
+    """
+    Save model into a given file
+
+    :param model: model instance
+    :type model: object
+    :param output_dir: output directory to store the model
+    :type output_dir: str
+    :return: None
+    """
     # Check file extension
     output_dir = check_file_extension(output_dir)
 
@@ -28,6 +45,14 @@ def save_model(model: object, output_dir: str):
 
 
 def load_model(input_dir: str):
+    """
+    Load model from an directory
+
+    :param input_dir: directory where the model is stored
+    :type input_dir: str
+    :return: model loaded
+    :rtype: object
+    """
     # Check input classifier file
     input_dir = check_file_extension(input_dir)
     # Read from input file
@@ -39,7 +64,17 @@ def load_model(input_dir: str):
     return model
 
 
-def calculate_results(test_target_dataset, pred_target_dataset):
+def calculate_pred_metrics(test_target_dataset: pd.DataFrame, pred_target_dataset: pd.DataFrame):
+    """
+    Calculate models metrics accuracy, precision, recall and f1 score
+
+    :param test_target_dataset: dataframe with test dataset
+    :type test_target_dataset: pd.DataFrame
+    :param pred_target_dataset: dataframe with predicted dataset
+    :type pred_target_dataset: pd.DataFrame
+
+    :return accuracy, precision, recall and f1 score
+    """
     # Retrieve accuracy
     accuracy = accuracy_score(test_target_dataset, pred_target_dataset)
     # Retrieve precision, recall and F1 score
