@@ -115,6 +115,13 @@ class DockerGenerator:
         # Generate the volumes field
         volumes = generate_list_items(container['volumes'])
 
+        # Default params to None
+        params = None
+
+        # Check if container has params (indicated by ':') and retrieve them
+        if ':' in container_name:
+            container_name, params = container_name.split(':')
+
         # If the 'build' tag is defined on the container modify the container schema and change the 'image' tag for
         # 'build' and append all the information to it
         if 'build' in container:
@@ -146,11 +153,19 @@ class DockerGenerator:
         if "depends_on" in container:
             container_str += "    depends_on:\n{}".format(generate_list_items(container['depends_on']))
         if "command" in container:
-            # TODO add execution options to container generator
-            # Append execution params for both traffic_light_predictor and traffic_light_controller
-            if 'traffic_light_controller' in container_name:
-                container_str += "    command: {}\n".format(container['command'].format(
-                    DOCKER_EXECUTION_OPTIONS['traffic_light_controller']['monday']))
+            if params:
+                # We have param name and param value
+                if '#' in params:
+                    # Param name and value split by '#'
+                    param_name, param_value = params.split('#')
+
+                    # Replace the param with its name and value
+                    container_str += "    command: {}\n".format(container['command'].format(
+                        DOCKER_EXECUTION_OPTIONS['traffic_light_controller'][param_name].format(param_value)))
+                else:
+                    # We only have param value
+                    container_str += "    command: {}\n".format(container['command'].format(params))
+
             else:
                 container_str += "    command: {}\n".format(container['command'])
         if "entrypoint" in container:
@@ -167,7 +182,6 @@ class DockerGenerator:
         :param containers: Selected containers by the user
         :type containers: list
         """
-
         # Open the output file as write only
         docker_file = open(output_file, 'w')
 
@@ -183,12 +197,15 @@ class DockerGenerator:
         # Iterate over the possible containers
         for k, v in ALL_CONTAINERS.items():
             # If the container exists in selected containers
-            if k in containers:
+            if any(k in container for container in containers):
                 # If the containers has not been generated previously
                 if generated_containers[i] == 0:
 
+                    # Get container name and params if apply (together)
+                    container_name = [container for container in containers if k in container][0]
+
                     # Write the container info into the output file
-                    docker_file.write(self.generate_container_item(k, v))
+                    docker_file.write(self.generate_container_item(container_name, v))
 
                     # Retrieve connections from the dependencies graph
                     connections = self.dependencies.graph[i]

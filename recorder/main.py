@@ -1,6 +1,6 @@
 import argparse
 import csv
-import sys
+import time
 from datetime import datetime
 
 import paho.mqtt.client as mqtt
@@ -16,7 +16,7 @@ DEFAULT_OUTPUT_FILENAME = 'record_{}.csv'
 DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 # CSV Header
-FIELDNAMES = ['topic', 'measurement_field', 'tag', 'timestamp']
+FIELDNAMES = ['topic', 'data', 'timestamp']
 
 
 class Recorder:
@@ -44,7 +44,7 @@ class Recorder:
         self._f = open(filename, 'w', encoding='UTF8')
 
         # Create a DictWriter in order to store the information on the file, split by ';'
-        self._writer = csv.DictWriter(self._f, delimiter=";", fieldnames=FIELDNAMES, quoting=csv.QUOTE_ALL)
+        self._writer = csv.DictWriter(self._f, delimiter=";", fieldnames=FIELDNAMES)
 
         # write the header (previously defined on the "fieldnames" parameter)
         self._writer.writeheader()
@@ -93,30 +93,16 @@ class Recorder:
 
         """
 
-        # Split payload with ' ' char
-        payload = msg.payload.decode("utf-8").split(' ')
+        # Parse to message input dict
+        payload = msg.payload.decode('utf-8')
 
-        # Only save those messages that contains "sumo" and those with timestamp
-        if any('sumo' in s for s in payload) and len(payload) > 2:
-            # Get measurement and field data from payload (First position)
-            measurement_field = payload[0]
+        # Get current timestamp
+        timestamp = time.time()
 
-            # Now we are going to retrieve the timestamp from the list of tags
-
-            # Split data with ',' character in order to retrieve the list of tags
-            payload_tag = payload[1].split(',')
-
-            # Rejoin strings of payload, separated by comma, excluding timestamp
-            tag = ','.join(payload_tag[:-1])
-
-            # Extract timestamp, removing unnecessary characters
-            timestamp = payload_tag[-1].replace('timestamp=\"', '') + ' ' + payload[2].replace('\"', '')
-
-            # Write the data on the csv
-            self._writer.writerow({FIELDNAMES[0]: msg.topic,
-                                   FIELDNAMES[1]: measurement_field,
-                                   FIELDNAMES[2]: tag,
-                                   FIELDNAMES[3]: timestamp})
+        # Write the data on the csv
+        self._writer.writerow({FIELDNAMES[0]: msg.topic,
+                               FIELDNAMES[1]: payload,
+                               FIELDNAMES[2]: timestamp})
 
 
 def get_options():

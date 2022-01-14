@@ -13,7 +13,7 @@ MQTT_PORT = 1883
 DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
 
 # CSV Header
-FIELDNAMES = ['topic', 'field', 'tag', 'timestamp']
+FIELDNAMES = ['topic', 'data', 'timestamp']
 
 
 class Player:
@@ -57,11 +57,8 @@ class Player:
         in order to behave as the original information trip.
         """
 
-        # Format the column 'timestamp' to datetime format
-        self._data['timestamp'] = pd.to_datetime(self._data['timestamp'], format=DATETIME_FORMAT)
-
-        # Format the column 'timestamp' to represent milliseconds
-        self._data['timestamp'] = pd.to_datetime(self._data['timestamp'], unit='ms')
+        # Format the column 'timestamp' to represent seconds
+        self._data['timestamp'] = pd.to_datetime(self._data['timestamp'], unit='s')
 
         # Calculate the temporal difference between adjacent rows
         self._data['timestamp_diff'] = self._data['timestamp'].diff().apply(lambda x: x / np.timedelta64(1, 'ms')) \
@@ -70,33 +67,10 @@ class Player:
         # Include first element as 0 due to the diff() method inserts an invalid value on the first position
         self._data.loc[0, 'timestamp_diff'] = 0
 
-    def clean_dataframe(self, info):
-        """
-        Clean up the
-        :param info: contains the kind of information that will be stored in the dataframe. Options are: context,
-        observation or qos.
-        :type info: str
-        :return:
-        """
-        # Info is not empty, store valid values
-        if info != '':
-
-            if len(info) > 1:
-                # Retrieve the info condition
-                player_info_str = '|'.join(info)
-            else:
-                player_info_str = info[0]
-
-            # Store only valid values
-            self._data = self._data[self._data['measurement_field'].str.contains(player_info_str)]
-
     def publish_all_data(self) -> None:
         """
         Publish the data with the given timestamp
         """
-
-        # Clean up the dataframe
-        self.clean_dataframe(info=self._player_info)
 
         # Sort dataframe by timestamp in order to assure the temporal order.
         self.sort_data(field='timestamp')
@@ -114,11 +88,11 @@ class Player:
                 # Sleep the process the sleep time seconds (divided by 1000 because is in milliseconds)
                 time.sleep(sleep_time / 1000)
 
-            # Create the publish message
-            msg = '{measurement_field} {tag}'.format(measurement_field=row['measurement_field'], tag=row['tag'])
-
             # Publish message
-            self._client.publish(topic=row['topic'], payload=msg)
+            self._client.publish(topic=row['topic'], payload=row['data'])
+
+        # Disconnect
+        self._client.disconnect()
 
 
 def get_options():
