@@ -42,7 +42,12 @@ class Player:
         self._client.connect(mqtt_url, mqtt_port)
 
         # Store player info
-        self._player_info = player_info
+        if not player_info:
+            self._player_info = self._data['topic'].unique()
+        elif ',' in player_info:
+            self._player_info = player_info.split(',')
+        else:
+            self._player_info = [player_info]
 
     def sort_data(self, field: str = 'timestamp') -> None:
         """
@@ -74,6 +79,9 @@ class Player:
 
         # Sort dataframe by timestamp in order to assure the temporal order.
         self.sort_data(field='timestamp')
+
+        # Remove unwanted topics
+        self._data = self._data[self._data['topic'].isin(self._player_info)]
 
         # Process the timestamp field
         self.process_timestamp()
@@ -107,9 +115,9 @@ def get_options():
     # Define the arguments options
     argParser.add_argument("-i", "--input-file", dest="input_file", action="store", metavar="FILE", type=open,
                            help="define the input file where the data is stored (.csv)", required=True)
-    argParser.add_argument("-d", "--data", dest="data", action="store", type=str,
-                           help="define the kind of data that will be published split by comma. "
-                                "It can be: context, observations or qos. Empty for all kind of data. ")
+    argParser.add_argument("-t", "--topics", dest="topics", action="store", type=str,
+                           help="define the kind of data by topic that will be published split by comma. "
+                                "Empty for all kind of data. ")
     argParser.add_argument("-b", "--broker-url", dest="broker_url", action="store", default=MQTT_URL, type=str,
                            help="define the broker url where the data will be published")
     argParser.add_argument("-p", "--broker-port", dest="broker_port", action="store", default=MQTT_PORT, type=int,
@@ -127,7 +135,7 @@ if __name__ == "__main__":
 
     # Initialize the player
     player = Player(filename=exec_options.input_file, mqtt_url=exec_options.broker_url,
-                    mqtt_port=exec_options.broker_port, player_info=exec_options.data)
+                    mqtt_port=exec_options.broker_port, player_info=exec_options.topics)
 
     # Publish all the data stored in the player
     player.publish_all_data()
