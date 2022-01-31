@@ -30,6 +30,3 @@ MANIFEST
 /net-files/topology/out.xml
 /net-files/topology/NULL
 /net-files/flows/flows.rou.xml
-
-classifier_models_context
-classifier_models_date
