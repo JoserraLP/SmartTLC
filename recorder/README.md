@@ -10,13 +10,12 @@ The execution command for this component is the following one:
 ```sh
 # Example recording the traffic_light_controller component (topic = 'traffic_info')
 python main.py --broker-url <broker-url> --broker-port <broker-port> --topics traffic_info --output-file <experiment-file>
-
-# Or shorten 
-python main.py -b <broker-url> -p <broker-port> -t traffic_info -o <experiment-file>
 ```
 
-Where default values are:
-- **broker-url**: 172.20.0.2
-- **broker-port**: 1883
-- **topics**: all the topics (#)
-- **output-file**: record_[current_date].csv
+Where the parameters are:
+- **--output-file** or **-o**: indicates the output file where it is stored the experiment. By default, it is 
+  record_[current_date].csv
+- **--topics** or **-t**: indicates the topics that will be subscribed to, in order to store all its information from the 
+  middleware. By default, it records all the topics ("#").
+- **-–broker-url** or **-b**: indicates the middleware broker url. By default, it is "172.20.0.2". 
+- **--broker-port** or **-p**: indicates the middleware broker port. By default, it is "1883".

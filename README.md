@@ -5,12 +5,26 @@ adaptation approaches to help designers decide which one performs better in diff
 The metric used to compare between the different adaptation approaches is the waiting time per vehicle on each 
 direction.
 
+## Basic concepts
 
-## Installation
-Each one of the components of SmartTLC have been developed as single Docker Container, making them independent. 
-Based on this statement, the main technologies required to deploy the framework are:
-- [Docker]
-- [Docker-compose]
+Before going deeper into the different components and architecture, we are going to describe some relevant concepts 
+to understand this framework better.
+
+### What is Eclipse SUMO?
+
+["Simulation of Urban MObility" (SUMO)](https://sumo.dlr.de/) is an open source,
+highly portable, microscopic traffic simulation package designed to handle large road networks and different modes of 
+transport. It is available on [GitHub](https://github.com/eclipse/sumo).
+
+### What is TraCI?
+
+TraCI is the short term for "**Tra**ffic **C**ontrol **I**nterface". Giving access to a running road traffic simulation,
+it allows retrieving values of simulated objects and manipulating their behavior "on-line".
+
+TraCI uses a TCP based client/server architecture to provide access to sumo. Thereby, sumo acts as server. Please note, 
+when sumo runs as a TraCI server, it runs until the client demands a simulation end.
+
+Documentation is available on [Eclipse SUMO TraCI webpage](https://sumo.dlr.de/docs/TraCI.html).
 
 ## Architecture
 The architecture is described in the next figure:
