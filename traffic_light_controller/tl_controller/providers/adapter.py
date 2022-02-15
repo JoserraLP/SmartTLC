@@ -14,8 +14,10 @@ class TrafficLightAdapter:
         """
         TraCISimulator initializer.
 
-        :param traffic_prediction: traffic prediction value. Default is None.
-        :param traffic_analysis: traffic analysis value. Default is None.
+        :param traffic_prediction: traffic prediction dict. Default is None.
+        :type traffic_prediction: dict
+        :param traffic_analysis: traffic analysis dict. Default is None.
+        :type traffic_analysis: dict
         :param mqtt_url: MQTT middleware broker url. Default to '172.20.0.2'.
         :type mqtt_url: str
         :param mqtt_port: MQTT middleware broker port. Default to 1883.
@@ -61,22 +63,19 @@ class TrafficLightAdapter:
         # Check the topic it comes from
         if msg.topic == PREDICTION_TOPIC:
             # Retrieve predicted traffic type
-            traffic_type = int(traffic_info['traffic_prediction'])
-            self._traffic_prediction = traffic_type
+            self._traffic_prediction = traffic_info
         if msg.topic == ANALYSIS_TOPIC:
             # Retrieve analyzed traffic type
-            traffic_type = int(traffic_info['traffic_analysis'])
-            self._traffic_analysis = traffic_type
+            self._traffic_analysis = traffic_info
 
     def get_new_tl_program(self):
         """
         Retrieve the new traffic light program based on the analyzer, predictor or both.
 
-        :return: new tl program
-        :rtype: str
+        :return: new tl program per traffic light
+        :rtype: dict
         """
-        # Initialize current traffic type to None
-        current_traffic_type = None
+
         # If only analyzer is deployed
         if self._traffic_analysis and not self._traffic_prediction:
             current_traffic_type = self._traffic_analysis
@@ -84,29 +83,38 @@ class TrafficLightAdapter:
         elif self._traffic_prediction and not self._traffic_analysis:
             current_traffic_type = self._traffic_prediction
         else:
+            current_traffic_type = dict()
             # If both analyzer and predictor are deployed
             if self._traffic_analysis and self._traffic_prediction:
-                # Calculate the difference between the traffic types
-                error_distance = self._traffic_analysis - self._traffic_prediction
-                # If the distance is less than the threshold
-                if abs(error_distance) <= ERROR_THRESHOLD:
-                    # The analyzer is right, use its value
-                    current_traffic_type = self._traffic_analysis
-                # Otherwise calculate the weighted value
-                else:
-                    # 1/3 closest to the analyzer as it is in real time
-                    new_traffic_type = self._traffic_analysis - int(error_distance / 3)
-                    if new_traffic_type >= 0 or new_traffic_type <= NUM_TRAFFIC_TYPES:
-                        # If calculated value is valid, store it
-                        current_traffic_type = new_traffic_type
+                # It is chosen the traffic_analysis but can be used both as they have the same information
+                for traffic_light in self._traffic_analysis.keys():
+
+                    # Calculate the difference between the traffic types
+                    error_distance = self._traffic_analysis[traffic_light] \
+                                     - self._traffic_prediction[traffic_light]
+                    # If the distance is less than the threshold
+                    if abs(error_distance) <= ERROR_THRESHOLD:
+                        # The analyzer is right, use its value
+                        current_traffic_type[traffic_light] = self._traffic_analysis[traffic_light]
+                    # Otherwise calculate the weighted value
+                    else:
+                        # 1/3 closest to the analyzer as it is in real time
+                        new_traffic_type = self._traffic_analysis[traffic_light]\
+                                           - int(error_distance / 3)
+                        if new_traffic_type >= 0 or new_traffic_type <= NUM_TRAFFIC_TYPES:
+                            # If calculated value is valid, store it
+                            current_traffic_type[traffic_light] = new_traffic_type
+
+        adapter_tl_programs = dict()
 
         if current_traffic_type is not None:
-            # If the traffic type exists get the new traffic light program
-            new_tl_program = TRAFFIC_TYPE_TL_ALGORITHMS[str(current_traffic_type)]
+            # If the traffic type exists get the new traffic light program per traffic light
+            for traffic_light, traffic_type in current_traffic_type.items():
+                adapter_tl_programs[traffic_light] = TRAFFIC_TYPE_TL_ALGORITHMS[str(int(traffic_type))]
         else:
-            new_tl_program = None
+            adapter_tl_programs = None
 
-        return new_tl_program
+        return adapter_tl_programs
 
     def close_connection(self):
         """

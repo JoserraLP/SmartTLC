@@ -1,5 +1,4 @@
-from t_analyzer.static.constants import FLOWS_VALUES, TRAFFIC_INFO_TOPIC, MQTT_PORT, MQTT_URL, ANALYZER_TOPIC, \
-    ANALYZER_SCHEMA
+from t_analyzer.static.constants import FLOWS_VALUES, TRAFFIC_INFO_TOPIC, MQTT_PORT, MQTT_URL, ANALYZER_TOPIC
 import paho.mqtt.client as mqtt
 import ast
 
@@ -71,17 +70,25 @@ class TrafficAnalyzer:
         # Parse message to dict
         traffic_info = ast.literal_eval(msg.payload.decode('utf-8'))
 
-        # Analyze the current traffic and get the traffic type
-        analyzed_type = self.analyze_current_traffic_flow(passing_veh_n_s=int(traffic_info['passing_veh_n_s']),
-                                                          passing_veh_e_w=int(traffic_info['passing_veh_e_w']))
+        # Define analysis variable
+        traffic_analysis = dict()
 
-        # Set the analysis into the published message
-        analysis = ANALYZER_SCHEMA
-        analysis['traffic_analysis'] = analyzed_type
-        analysis['tl_id'] = traffic_info['tl_id']
+        # Iterate over the traffic lights
+        for traffic_light_info in traffic_info:
+            traffic_light_id = traffic_light_info['tl_id']
+
+            # Analyze the current traffic and get the traffic type
+            analyzed_type = self.analyze_current_traffic_flow(passing_veh_n_s=int(traffic_light_info['passing_veh_n_s']),
+                                                              passing_veh_e_w=int(traffic_light_info['passing_veh_e_w']))
+
+            # Set the analysis into the published message
+            traffic_analysis[traffic_light_id] = analyzed_type
+
+        print(traffic_analysis)
 
         # Publish the message
-        self._mqtt_client.publish(topic=ANALYZER_TOPIC, payload=str(analysis).replace('\'', '"').replace(' ', ''))
+        self._mqtt_client.publish(topic=ANALYZER_TOPIC, payload=str(traffic_analysis).replace('\'', '"')
+                                  .replace(' ', ''))
 
     def analyze_current_traffic_flow(self, passing_veh_n_s: int, passing_veh_e_w: int) -> int:
         """
@@ -95,7 +102,7 @@ class TrafficAnalyzer:
         :rtype: int
         """
         # Initialize the traffic type
-        traffic_type = -1
+        traffic_type = 0
 
         # Calculate the traffic type with the use of bounds.
         # Lower bound of a type is the highest bound of the previous one:

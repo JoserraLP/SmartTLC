@@ -4,8 +4,7 @@ import paho.mqtt.client as mqtt
 import pandas as pd
 
 from tl_predictor.ml.model_predictor import ModelPredictor
-from tl_predictor.static.constants import MQTT_URL, MQTT_PORT, DEFAULT_NUM_MODELS, PREDICTION_TOPIC, \
-    PREDICTION_SCHEMA, TRAFFIC_INFO_TOPIC
+from tl_predictor.static.constants import MQTT_URL, MQTT_PORT, DEFAULT_NUM_MODELS, PREDICTION_TOPIC, TRAFFIC_INFO_TOPIC
 
 
 class Predictor:
@@ -73,25 +72,33 @@ class Predictor:
         """
         # Parse to message input dict
         traffic_info = ast.literal_eval(msg.payload.decode('utf-8'))
-        # Retrieve traffic light id
-        tl_id = traffic_info['tl_id']
-        # Convert to dataframe
-        traffic_data = pd.DataFrame([list(traffic_info.values())], columns=list(traffic_info.keys()))
-        # Remove unused model features
-        traffic_data = traffic_data.drop(
-            labels=['tl_id', 'tl_program', 'waiting_time_veh_e_w', 'waiting_time_veh_n_s'], axis=1)
-        # Remove the number of vehicles passing features
-        if self._date:
-            traffic_data = traffic_data.drop(labels=['passing_veh_e_w', 'passing_veh_n_s'], axis=1)
-        else:
-            # Otherwise multiply by 5 because it fits the best to the actual traffic
-            traffic_data['passing_veh_e_w'] = traffic_data['passing_veh_e_w']*5
-            traffic_data['passing_veh_n_s'] = traffic_data['passing_veh_n_s']*5
 
-        # Set prediction into the published message
-        prediction = PREDICTION_SCHEMA
-        prediction['traffic_prediction'] = self._model_predictor.predict(traffic_data, num_models=self._num_models)[0]
-        prediction['tl_id'] = tl_id
+        # Define analysis variable
+        traffic_predictions = dict()
+
+        # Iterate over the traffic lights
+        for traffic_light_info in traffic_info:
+            traffic_light_id = traffic_light_info['tl_id']
+            traffic_light_info.pop("tl_id", None)
+            # Convert to dataframe
+            traffic_data = pd.DataFrame([list(traffic_light_info.values())], columns=list(traffic_light_info.keys()))
+
+            # Remove unused model features
+            traffic_data = traffic_data.drop(
+                labels=['tl_program', 'waiting_time_veh_e_w', 'waiting_time_veh_n_s', 'turning_vehicles'], axis=1)
+
+            # Remove the number of vehicles passing features
+            if self._date:
+                traffic_data = traffic_data.drop(labels=['passing_veh_e_w', 'passing_veh_n_s'], axis=1)
+            else:
+                # Otherwise multiply by 5 because it fits the best to the actual traffic
+                traffic_data['passing_veh_e_w'] = traffic_data['passing_veh_e_w']*5
+                traffic_data['passing_veh_n_s'] = traffic_data['passing_veh_n_s']*5
+
+                # Set the prediction into the published message
+                traffic_predictions[traffic_light_id] = self._model_predictor.predict(traffic_data,
+                                                                                      num_models=self._num_models)[0]
 
         # Publish the message
-        self._mqtt_client.publish(topic=PREDICTION_TOPIC, payload=str(prediction).replace('\'', '"').replace(' ', ''))
+        self._mqtt_client.publish(topic=PREDICTION_TOPIC, payload=str(traffic_predictions).replace('\'', '"')
+                                  .replace(' ', ''))

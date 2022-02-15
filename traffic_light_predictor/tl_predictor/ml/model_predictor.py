@@ -1,6 +1,7 @@
 import json
 
 import pandas as pd
+from tl_predictor.ml.classification_algorithms import KNearestNeighbors
 from tl_predictor.ml.utils import load_model
 from tl_predictor.static.constants import MODEL_BASE_DIR_DATE, MODEL_BASE_DIR_CONTEXT, MODEL_PERFORMANCE_FILE_CONTEXT, \
     MODEL_PERFORMANCE_FILE_DATE, MODEL_PARSED_VALUES_FILE, DEFAULT_NUM_MODELS
@@ -125,10 +126,16 @@ class ModelPredictor:
             for i in range(num_models):
                 # Parse the traffic information to valid values
                 traffic_info = self.parse_input_data(traffic_info)
-                # Predict the traffic type and store it
-                predictions.append(self._best_models[i].predict(traffic_info)[0])
 
-                return predictions
+                if isinstance(self._best_models[i], KNearestNeighbors):
+                    prediction = self._best_models[i].predict(traffic_info.values)[0]
+                else:
+                    prediction = self._best_models[i].predict(traffic_info)[0]
+
+                # Predict the traffic type and store it
+                predictions.append(prediction)
+
+            return predictions
         else:
             raise ValueError('Number of specified models is greater than the load ones, exiting...')
 
