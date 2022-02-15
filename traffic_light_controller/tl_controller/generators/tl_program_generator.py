@@ -8,16 +8,15 @@ class TrafficLightProgramGenerator(BaseGenerator):
     Class that generates the traffic lights programs in an additional file
     """
 
-    def __init__(self):
+    def __init__(self, topology_dim):
         """
         TrafficLightProgramGenerator initializer
         """
         # Define root element
         super().__init__(tag='additional')
 
-        # TODO generalize the TL id
-        # Currently the id is unique as there is only one TL
-        self._cur_id = 'c1'
+        # Define traffic lights ids
+        self._traffic_light_ids = [f'c{i}' for i in range(1, topology_dim*topology_dim+1)]
 
     def add_static_program(self, phases: list, program_id: str = 'static_program', offset: int = '0'):
         """
@@ -31,13 +30,15 @@ class TrafficLightProgramGenerator(BaseGenerator):
         :type offset: int
         :return: None
         """
-        # Define the tl_logic tag
-        tl_logic = ET.SubElement(self._root, "tlLogic", id=str(self._cur_id), programID=program_id,
-                                 type="static", offset=offset)
+        # Create the same static program for all the traffic lights
+        for traffic_light in self._traffic_light_ids:
+            # Define the tl_logic tag
+            tl_logic = ET.SubElement(self._root, "tlLogic", id=str(traffic_light), programID=program_id,
+                                     type="static", offset=offset)
 
-        # Iterate over the phases and store them
-        for phase in phases:
-            ET.SubElement(tl_logic, "phase", duration=phase['duration'], state=phase['state'])
+            # Iterate over the phases and store them
+            for phase in phases:
+                ET.SubElement(tl_logic, "phase", duration=phase['duration'], state=phase['state'])
 
     def add_actuated_program(self, phases: list, params_type: str = "", params=None):
         """
@@ -58,16 +59,18 @@ class TrafficLightProgramGenerator(BaseGenerator):
         elif params_type == "time_loss":
             programID += "_time_loss"
 
-        # Define the tl_logic tag
-        tl_logic = ET.SubElement(self._root, "tlLogic", id=str(self._cur_id), programID=programID,
-                                 type="actuated")
+        # Create the same static program for all the traffic lights
+        for traffic_light in self._traffic_light_ids:
+            # Define the tl_logic tag
+            tl_logic = ET.SubElement(self._root, "tlLogic", id=str(traffic_light), programID=programID,
+                                     type="actuated")
 
-        # Add the params for the "time_gap" and "time_loss" variants
-        if params:
-            for param in params:
-                ET.SubElement(tl_logic, "param", key=param[0], value=param[1])
+            # Add the params for the "time_gap" and "time_loss" variants
+            if params:
+                for param in params:
+                    ET.SubElement(tl_logic, "param", key=param[0], value=param[1])
 
-        # Iterate over the phases and store them
-        for phase in phases:
-            ET.SubElement(tl_logic, "phase", duration=phase['duration'], minDur=phase['minDur'], maxDur=phase['maxDur'],
-                          state=phase['state'])
+            # Iterate over the phases and store them
+            for phase in phases:
+                ET.SubElement(tl_logic, "phase", duration=phase['duration'], minDur=phase['minDur'],
+                              maxDur=phase['maxDur'], state=phase['state'])
