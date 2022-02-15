@@ -1,7 +1,6 @@
 import optparse
 import os
 import sys
-import time
 
 import tl_controller.static.constants as cnt
 from sumolib import checkBinary
@@ -43,6 +42,13 @@ def get_options():
     simulation_group.add_option("-d", "--dates", dest="dates", action="store",
                                 help="calendar dates from start to end to simulate. Format is dd/mm/yyyy-dd/mm/yyyy."
                                      "")
+    simulation_group.add_option("-s", "--save-vehicles", action="store", dest="save_vehicles_dir",
+                                help="directory where the vehicles info will be saved. Cannot be used with the "
+                                     "--load-vehicles option.")
+    simulation_group.add_option("-l", "--load-vehicles", action="store", dest="load_vehicles_dir",
+                                help="directory from where the vehicles info will be load. Cannot be used with the "
+                                     "--save-vehicles option.")
+
     optParser.add_option_group(simulation_group)
 
     options, args = optParser.parse_args()
@@ -52,13 +58,18 @@ def get_options():
 if __name__ == "__main__":
 
     # Wait 120 seconds until the other components are deployed
-    time.sleep(120)
+    # time.sleep(120)
 
     # Import required libraries
     import_required_libs()
 
     # Retrieve execution options (parameters)
     exec_options = get_options()
+
+    # Check invalid arguments
+    if exec_options.save_vehicles_dir and exec_options.load_vehicles_dir:
+        print("Please, use the correct arguments")
+        exit(-1)
 
     # this script has been called from the command line. It will start sumo as a
     # server, then connect and run
@@ -89,4 +100,5 @@ if __name__ == "__main__":
         traci_sim = TraCISimulator(sumo_conf=sim_args, dates=exec_options.dates)
 
     # Start the simulation process
-    traci_sim.simulate()
+    traci_sim.simulate(load_vehicles_dir=exec_options.load_vehicles_dir,
+                       save_vehicles_dir=exec_options.save_vehicles_dir)
