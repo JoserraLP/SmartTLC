@@ -27,9 +27,10 @@ MANIFEST
 .idea/
 
 # Directory where the output dataset will be stored
-/net-files/topology/out.xml
-/net-files/topology/NULL
-/net-files/flows/flows.rou.xml
+**out.xml
+**NULL
+**flows.rou.xml
+**veh_route.rou.xml
 
 output
 /net-files/default/NULL
