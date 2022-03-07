@@ -3,6 +3,7 @@ Library for generating several configuration files related to Eclipse SUMO. Its 
 - Grid network generation
 - Traffic light algorithms generation
 - Network detectors generation
+- Time pattern flows generation
 - Eclipse SUMO configuration generation
 
 All these features and its parameters are described below, along with its parameters.
@@ -25,9 +26,10 @@ python config_generator.py <parameters>
 This execution process generates the following files:
 - Detectors file.
 - Full network file.
-- Network edges file.
-- Network nodes file.
+    - Network edges file.
+    - Network nodes file.
 - SUMO simulation configuration file.
+- Time pattern flows file.
 - Traffic light algorithms file.
 
 Where the parameters defined are, grouped by its functionality:
@@ -43,8 +45,10 @@ Where the parameters defined are, grouped by its functionality:
       *../output/topology.det.xml*.
     - **-t TL_PROGRAM_PATH, --tl-program-path TL_PROGRAM_PATH**: SUMO traffic lights programs file location. Default is 
       *../output/topology.tll.xml*.
-    - **-o NETWORK_PATH, --output-network NETWORK_PATH**: define the path where the network file is created.Default is 
+    - **-o NETWORK_PATH, --output-network NETWORK_PATH**: define the path where the network file is created. Default is 
       *../output/topology.net.xml*.
+    - **-f FLOWS_PATH, --flows-path FLOWS_PATH**: define the path where the flows file is created. Default is 
+      *../output/flows.rou.xml*.
     - **-s SUMO_CONFIG_PATH, --sumo-config-path SUMO_CONFIG_PATH**: SUMO configuration file location. Default is
       *../output/simulation.sumocfg*.
 - **Network generator**:
@@ -63,7 +67,12 @@ Where the parameters defined are, grouped by its functionality:
 - **Traffic Light generator**:
   - **-i INTERVAL, --interval INTERVAL**: interval of seconds to be used in the traffic light generator. 
   - **-p, --proportion**: flag to use proportions in the traffic light generator.
-
+    
+- **Flows generator**:
+  - **time-pattern TIME_PATTERN**: define the path where the time pattern file is stored to create the flows.
+  - **--dates DATES**: indicates the range of dates, retrieved from the generated calendar, that will be simulated. 
+  The format is dd/mm/yyyy-dd/mm/yyyy, where the first date is the start, and the second one is the end, both included.
+  
 Note: in the script itself, all the parameters are grouped based on its functionality, but in this case
 it is not shown here in order to clarify its reading. If you want to see these groups execute the script 
 with the **-h** or **--help** argument.

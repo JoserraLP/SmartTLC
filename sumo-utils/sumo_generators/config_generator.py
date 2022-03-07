@@ -1,13 +1,17 @@
 import math
 import os
+import random
 import subprocess
 import xml.etree.cElementTree as ET
 from xml.dom import minidom
 
+import pandas as pd
+from sumo_generators.generators.flows_generator import FlowsGenerator
 from sumo_generators.generators.sumo_config_generator import SumoConfigGenerator
 from sumo_generators.network.net_generator import NetGenerator
 from sumo_generators.static.argparse_types import *
 from sumo_generators.static.constants import *
+from sumo_generators.time_patterns.time_patterns import TimePattern
 
 
 def generate_detector_file(network_path: str, detector_path: str, cols: int = MIN_COLS):
@@ -20,9 +24,10 @@ def generate_detector_file(network_path: str, detector_path: str, cols: int = MI
     :type detector_path: str
     :param cols: number of cols of the matrix
     :type cols: int
+    :return: None
     """
 
-    # Update cols value (subtract 2)
+    # Update cols value to its real value (subtract 2)
     cols -= 2
 
     # Get SUMO environment variable
@@ -52,11 +57,13 @@ def generate_detector_file(network_path: str, detector_path: str, cols: int = MI
         # Retrieve lanes
         _, from_node, to_node, lane_id = str(detector_dict['id']).split('_')
         # Retrieve node letter and value
+        # Example is n_1 and e_1
         from_node_letter, from_node_value, to_node_id, to_node_value = from_node[0], int(from_node[1:]), to_node[0], \
                                                                        int(to_node[1:])
 
         # Set direction to empty
         direction = ''
+        # Retrieve the detector direction
         if from_node_letter == 'n':
             direction = 'south'
         elif from_node_letter == 's':
@@ -83,13 +90,24 @@ def generate_detector_file(network_path: str, detector_path: str, cols: int = MI
     tree.write(detector_path)
 
 
-def generate_tll_file(network_path: str, tll_path: str, interval: int = -1,
-                      proportion: bool = True):
+def generate_tll_file(network_path: str, tll_path: str, interval: int = -1, proportion: bool = True):
+    """
+    Creates the network generator and generates the output network file
+
+    :param network_path: directory where the network file will be generated
+    :type network_path: str
+    :param tll_path: directory where the tll file will be generated
+    :type tll_path: str
+    :param interval: interval between TL programs. Default to -1 which means it is not used.
+    :type interval: int
+    :param proportion: flag enabling proportion-based TL programs. Default to True.
+    :type proportion: bool
+    :return: None
+    """
+
     # Create root for tll
     tll_root = ET.Element("additional")
 
-    # Define tl program id value
-    tl_program_id = 1
     # Define tl program id schema
     tl_program_schema = 'static_program_{}'
 
@@ -102,6 +120,7 @@ def generate_tll_file(network_path: str, tll_path: str, interval: int = -1,
 
         # Proportion traffic light phase duration
         if proportion:
+            # Iterate over the traffic light proportions
             for i in range(0, len(TRAFFIC_PROPORTIONS)):
                 # Retrieve the traffic light program info
                 tl_dict = dict(tl.items())
@@ -114,13 +133,13 @@ def generate_tll_file(network_path: str, tll_path: str, interval: int = -1,
 
                 # Calculate the time on EW direction by proportion
                 time_ew = MAXIMUM_TIME_PHASE / (TRAFFIC_PROPORTIONS[i] + 1)
-
+                # Update the green phases
                 for index, tl_phase in enumerate(tl_phases):
                     if index == 0:  # Green on NS
                         tl_phase['duration'] = str(math.floor(MAXIMUM_TIME_PHASE - time_ew))
                     elif index == 2:  # Green on EW
                         tl_phase['duration'] = str(math.ceil(time_ew))
-
+                    # Add the traffic light phase
                     ET.SubElement(tl_item, 'phase', attrib=tl_phase)
 
         # interval traffic light phase duration
@@ -137,12 +156,12 @@ def generate_tll_file(network_path: str, tll_path: str, interval: int = -1,
                 tl_phases = [dict(tl_phase.items()) for tl_phase in list(tl.iter()) if tl_phase is not tl]
 
                 for index, tl_phase in enumerate(tl_phases):
-
+                    # Update the green phases
                     if index == 0:  # Green on NS
                         tl_phase['duration'] = str(LOWER_BOUND_TIME_PHASE + i * interval)
                     elif index == 2:  # Green on EW
                         tl_phase['duration'] = str(UPPER_BOUND_TIME_PHASE - i * interval)
-
+                    # Add the traffic light phase
                     ET.SubElement(tl_item, 'phase', attrib=tl_phase)
 
     # Parse the XML object to be human-readable
@@ -181,7 +200,6 @@ def generate_network_file(rows: int = MIN_ROWS, cols: int = MIN_COLS, lanes: int
     :type network_path: str
     :return:
     """
-
     # Define the network generator
     net_generator = NetGenerator(rows=rows, cols=cols, lanes=lanes, distance=distance, junction=junction,
                                  tl_type=tl_type, tl_layout=tl_layout, nodes_path=nodes_path, edges_path=edges_path)
@@ -207,8 +225,168 @@ def generate_network_file(rows: int = MIN_ROWS, cols: int = MIN_COLS, lanes: int
             break
 
 
+def generate_flow_file(flows_path: str, rows: int, cols: int, time_pattern_path: str = '', dates: str = ''):
+    """
+    Generate the traffic flows and store it on the output file.
+
+    Traffic_type: \n
+    - 0 : Very Low (NS) - Very Low (WE)\n
+    - 1 : Very Low (NS) - Low (WE)\n
+    - 2 : Low (NS) - Very Low (WE)\n
+    - 3 : Low (NS) - Low (WE)\n
+    - 4 : Low (NS) - Medium (WE)\n
+    - 5 : Low (NS) - High (WE)\n
+    - 6 : Medium (NS) - Low (WE)\n
+    - 7 : Medium (NS) - Medium (WE)\n
+    - 8 : Medium (NS) - High (WE)\n
+    - 9 : High (NS) - Low (WE)\n
+    - 10 : High (NS) - Medium (WE)\n
+    - 11 : High (NS) - High (WE)\n
+
+    :param flows_path: flows file path.
+    :type flows_path: str
+    :param rows: number of rows of the matrix
+    :type rows: int
+    :param cols: number of cols of the matrix
+    :type cols: int
+    :param time_pattern_path: dataframe with the time pattern. Default is ''.
+    :type time_pattern_path: pd.DataFrame
+    :param dates: time pattern input file. Default is ''.
+    :type dates: str
+    :return: None
+    """
+    # Retrieve time pattern
+    if time_pattern_path != '':
+        # Retrieve time pattern file
+        time_pattern = TimePattern(file_dir=time_pattern_path)
+    elif dates != '':
+        # Retrieve time pattern from given dates
+        time_pattern = TimePattern(file_dir=DEFAULT_TIME_PATTERN_FILE)
+        start_date, end_date = dates.split('-')
+        time_pattern.retrieve_pattern_days(start_date=start_date, end_date=end_date)
+    else:
+        # Initialize to None and exit
+        time_pattern = None
+        exit(-1)
+
+    # Define flows generator
+    flow_generator = FlowsGenerator()
+
+    # Update cols and rows to its actual values (-2)
+    cols -= 2
+    rows -= 2
+
+    # Define flows default values
+    # High values
+    high_vehs_per_hour = FLOWS_VALUES['high']['vehsPerHour']
+    high_vehs_range = FLOWS_VALUES['high']['vehs_range']
+    # Medium values
+    med_vehs_per_hour = FLOWS_VALUES['med']['vehsPerHour']
+    med_vehs_range = FLOWS_VALUES['med']['vehs_range']
+    # Low values
+    low_vehs_per_hour = FLOWS_VALUES['low']['vehsPerHour']
+    low_vehs_range = FLOWS_VALUES['low']['vehs_range']
+    # Very Low values
+    very_low_vehs_per_hour = FLOWS_VALUES['very_low']['vehsPerHour']
+    very_low_vehs_range = FLOWS_VALUES['very_low']['vehs_range']
+
+    # Iter over the time pattern rows
+    for index, row in time_pattern.pattern.iterrows():
+        # Calculate flows values
+        begin = index * TIMESTEPS_PER_HALF_HOUR
+        end = TIMESTEPS_PER_HALF_HOUR * (index + 1)
+        traffic_type = row['traffic_type']
+
+        # Generate the row traffic flow
+        # Initialize the flows list
+        flows = []
+
+        lower_bound, upper_bound = -1, -1
+
+        # The traffic generated will be bidirectionally
+        # Create the WE traffic
+        if traffic_type == 0 or traffic_type == 2:  # Very Low (WE)
+            lower_bound = very_low_vehs_per_hour - very_low_vehs_range
+            upper_bound = very_low_vehs_per_hour + very_low_vehs_range
+        elif traffic_type % 3 == 0 or traffic_type == 1:  # Low (WE)
+            lower_bound = low_vehs_per_hour - low_vehs_range
+            upper_bound = low_vehs_per_hour + low_vehs_range
+        elif traffic_type % 3 == 1:  # Medium (WE)
+            lower_bound = med_vehs_per_hour - med_vehs_range
+            upper_bound = med_vehs_per_hour + med_vehs_range
+        elif traffic_type % 3 == 2:  # High (WE)
+            lower_bound = high_vehs_per_hour - high_vehs_range
+            upper_bound = high_vehs_per_hour + high_vehs_range
+
+        # From external to center
+        flows.extend([
+            {'begin': begin, 'end': end,
+             'vehsPerHour': random.randint(lower_bound, upper_bound),
+             'from': f'w{i}_c{(i - 1) * cols + 1}', 'to': f'c{cols * i}_e{i}'}
+            for i in range(1, rows + 1)])
+
+        # From center to external
+        flows.extend([
+            {'begin': begin, 'end': end,
+             'vehsPerHour': random.randint(lower_bound, upper_bound),
+             'from': f'e{i}_c{cols * i}', 'to': f'c{(i - 1) * cols + 1}_w{i}'}
+            for i in range(1, rows + 1)])
+
+        # Create the NS traffic
+        if 0 <= traffic_type < 2:  # Very Low values (NS)
+            lower_bound = very_low_vehs_per_hour - very_low_vehs_range
+            upper_bound = very_low_vehs_per_hour + very_low_vehs_range
+        elif 2 <= traffic_type < 6:  # Low values (NS)
+            lower_bound = low_vehs_per_hour - low_vehs_range
+            upper_bound = low_vehs_per_hour + low_vehs_range
+        elif 6 <= traffic_type < 9:  # Med values (NS)
+            lower_bound = med_vehs_per_hour - med_vehs_range
+            upper_bound = med_vehs_per_hour + med_vehs_range
+        elif 9 <= traffic_type < 12:  # High values (NS)
+            lower_bound = high_vehs_per_hour - high_vehs_range
+            upper_bound = high_vehs_per_hour + high_vehs_range
+
+        # From external to center
+        flows.extend([
+            {'begin': begin, 'end': end,
+             'vehsPerHour': random.randint(lower_bound, upper_bound),
+             'from': f'n{i}_c{i}', 'to': f'c{cols*(rows-1) + i}_s{i}'} for i in range(1, cols + 1)])
+
+        # From center to external
+        flows.extend([
+            {'begin': begin, 'end': end,
+             'vehsPerHour': random.randint(lower_bound, upper_bound),
+             'from': f's{i}_c{cols*(rows-1) + i}', 'to': f'c{i}_n{i}'} for i in range(1, cols + 1)])
+
+        # Add flows to the flows generator
+        flow_generator.add_flows(flows)
+
+    # Store the flows
+    flow_generator.store_flows()
+    # Store the flows file at a given position
+    flow_generator.write_output_file(flows_path)
+    # Clean flows from the generator
+    flow_generator.clean_flows()
+
+
 def generate_sumo_config_file(sumo_config_path: str, network_path: str, tll_path: str, detector_path: str,
                               route_path: str = DEFAULT_ROUTE_DIR):
+    """
+    Creates the SUMO configuration file
+
+    :param sumo_config_path: directory where the SUMO configuration file will be generated
+    :type sumo_config_path: str
+    :param network_path: directory where the network file is stored
+    :type network_path: str
+    :param tll_path: directory where the tll file is stored
+    :type tll_path: str
+    :param detector_path: directory where the detector file is stored
+    :type detector_path: str
+    :param route_path: directory where the route/flows file is stored
+    :type route_path: str
+    :return: None
+    """
+
     # Define the generator
     sumo_config_generator = SumoConfigGenerator()
 
@@ -279,6 +457,12 @@ def get_options():
                                     help=f"define the path where the network file is created."
                                          f"Default is {DEFAULT_NET_DIR}")
 
+    # Flows file path
+    output_files_group.add_argument("-f", "--flows-path", dest="flows_path", action="store",
+                                    default=DEFAULT_ROUTE_DIR, type=str,
+                                    help=f"define the path where the flows file is created."
+                                         f"Default is {DEFAULT_ROUTE_DIR}")
+
     # SUMO config file path
     output_files_group.add_argument("-s", "--sumo-config-path", dest="sumo_config_path", action='store',
                                     default=DEFAULT_CONFIG_DIR, type=str, help=f"SUMO configuration file location. "
@@ -314,7 +498,7 @@ def get_options():
                                          type=check_valid_tl_layout,
                                          help="define the tl layout, only if the 'junction' value is 'traffic_light'. "
                                               "Possible types are: opposites, incoming, alternateOneWay. "
-                                            f"Default is {TL_LAYOUT}.")
+                                              f"Default is {TL_LAYOUT}.")
 
     # Traffic Light Program Generator
     tl_program_generator_group = arg_parser.add_argument_group("Traffic Light generator",
@@ -326,6 +510,15 @@ def get_options():
     tl_program_generator_group.add_argument("-p", "--proportion", dest="proportion", action='store_true',
                                             default=True, help="flag to use proportions in the traffic light generator")
 
+    # Flows Generator
+    flows_generator_group = arg_parser.add_argument_group("Flows generator",
+                                                          description="Parameters related to the flows generation")
+    flows_generator_group.add_argument("--time-pattern", dest="time_pattern_path", action='store',
+                                       type=str, help=f"time pattern to create the flows.")
+
+    flows_generator_group.add_argument("--dates", dest="dates", action="store", type=str,
+                                        help="calendar dates from start to end to simulate. Format is "
+                                          "dd/mm/yyyy-dd/mm/yyyy.")
     # Retrieve the arguments parsed
     args = arg_parser.parse_args()
     return args
@@ -355,3 +548,12 @@ if __name__ == '__main__':
     # Generate the SUMO config file
     generate_sumo_config_file(sumo_config_path=exec_options.sumo_config_path, network_path=exec_options.network_path,
                               tll_path=exec_options.tl_program_path, detector_path=exec_options.detector_path)
+
+    if exec_options.dates:
+        # Generate flow file based on date interval
+        generate_flow_file(dates=exec_options.dates, flows_path=exec_options.flows_path,
+                           rows=exec_options.rows, cols=exec_options.cols)
+    elif exec_options.time_pattern_path:
+        # Generate flow file based on time pattern
+        generate_flow_file(time_pattern_path=exec_options.time_pattern_path, flows_path=exec_options.flows_path,
+                           rows=exec_options.rows, cols=exec_options.cols)
