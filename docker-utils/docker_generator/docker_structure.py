@@ -1,6 +1,3 @@
-# Example with a 3 x 3 grid with 2 lanes
-GENERATION_PARAMETERS = "-r 5 -c 5 -l 2 -p"
-
 ALL_CONTAINERS = {
     'mosquitto': {
         'image': 'eclipse-mosquitto:latest',
@@ -72,7 +69,7 @@ ALL_CONTAINERS = {
         'links': 'mosquitto',
         'volumes': ['./traffic_light_controller:/etc/traffic_light_controller/', './sumo-utils:/etc/sumo-utils/'],
         'command': 'bash -c "pip3 install -r /etc/traffic_light_controller/requirements.txt && '
-                   f'cd /etc/sumo-utils/sumo_generators && python3 config_generator.py {GENERATION_PARAMETERS} && '
+                   'cd /etc/sumo-utils/sumo_generators && python3 config_generator.py {} && '
                    'cd /etc/traffic_light_controller/tl_controller/ &&  dockerize -wait '
                    'tcp://172.20.0.3:8086 -timeout 100s -wait-retry-interval 20s python3 {}"',
         'ipv4_address': '172.20.0.7'

@@ -120,7 +120,9 @@ class DockerGenerator:
 
         # Check if container has params (indicated by ':') and retrieve them
         if ':' in container_name:
-            container_name, params = container_name.split(':')
+            params = container_name.split(':')
+            # Retrieve container name and remove it from params
+            container_name = params.pop(0)
 
         # If the 'build' tag is defined on the container modify the container schema and change the 'image' tag for
         # 'build' and append all the information to it
@@ -154,17 +156,34 @@ class DockerGenerator:
             container_str += "    depends_on:\n{}".format(generate_list_items(container['depends_on']))
         if "command" in container:
             if params:
-                # We have param name and param value
-                if '#' in params:
-                    # Param name and value split by '#'
-                    param_name, param_value = params.split('#')
 
-                    # Replace the param with its name and value
-                    container_str += "    command: {}\n".format(container['command'].format(
-                        DOCKER_EXECUTION_OPTIONS['traffic_light_controller'][param_name].format(param_value)))
-                else:
-                    # We only have param value
-                    container_str += "    command: {}\n".format(container['command'].format(params))
+                # Define params str
+                pattern_str, sumo_generator_str, pattern_file = "", "", ""
+
+                # Iterate over different params
+                for value in params:
+                    param_type, param_value = value.split('#')
+
+                    if param_type in ['pattern', 'date']:
+                        pattern_str = DOCKER_EXECUTION_OPTIONS['traffic_light_controller'][param_type].\
+                            format(param_value)
+                        pattern_file = param_value
+
+                    elif param_type == 'rows':
+                        sumo_generator_str += f'-r {param_value} '
+                    elif param_type == 'cols':
+                        sumo_generator_str += f'-c {param_value} '
+                    elif param_type == 'lanes':
+                        sumo_generator_str += f'-l {param_value} '
+
+                # Add the "proportion" flag and the time pattern to the sumo generator
+                sumo_generator_str += "-p "
+
+                if pattern_file:
+                    sumo_generator_str += f"--time-pattern {pattern_file}"
+
+                # Replace the param with its name and value
+                container_str += "    command: {}\n".format(container['command'].format(sumo_generator_str, pattern_str))
 
             else:
                 container_str += "    command: {}\n".format(container['command'])
