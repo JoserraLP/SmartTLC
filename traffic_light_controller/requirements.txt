@@ -10,3 +10,6 @@ scikit-learn
 
 # Editable install with no version control
 -e /etc/traffic_light_controller/
+
+# Editable install with no version control
+-e /etc/sumo-utils/
