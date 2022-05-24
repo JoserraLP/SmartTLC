@@ -1,26 +1,3 @@
-# Flows variables and its values
-FLOWS_VALUES = {
-    'high': {
-        'vehsPerHour': 500,
-        'vehs_range': 150
-    },
-    'med': {
-        'vehsPerHour': 150,
-        'vehs_range': 45
-    },
-    'low': {
-        'vehsPerHour': 20,
-        'vehs_range': 6
-    },
-    'very_low': {
-        'vehsPerHour': 3,
-        'vehs_range': 2
-    }
-}
-
-# Output directory where the flows will be stored
-FLOWS_OUTPUT_DIR = '../net-files/flows/flows.rou.xml'
-
 # Proportions
 TRAFFIC_PROPORTIONS = [0.25, 0.50, 1, 2, 4]
 
@@ -35,6 +12,11 @@ MAXIMUM_TIME_BOUND_PHASE = UPPER_BOUND_TIME_PHASE - LOWER_BOUND_TIME_PHASE
 
 MAXIMUM_TIME_PHASE_TURN = MAXIMUM_TIME_PHASE - 20
 
+# Default date values
+DEFAULT_DAY = "monday"
+DEFAULT_DATE_DAY = "02"
+DEFAULT_DATE_MONTH = "02"  # February
+DEFAULT_DATE_YEAR = "2021"
 
 # Timestep range for storing info into the dataset
 TIMESTEPS_TO_STORE_INFO = 300  # 5 Cycles = 300 seconds
@@ -49,10 +31,16 @@ DEFAULT_GUI_FLAG = False
 DEFAULT_NUMBER_OF_SIMULATIONS = 0
 DEFAULT_CLI_VISUALIZE_FLAG = False
 DEFAULT_CONFIG_FILE = '../net-files/config/simulation.sumocfg'
-DEFAULT_OUTPUT_FILE = '../output/simulation.csv'
+
+# Output directory where the flows will be stored
+# FLOWS_OUTPUT_DIR = '../net-files/flows/flows.rou.xml'
+FLOWS_OUTPUT_DIR = '../../sumo-utils/output/flows.rou.xml'
 
 # Default time pattern file
 DEFAULT_TIME_PATTERN_FILE = '../time_patterns/generated_calendar.csv'
+
+# Default turn pattern
+DEFAULT_TURN_PATTERN_FILE = '../../sumo-utils/time_patterns/base_patterns/turn_prob_patterns.csv'
 
 # MQTT constants
 MQTT_URL = '172.20.0.2'

@@ -57,3 +57,27 @@ FLOWS_VALUES = {
         'vehs_range': 2
     }
 }
+
+# Traffic type relation
+TRAFFIC_TYPE_RELATION = {
+    # (NS, EW)
+    0: ('very_low', 'very_low'),
+    1: ('very_low', 'low'),
+    2: ('low', 'very_low'),
+    3: ('low', 'low'),
+    4: ('low', 'med'),
+    5: ('low', 'high'),
+    6: ('med', 'low'),
+    7: ('med', 'med'),
+    8: ('med', 'high'),
+    9: ('high', 'low'),
+    10: ('high', 'med'),
+    11: ('high', 'high'),
+}
+
+TRAFFIC_TYPES = {
+    'very_low': 0,
+    'low': 1,
+    'med': 2,
+    'high': 3
+}

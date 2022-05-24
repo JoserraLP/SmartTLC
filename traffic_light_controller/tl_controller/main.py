@@ -4,7 +4,7 @@ import sys
 
 import tl_controller.static.constants as cnt
 from sumolib import checkBinary
-from tl_controller.providers.traci_sim import TraCISimulator
+from tl_controller.providers.traci_sim import TraCISimulator, DEFAULT_TURN_PATTERN_FILE
 
 
 def import_required_libs():
@@ -42,6 +42,8 @@ def get_options():
     simulation_group.add_option("-d", "--dates", dest="dates", action="store",
                                 help="calendar dates from start to end to simulate. Format is dd/mm/yyyy-dd/mm/yyyy."
                                      "")
+    simulation_group.add_option("--turn-pattern", dest="turn_pattern", metavar='FILE', action="store",
+                                help="turn pattern input file.")
     simulation_group.add_option("-s", "--save-vehicles", action="store", dest="save_vehicles_dir",
                                 help="directory where the vehicles info will be saved. Cannot be used with the "
                                      "--load-vehicles option.")
@@ -90,14 +92,21 @@ if __name__ == "__main__":
         'sumo_binary': sumo_binary
     }
 
+    if exec_options.turn_pattern:
+        turn_pattern = exec_options.turn_pattern
+    else:
+        turn_pattern = DEFAULT_TURN_PATTERN_FILE
+
     # Initialize to None
     traci_sim = None
 
     # Create the TraCI Traffic simulator based on time pattern or dates
     if exec_options.time_pattern:
-        traci_sim = TraCISimulator(sumo_conf=sim_args, time_pattern_file=exec_options.time_pattern)
+        traci_sim = TraCISimulator(sumo_conf=sim_args, time_pattern_file=exec_options.time_pattern,
+                                   turn_pattern_file=turn_pattern)
     elif exec_options.dates:
-        traci_sim = TraCISimulator(sumo_conf=sim_args, dates=exec_options.dates)
+        traci_sim = TraCISimulator(sumo_conf=sim_args, dates=exec_options.dates,
+                                   turn_pattern_file=turn_pattern)
 
     # Start the simulation process
     traci_sim.simulate(load_vehicles_dir=exec_options.load_vehicles_dir,

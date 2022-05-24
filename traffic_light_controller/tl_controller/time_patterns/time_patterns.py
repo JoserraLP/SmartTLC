@@ -1,6 +1,8 @@
+import math
+
 import pandas as pd
 
-from tl_controller.static.constants import DEFAULT_TIME_PATTERN_FILE
+from tl_controller.static.constants import DEFAULT_TIME_PATTERN_FILE, TIMESTEPS_PER_HALF_HOUR
 
 
 class TimePattern:
@@ -18,17 +20,22 @@ class TimePattern:
         """
         self._pattern = pd.read_csv(file_dir)
 
-    def retrieve_traffic_type(self, time_pattern_id: int):
+    def retrieve_turn_prob(self, timestep: int):
         """
-        Retrieve the traffic type given a time_pattern_id.
+        Retrieve the turn probabilities a time_pattern_id.
 
-        :param time_pattern_id: current simulation time_pattern_id
-        :type time_pattern_id: int
-        :return: traffic type represented as an int
-        :rtype int
+        :param timestep: current simulation time_pattern_id
+        :type timestep: int
+        :return: DataFrame with turn probabilities (right, left and forward)
+        :rtype DataFrame
         """
+        # Calculate the time pattern id
+        time_pattern_id = math.floor(timestep / TIMESTEPS_PER_HALF_HOUR)
+
         if time_pattern_id < len(self._pattern):
-            return self._pattern.iloc[time_pattern_id]['traffic_type']
+            if 'turn_right' or 'turn_left' or 'turn_forward' in self._pattern.columns:
+                # Index for those columns are 1,2 and 3 respectively
+                return self._pattern.iloc[time_pattern_id, [1, 2, 3]]
 
     def get_num_sim(self):
         """
