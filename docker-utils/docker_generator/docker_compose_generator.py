@@ -175,6 +175,8 @@ class DockerGenerator:
                         sumo_generator_str += f'-c {param_value} '
                     elif param_type == 'lanes':
                         sumo_generator_str += f'-l {param_value} '
+                    elif param_type == 'turn':
+                        sumo_generator_str += f'--turn-pattern {param_value} '
 
                 # Add the "proportion" flag and the time pattern to the sumo generator
                 sumo_generator_str += "-p "

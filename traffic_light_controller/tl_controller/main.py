@@ -92,21 +92,16 @@ if __name__ == "__main__":
         'sumo_binary': sumo_binary
     }
 
-    if exec_options.turn_pattern:
-        turn_pattern = exec_options.turn_pattern
-    else:
-        turn_pattern = DEFAULT_TURN_PATTERN_FILE
-
     # Initialize to None
     traci_sim = None
 
     # Create the TraCI Traffic simulator based on time pattern or dates
     if exec_options.time_pattern:
         traci_sim = TraCISimulator(sumo_conf=sim_args, time_pattern_file=exec_options.time_pattern,
-                                   turn_pattern_file=turn_pattern)
+                                   turn_pattern_file=exec_options.turn_pattern)
     elif exec_options.dates:
         traci_sim = TraCISimulator(sumo_conf=sim_args, dates=exec_options.dates,
-                                   turn_pattern_file=turn_pattern)
+                                   turn_pattern_file=exec_options.turn_pattern)
 
     # Start the simulation process
     traci_sim.simulate(load_vehicles_dir=exec_options.load_vehicles_dir,

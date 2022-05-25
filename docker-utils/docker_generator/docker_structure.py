@@ -13,7 +13,7 @@ ALL_CONTAINERS = {
         'restart': 'always',
         'ports': "8086:8086",
         'env_file': 'influxdb/env.influxdb',
-        'volumes': './influxdb/data:/data',
+        'volumes': '/srv/docker/influxdb/data:/var/lib/influxdb',
         'ipv4_address': '172.20.0.3'
     },
     'grafana': {
@@ -23,7 +23,7 @@ ALL_CONTAINERS = {
         'ports': "3000:3000",
         'env_file': 'grafana/env.grafana',
         'links': "influxdb",
-        'volumes': './grafana/data:/data',
+        'volumes': '/srv/docker/grafana/data:/var/lib/grafana',
         'ipv4_address': '172.20.0.4'
     },
     'telegraf': {
@@ -44,7 +44,7 @@ ALL_CONTAINERS = {
         'volumes': './traffic_light_predictor:/etc/traffic_light_predictor/',
         'command': 'bash -c "pip3 install -r /etc/traffic_light_predictor/requirements.txt && '
                    'cd /etc/traffic_light_predictor/tl_predictor/ && dockerize -wait '
-                   'tcp://172.20.0.3:8086 -timeout 100s -wait-retry-interval 40s python3 ml_trainer.py --component -n 1'
+                   'tcp://172.20.0.3:8086 -timeout 120s -wait-retry-interval 40s python3 ml_trainer.py --component -n 1'
                    ' --middleware_host 172.20.0.2 --middleware_port 1883 -d"',
         'ipv4_address': '172.20.0.6'
     },
@@ -57,11 +57,11 @@ ALL_CONTAINERS = {
         'volumes': './traffic_light_predictor:/etc/traffic_light_predictor/',
         'command': 'bash -c "pip3 install -r /etc/traffic_light_predictor/requirements.txt && '
                    'cd /etc/traffic_light_predictor/tl_predictor/ && dockerize -wait '
-                   'tcp://172.20.0.3:8086 -timeout 100s -wait-retry-interval 40s python3 ml_trainer.py --component -n 1'
+                   'tcp://172.20.0.3:8086 -timeout 120s -wait-retry-interval 40s python3 ml_trainer.py --component -n 1'
                    ' --middleware_host 172.20.0.2 --middleware_port 1883"',
         'ipv4_address': '172.20.0.6'
     },
-    'traffic_light_controller': { # TODO generalize with sumo-utils
+    'traffic_light_controller': {
         'build': './traffic_light_controller',
         'container_name': 'traffic_light_controller',
         'env_file': 'traffic_light_controller/eclipse-sumo-image/env.sumo',
@@ -71,7 +71,7 @@ ALL_CONTAINERS = {
         'command': 'bash -c "pip3 install -r /etc/traffic_light_controller/requirements.txt && '
                    'cd /etc/sumo-utils/sumo_generators && python3 config_generator.py {} && '
                    'cd /etc/traffic_light_controller/tl_controller/ &&  dockerize -wait '
-                   'tcp://172.20.0.3:8086 -timeout 100s -wait-retry-interval 20s python3 {}"',
+                   'tcp://172.20.0.3:8086 -timeout 120s -wait-retry-interval 20s python3 {}"',
         'ipv4_address': '172.20.0.7'
     }, # Added {} to parametrize execution
     'traffic_analyzer': {
