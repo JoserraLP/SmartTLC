@@ -28,16 +28,17 @@ NUM_TRAFFIC_TYPES = 11
 
 # Options default values
 DEFAULT_GUI_FLAG = False
+DEFAULT_TURNS_FLAG = False
 DEFAULT_NUMBER_OF_SIMULATIONS = 0
 DEFAULT_CLI_VISUALIZE_FLAG = False
-DEFAULT_CONFIG_FILE = '../net-files/config/simulation.sumocfg'
+DEFAULT_CONFIG_FILE = '../../sumo-utils/output/simulation.sumocfg'
 
 # Output directory where the flows will be stored
 # FLOWS_OUTPUT_DIR = '../net-files/flows/flows.rou.xml'
 FLOWS_OUTPUT_DIR = '../../sumo-utils/output/flows.rou.xml'
 
 # Default time pattern file
-DEFAULT_TIME_PATTERN_FILE = '../time_patterns/generated_calendar.csv'
+DEFAULT_TIME_PATTERN_FILE = '.../../sumo-utils/time_patterns/generated_calendar.csv'
 
 # Default turn pattern
 DEFAULT_TURN_PATTERN_FILE = '../../sumo-utils/time_patterns/base_patterns/turn_prob_patterns.csv'
