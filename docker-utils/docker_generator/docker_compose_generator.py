@@ -1,7 +1,7 @@
 import numpy as np
 
 from dependencies_graph import DependenciesGraph
-from docker_structure import ALL_CONTAINERS, DOCKER_EXECUTION_OPTIONS
+from docker_structure import ALL_CONTAINERS, DOCKER_EXECUTION_OPTIONS, DEFAULT_ROUTE_DIR
 from decorators import check_containers
 
 
@@ -112,9 +112,6 @@ class DockerGenerator:
         :return:
         """
 
-        # Generate the volumes field
-        volumes = generate_list_items(container['volumes'])
-
         # Default params to None
         params = None
 
@@ -123,6 +120,40 @@ class DockerGenerator:
             params = container_name.split(':')
             # Retrieve container name and remove it from params
             container_name = params.pop(0)
+
+        # Define params str
+        pattern_str, sumo_generator_str, pattern_file = "", "", ""
+        if params:
+            # Iterate over different params
+            for value in params:
+                param_type, param_value = value.split('#')
+
+                if param_type in ['pattern', 'date']:
+                    pattern_str = DOCKER_EXECUTION_OPTIONS['traffic_light_controller'][param_type]. \
+                        format(param_value)
+                    pattern_file = param_value
+
+                elif param_type == 'rows':
+                    sumo_generator_str += f'-r {param_value} '
+                elif param_type == 'cols':
+                    sumo_generator_str += f'-c {param_value} '
+                elif param_type == 'lanes':
+                    sumo_generator_str += f'-l {param_value} '
+                elif param_type == 'load':
+                    container['volumes'][2] = container['volumes'][2].format(param_value)
+
+                    pattern_str += f' -l {DEFAULT_ROUTE_DIR}'
+                elif param_type == 'turn':
+                    sumo_generator_str += f'--turn-pattern {param_value} '
+
+            # Add the "proportion" flag and the time pattern to the sumo generator
+            sumo_generator_str += "-p "
+
+            if pattern_file:
+                sumo_generator_str += f"--time-pattern {pattern_file}"
+
+        # Generate the volumes field
+        volumes = generate_list_items(container['volumes'])
 
         # If the 'build' tag is defined on the container modify the container schema and change the 'image' tag for
         # 'build' and append all the information to it
@@ -155,35 +186,8 @@ class DockerGenerator:
         if "depends_on" in container:
             container_str += "    depends_on:\n{}".format(generate_list_items(container['depends_on']))
         if "command" in container:
+
             if params:
-
-                # Define params str
-                pattern_str, sumo_generator_str, pattern_file = "", "", ""
-
-                # Iterate over different params
-                for value in params:
-                    param_type, param_value = value.split('#')
-
-                    if param_type in ['pattern', 'date']:
-                        pattern_str = DOCKER_EXECUTION_OPTIONS['traffic_light_controller'][param_type].\
-                            format(param_value)
-                        pattern_file = param_value
-
-                    elif param_type == 'rows':
-                        sumo_generator_str += f'-r {param_value} '
-                    elif param_type == 'cols':
-                        sumo_generator_str += f'-c {param_value} '
-                    elif param_type == 'lanes':
-                        sumo_generator_str += f'-l {param_value} '
-                    elif param_type == 'turn':
-                        sumo_generator_str += f'--turn-pattern {param_value} '
-
-                # Add the "proportion" flag and the time pattern to the sumo generator
-                sumo_generator_str += "-p "
-
-                if pattern_file:
-                    sumo_generator_str += f"--time-pattern {pattern_file}"
-
                 # Replace the param with its name and value
                 container_str += "    command: {}\n".format(container['command'].format(sumo_generator_str, pattern_str))
 

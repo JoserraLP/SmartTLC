@@ -1,3 +1,5 @@
+DEFAULT_ROUTE_DIR = '/etc/flows/flows.rou.xml'
+
 ALL_CONTAINERS = {
     'mosquitto': {
         'image': 'eclipse-mosquitto:latest',
@@ -67,7 +69,8 @@ ALL_CONTAINERS = {
         'env_file': 'traffic_light_controller/eclipse-sumo-image/env.sumo',
         'restart': 'on-failure',
         'links': 'mosquitto',
-        'volumes': ['./traffic_light_controller:/etc/traffic_light_controller/', './sumo-utils:/etc/sumo-utils/'],
+        'volumes': ['./traffic_light_controller:/etc/traffic_light_controller/', './sumo-utils:/etc/sumo-utils/',
+                    '{}'+f':{DEFAULT_ROUTE_DIR}'],
         'command': 'bash -c "pip3 install -r /etc/traffic_light_controller/requirements.txt && '
                    'cd /etc/sumo-utils/sumo_generators && python3 config_generator.py {} && '
                    'cd /etc/traffic_light_controller/tl_controller/ &&  dockerize -wait '
