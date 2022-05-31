@@ -77,14 +77,15 @@ class TrafficAnalyzer:
         for traffic_light_info in traffic_info:
             traffic_light_id = traffic_light_info['tl_id']
 
-            # Analyze the current traffic and get the traffic type
-            analyzed_type = self.analyze_current_traffic_flow(passing_veh_n_s=int(traffic_light_info['passing_veh_n_s']),
-                                                              passing_veh_e_w=int(traffic_light_info['passing_veh_e_w']))
+            # Remove summary information
+            if traffic_light_info['tl_id'] != 'summary':
 
-            # Set the analysis into the published message
-            traffic_analysis[traffic_light_id] = analyzed_type
+                # Analyze the current traffic and get the traffic type
+                analyzed_type = self.analyze_current_traffic_flow(passing_veh_n_s=int(traffic_light_info['passing_veh_n_s']),
+                                                                  passing_veh_e_w=int(traffic_light_info['passing_veh_e_w']))
 
-        print(traffic_analysis)
+                # Set the analysis into the published message
+                traffic_analysis[traffic_light_id] = analyzed_type
 
         # Publish the message
         self._mqtt_client.publish(topic=ANALYZER_TOPIC, payload=str(traffic_analysis).replace('\'', '"')

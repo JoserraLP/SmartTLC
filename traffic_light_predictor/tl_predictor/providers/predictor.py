@@ -79,21 +79,24 @@ class Predictor:
         # Iterate over the traffic lights
         for traffic_light_info in traffic_info:
             traffic_light_id = traffic_light_info['tl_id']
-            traffic_light_info.pop("tl_id", None)
-            # Convert to dataframe
-            traffic_data = pd.DataFrame([list(traffic_light_info.values())], columns=list(traffic_light_info.keys()))
 
-            # Remove unused model features
-            traffic_data = traffic_data.drop(
-                labels=['tl_program', 'waiting_time_veh_e_w', 'waiting_time_veh_n_s', 'turning_vehicles'], axis=1)
+            # Remove summary information
+            if traffic_light_info['tl_id'] != 'summary':
+                traffic_light_info.pop("tl_id", None)
+                # Convert to dataframe
+                traffic_data = pd.DataFrame([list(traffic_light_info.values())], columns=list(traffic_light_info.keys()))
 
-            # Remove the number of vehicles passing features
-            if self._date:
-                traffic_data = traffic_data.drop(labels=['passing_veh_e_w', 'passing_veh_n_s'], axis=1)
-            else:
-                # Otherwise multiply by 5 because it fits the best to the actual traffic
-                traffic_data['passing_veh_e_w'] = traffic_data['passing_veh_e_w']*5
-                traffic_data['passing_veh_n_s'] = traffic_data['passing_veh_n_s']*5
+                # Remove unused model features
+                traffic_data = traffic_data.drop(
+                    labels=['tl_program', 'waiting_time_veh_e_w', 'waiting_time_veh_n_s', 'turning_vehicles'], axis=1)
+
+                # Remove the number of vehicles passing features
+                if self._date:
+                    traffic_data = traffic_data.drop(labels=['passing_veh_e_w', 'passing_veh_n_s'], axis=1)
+                else:
+                    # Otherwise multiply by 5 because it fits the best to the actual traffic
+                    traffic_data['passing_veh_e_w'] = traffic_data['passing_veh_e_w']*5
+                    traffic_data['passing_veh_n_s'] = traffic_data['passing_veh_n_s']*5
 
                 # Set the prediction into the published message
                 traffic_predictions[traffic_light_id] = self._model_predictor.predict(traffic_data,
