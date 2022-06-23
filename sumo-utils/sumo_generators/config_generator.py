@@ -174,7 +174,8 @@ def generate_tll_file(network_path: str, tll_path: str, interval: int = -1, prop
 def generate_network_file(rows: int = MIN_ROWS, cols: int = MIN_COLS, lanes: int = MIN_LANES, distance: int = DISTANCE,
                           junction: str = JUNCTION_TYPE, tl_type: str = TL_TYPE,
                           tl_layout: str = TL_LAYOUT, nodes_path: str = DEFAULT_NODES_DIR,
-                          edges_path: str = DEFAULT_EDGES_DIR, network_path: str = DEFAULT_NET_DIR):
+                          edges_path: str = DEFAULT_EDGES_DIR, network_path: str = DEFAULT_NET_DIR,
+                          allow_add_left_phases: bool = ALLOW_ADD_LEFT_PHASES):
     """
     Creates the network generator and generates the output network file
 
@@ -198,6 +199,8 @@ def generate_network_file(rows: int = MIN_ROWS, cols: int = MIN_COLS, lanes: int
     :type edges_path: str
     :param network_path: directory where the network file will be generated
     :type network_path: str
+    :param allow_add_left_phases: flag to allow additional traffic lights left turn phases
+    :type allow_add_left_phases: bool
     :return:
     """
     # Define the network generator
@@ -207,13 +210,15 @@ def generate_network_file(rows: int = MIN_ROWS, cols: int = MIN_COLS, lanes: int
     # Generate the topology required files (nodes and edges)
     net_generator.generate_topology()
 
+    params = ['netconvert', '-n', nodes_path, '-e', edges_path, '-o', network_path,
+                                    '--tls.default-type', tl_type, '--no-turnarounds']
+    # Add additional params
+    if not allow_add_left_phases:
+        params.extend(['--tls.left-green.time',  str(0)])
+
     # Create a subprocess in order to generate the network file using the previously generated files and the netconvert
     # command
-    process = subprocess.Popen(
-        ['netconvert', '-n', nodes_path, '-e', edges_path, '-o', network_path, '--tls.default-type', tl_type,
-         '--no-turnarounds'],
-        stdout=subprocess.PIPE,
-        universal_newlines=True)
+    process = subprocess.Popen(params, stdout=subprocess.PIPE, universal_newlines=True)
 
     # Iterate until the process finishes, printing the command output
     while True:
@@ -350,13 +355,13 @@ def generate_flow_file(flows_path: str, rows: int, cols: int, time_pattern_path:
         flows.extend([
             {'begin': begin, 'end': end,
              'vehsPerHour': random.randint(lower_bound, upper_bound),
-             'from': f'n{i}_c{i}', 'to': f'c{cols*(rows-1) + i}_s{i}'} for i in range(1, cols + 1)])
+             'from': f'n{i}_c{i}', 'to': f'c{cols * (rows - 1) + i}_s{i}'} for i in range(1, cols + 1)])
 
         # From center to external
         flows.extend([
             {'begin': begin, 'end': end,
              'vehsPerHour': random.randint(lower_bound, upper_bound),
-             'from': f's{i}_c{cols*(rows-1) + i}', 'to': f'c{i}_n{i}'} for i in range(1, cols + 1)])
+             'from': f's{i}_c{cols * (rows - 1) + i}', 'to': f'c{i}_n{i}'} for i in range(1, cols + 1)])
 
         # Add flows to the flows generator
         flow_generator.add_flows(flows)
@@ -393,7 +398,6 @@ def generate_sumo_config_file(sumo_config_path: str, network_path: str, tll_path
     # Define the input files removing the root folder
     input_files = {
         'net-file': network_path.replace(DEFAULT_DIR, ''),
-        'route-files': route_path.replace(DEFAULT_DIR, ''),
         'additional-files': tll_path.replace(DEFAULT_DIR, '') + "," + detector_path.replace(DEFAULT_DIR, '')
     }
 
@@ -509,6 +513,10 @@ def get_options():
                                             help="interval of seconds to be used in the traffic light generator")
     tl_program_generator_group.add_argument("-p", "--proportion", dest="proportion", action='store_true',
                                             default=True, help="flag to use proportions in the traffic light generator")
+    tl_program_generator_group.add_argument("--allow-add-turn-phases", dest="allow_add_turn_phase",
+                                            action='store_true', default=ALLOW_ADD_LEFT_PHASES,
+                                            help="flag to allow additional phases on left turns "
+                                                               "in the traffic light generator")
 
     # Flows Generator
     flows_generator_group = arg_parser.add_argument_group("Flows generator",
@@ -517,8 +525,8 @@ def get_options():
                                        type=str, help=f"time pattern to create the flows.")
 
     flows_generator_group.add_argument("--dates", dest="dates", action="store", type=str,
-                                        help="calendar dates from start to end to simulate. Format is "
-                                          "dd/mm/yyyy-dd/mm/yyyy.")
+                                       help="calendar dates from start to end to simulate. Format is "
+                                            "dd/mm/yyyy-dd/mm/yyyy.")
     # Retrieve the arguments parsed
     args = arg_parser.parse_args()
     return args
@@ -535,7 +543,8 @@ if __name__ == '__main__':
                           distance=exec_options.distance, junction=exec_options.junction,
                           tl_type=exec_options.tl_type, tl_layout=exec_options.tl_layout,
                           nodes_path=exec_options.nodes_path, edges_path=exec_options.edges_path,
-                          network_path=exec_options.network_path)
+                          network_path=exec_options.network_path,
+                          allow_add_left_phases=exec_options.allow_add_turn_phase)
 
     # Generate the detector file
     generate_detector_file(network_path=exec_options.network_path, detector_path=exec_options.detector_path,
