@@ -137,7 +137,7 @@ class TimePattern:
                                         (self._pattern['date_year'] == int(end_year))].tolist()[-1]
 
         # Store the new time pattern by date
-        self._pattern = self._pattern.iloc[start_index:end_index, :]
+        self._pattern = self._pattern.iloc[start_index:end_index+1, :]
 
         # Reset index dataframe
         self._pattern.reset_index(drop=True, inplace=True)

@@ -38,7 +38,7 @@ DEFAULT_CONFIG_FILE = '../../sumo-utils/output/simulation.sumocfg'
 FLOWS_OUTPUT_DIR = '../../sumo-utils/output/flows.rou.xml'
 
 # Default time pattern file
-DEFAULT_TIME_PATTERN_FILE = '.../../sumo-utils/time_patterns/generated_calendar.csv'
+DEFAULT_TIME_PATTERN_FILE = '../../sumo-utils/time_patterns/generated_calendar.csv'
 
 # Default turn pattern
 DEFAULT_TURN_PATTERN_FILE = '../../sumo-utils/time_patterns/base_patterns/turn_prob_patterns.csv'
