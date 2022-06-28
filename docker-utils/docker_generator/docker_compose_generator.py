@@ -122,35 +122,56 @@ class DockerGenerator:
             container_name = params.pop(0)
 
         # Define params str
-        pattern_str, sumo_generator_str, pattern_file = "", "", ""
+        pattern_str, sumo_generator_str, pattern_file, date_range, exp_file, waiting_time = "", "", "", "", "", ""
         if params:
             # Iterate over different params
             for value in params:
+                # Retrieve parameter type and value, split by #
                 param_type, param_value = value.split('#')
 
+                # Retrieve time pattern from file or date range from calendar
                 if param_type in ['pattern', 'date']:
+                    # Store time pattern for TLC
                     pattern_str = DOCKER_EXECUTION_OPTIONS['traffic_light_controller'][param_type]. \
                         format(param_value)
-                    pattern_file = param_value
-
+                    # Store time pattern or date range for SUMO generator
+                    if param_type == 'pattern':
+                        pattern_file = param_value
+                    elif param_type == 'date':
+                        date_range = param_value
+                # Add network topology rows to SUMO generator
                 elif param_type == 'rows':
                     sumo_generator_str += f'-r {param_value} '
+                # Add network topology cols to SUMO generator
                 elif param_type == 'cols':
                     sumo_generator_str += f'-c {param_value} '
+                # Add network topology number of lanes to SUMO generator
                 elif param_type == 'lanes':
                     sumo_generator_str += f'-l {param_value} '
+                # Add route files to TLC volume
                 elif param_type == 'load':
+                    # It is fixed to the second position
                     container['volumes'][2] = container['volumes'][2].format(param_value)
-
+                    # Store time pattern for SUMO generator
                     pattern_str += f' -l {DEFAULT_ROUTE_DIR}'
+                # Add turn probabilities file to SUMO generator
                 elif param_type == 'turn':
                     sumo_generator_str += f'--turn-pattern {param_value} '
+                # Add output experiment file
+                elif param_type == 'exp_file':
+                    exp_file = param_value
+                # Add number of seconds for the experiment collector to wait until it finishes
+                elif param_type == 'waiting':
+                    waiting_time = param_value
 
-            # Add the "proportion" flag and the time pattern to the sumo generator
+            # Add the "proportion" flag and the time pattern to the SUMO generator
             sumo_generator_str += "-p "
 
+            # Add the pattern file or date range to SUMO generator
             if pattern_file:
                 sumo_generator_str += f"--time-pattern {pattern_file}"
+            elif date_range:
+                sumo_generator_str += f"--date {date_range}"
 
         # Generate the volumes field
         volumes = generate_list_items(container['volumes'])
@@ -187,10 +208,16 @@ class DockerGenerator:
             container_str += "    depends_on:\n{}".format(generate_list_items(container['depends_on']))
         if "command" in container:
 
+            # There exists some parameters
             if params:
-                # Replace the param with its name and value
-                container_str += "    command: {}\n".format(container['command'].format(sumo_generator_str, pattern_str))
-
+                # If there experiment is going to be collected
+                if exp_file and waiting_time:
+                    container_str += "    command: {}\n".format(container['command'].format(exp_file, waiting_time))
+                # Otherwise only add the SUMO generator and time pattern parameters
+                else:
+                    container_str += "    command: {}\n".format(container['command'].format(sumo_generator_str,
+                                                                                            pattern_str))
+            # No parameters
             else:
                 container_str += "    command: {}\n".format(container['command'])
         if "entrypoint" in container:

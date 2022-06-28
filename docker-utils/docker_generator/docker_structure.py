@@ -106,6 +106,16 @@ ALL_CONTAINERS = {
         'command': 'bash -c "pip3 install -r /etc/recorder/requirements.txt && '
                    'cd /etc/recorder/ && python3 main.py -o {}"',
         'ipv4_address': '172.20.0.10'
+    },
+    'exp_collector': {
+        'image': 'python:3.8.12-slim',
+        'container_name': 'exp_collector',
+        'restart': 'on-failure',
+        'links': 'mosquitto',
+        'volumes': './exp_collector:/etc/exp_collector/',
+        'command': 'bash -c "pip3 install -r /etc/exp_collector/requirements.txt && '
+                   'cd /etc/exp_collector && python3 main.py -o {} -w {}"',
+        'ipv4_address': '172.20.0.11'
     }
 }
 
