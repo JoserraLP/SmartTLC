@@ -2,10 +2,12 @@ import numpy as np
 import pandas as pd
 from influxdb_client import InfluxDBClient
 import optparse
+import time
+import warnings
 
 NUM_ITEMS_PER_DAY = 288
 TEMPORAL_WINDOW_MINUTES = 5
-DEFAULT_OUTPUT_FILE = "./data.csv"
+DEFAULT_OUTPUT_FILE = "./data.xlsx"
 
 # You can generate a Token from the "Tokens Tab" in the UI
 TOKEN = "my-super-secret-auth-token"
@@ -27,11 +29,15 @@ def get_options():
     optParser = optparse.OptionParser()
     optParser.add_option("-o", "--output-file", dest="output_file", action='store',
                          help="output file location")
+    optParser.add_option("-w", "--waiting-time", dest="waiting_time", action='store', default=0,
+                         help="waiting seconds to deploy. Use only when deploying Docker container. Default to 0")
     options, args = optParser.parse_args()
     return options
 
 
 if __name__ == '__main__':
+    # Remove warnings
+    warnings.filterwarnings('ignore')
 
     # Retrieve execution options (parameters)
     exec_options = get_options()
@@ -40,6 +46,9 @@ if __name__ == '__main__':
 
     if exec_options.output_file:
         output_file = exec_options.output_file
+
+    # Sleep waiting time
+    time.sleep(int(exec_options.waiting_time))
 
     # Query
     query = 'from(bucket: "{}")\
@@ -112,18 +121,20 @@ if __name__ == '__main__':
         # Iterate over the indexes
         for i in range(NUM_ITEMS_PER_DAY):
             value = 0
+            # Iterate over different junctions
             for index in indexes:
                 # Calculate the total waiting time and total number of passing vehicles
                 total_waiting_time = waiting_time_ew.iloc[index + i]['value'] + waiting_time_ns.iloc[index + i]['value']
                 total_passing_veh = passing_veh_ew.iloc[index + i]['value'] + passing_veh_ns.iloc[index + i]['value']
 
-                # Retrieve value
-                value += total_waiting_time / total_passing_veh
+                # Retrieve value -> Avoid division by zero
+                if total_passing_veh != 0:
+                    value += total_waiting_time / total_passing_veh
 
             # Append the average waiting time value
             average_waiting_time = average_waiting_time.append({'value': value}, ignore_index=True)
 
-        # Replace inf values by NaN
+        # Replace inf values by 0
         average_waiting_time = average_waiting_time.replace(np.inf, 0)
 
         # Process the data to set columns by info
@@ -144,5 +155,5 @@ if __name__ == '__main__':
         # Add average waiting time
         data['average_waiting_time'] = average_waiting_time['value'].mean()
 
-        # store the output csv
-        data.to_csv(output_file)
+        # store the output excel
+        data.to_excel(output_file, index=None, header=True)
