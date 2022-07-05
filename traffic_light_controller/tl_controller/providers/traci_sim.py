@@ -40,7 +40,10 @@ class TraCISimulator:
             self._time_pattern.retrieve_pattern_days(start_date=start_date, end_date=end_date)
 
         # Define the turn pattern
-        self._turn_pattern = TimePattern(file_dir=turn_pattern_file)
+        if turn_pattern_file:
+            self._turn_pattern = TimePattern(file_dir=turn_pattern_file)
+        else:
+            self._turn_pattern = None
 
         # SUMO configuration files
         self._config_file = sumo_conf['config_file']
@@ -70,6 +73,9 @@ class TraCISimulator:
         # Define initial timestep
         cur_timestep = 0
 
+        # Get maximum timesteps
+        max_timesteps = len(self._time_pattern.pattern) * TIMESTEPS_PER_HALF_HOUR
+
         # Save vehicles info
         if save_vehicles_dir:
             # Add save vehicles info parameters, sorted and with the last used route
@@ -82,7 +88,7 @@ class TraCISimulator:
             add_params = ["--route-files", FLOWS_OUTPUT_DIR]
 
         # Retrieve base params
-        sumo_params = [self._sumo_binary, "-c", self._config_file, "--no-warnings"]
+        sumo_params = [self._sumo_binary, "-c", self._config_file, "--no-warnings", ]
 
         # Extend with additional ones
         sumo_params.extend(add_params)
@@ -103,33 +109,20 @@ class TraCISimulator:
         # Initialize basic traffic info schema
         traffic_info = {traffic_light: {'tl_program': '', 'passing_veh_n_s': 0, 'passing_veh_e_w': 0,
                                         'waiting_time_veh_n_s': 0, 'waiting_time_veh_e_w': 0,
-                                        'turning_vehicles': {'forward': 0, 'right': 0, 'left': 0},
+                                        'turning_vehicles': {'forward': 0, 'right': 0, 'left': 0, 'veh_passed': set()},
                                         'veh_passed': set()}
                         for traffic_light in self._traci.trafficlight.getIDList()}
+
+        # Append traffic global information
+        summary_waiting_time, summary_veh_passed = 0, 0
 
         # Get previous total waiting time per lane
         prev_total_waiting_time_per_lane = get_total_waiting_time_per_lane(traci)
 
-        # Initialize the set for passing veh
-        vehicles_passed = {traffic_light: set() for traffic_light in self._traci.trafficlight.getIDList()}
-
         # Traci simulation
         # Iterate until simulation is ended
-        while self._traci.simulation.getMinExpectedNumber() > 0:
-
-            # If vehicles are not loaded means that they need to calculate the new route
-            if not load_vehicles_dir:
-                # Retrieve turn probabilities from turn pattern
-                turn_probabilities = self._turn_pattern.retrieve_turn_prob(timestep=cur_timestep)
-
-                # Update current vehicles routes to enable turns
-                # Insert the traffic info to store the number of turning vehicles
-                update_route_with_turns(self._traci, traffic_info, rows=self._topology_rows, cols=self._topology_cols,
-                                        turn_prob=turn_probabilities)
-            else:
-                # Otherwise calculate the number of turning vehicles
-                calculate_turning_vehicles(self._traci, traffic_info, rows=self._topology_rows,
-                                           cols=self._topology_cols)
+        # while self._traci.simulation.getMinExpectedNumber() > 0:
+        while cur_timestep < max_timesteps:
 
             # Get new TL programs per traffic light from the adapter
             adapter_tl_programs = self._adapter.get_new_tl_program()
@@ -139,9 +132,6 @@ class TraCISimulator:
                 # Apply the new TL program selected by the adapter
                 self.apply_tl_programs(adapter_tl_programs)
 
-            # Update number of vehicles passing
-            update_passing_vehicles(traci=self._traci, traffic_info=traffic_info, passing_veh=vehicles_passed)
-
             # Update the current waiting time
             prev_total_waiting_time_per_lane = update_current_waiting_time(traci=self._traci,
                                                                            prev_total_waiting_time_per_lane=
@@ -149,13 +139,46 @@ class TraCISimulator:
                                                                            traffic_info=traffic_info,
                                                                            cols=self._topology_cols)
 
+            # Update number of vehicles passing
+            update_passing_vehicles(traci=self._traci, traffic_info=traffic_info, rows=self._topology_rows,
+                                    cols=self._topology_cols)
+
+            if self._turn_pattern:
+                # Update the route of the passed vehicles or count them
+                if load_vehicles_dir != '':
+                    # If vehicles are not loaded means that they need to calculate the new route
+    
+                    # Retrieve turn probabilities from turn pattern
+                    turn_probabilities = self._turn_pattern.retrieve_turn_prob(timestep=cur_timestep)
+    
+                    # Update current vehicles routes to enable turns
+                    # Insert the traffic info to store the number of turning vehicles
+                    update_route_with_turns(self._traci, traffic_info, rows=self._topology_rows,
+                                            cols=self._topology_cols,
+                                            turn_prob=turn_probabilities)
+                else:
+                    # Otherwise calculate the number of turning vehicles
+                    calculate_turning_vehicles(self._traci, traffic_info, rows=self._topology_rows,
+                                               cols=self._topology_cols)
+
             # Store info each time interval
             if cur_timestep % TIMESTEPS_TO_STORE_INFO == 0:
                 # Retrieve date info
                 date_info = retrieve_date_info(timestep=cur_timestep, time_pattern=self._time_pattern)
 
+                # Retrieve summary of waiting time
+                for junction, info in traffic_info.items():
+                    summary_waiting_time += info['waiting_time_veh_n_s'] + info['waiting_time_veh_e_w']
+                    summary_veh_passed += info['passing_veh_n_s'] + info['passing_veh_e_w']
+
                 # Retrieve the veh_passed
                 veh_passed = {k: v['veh_passed'] for k, v in traffic_info.items()}
+
+                # Retrieve turning_veh_passed
+                turning_veh_passed = {k: v['turning_vehicles']['veh_passed'] for k, v in traffic_info.items()}
+
+                # Add summary information
+                traffic_info['summary'] = {'waiting_time': summary_waiting_time, 'veh_passed': summary_veh_passed}
 
                 # Process traffic and date info
                 traffic_info_payload = process_payload(traffic_info=traffic_info, date_info=date_info)
@@ -167,7 +190,8 @@ class TraCISimulator:
                 # Reset counters, except the vehicles passed set
                 traffic_info = {traffic_light: {'tl_program': '', 'passing_veh_n_s': 0, 'passing_veh_e_w': 0,
                                                 'waiting_time_veh_n_s': 0, 'waiting_time_veh_e_w': 0,
-                                                'turning_vehicles': {'forward': 0, 'right': 0, 'left': 0},
+                                                'turning_vehicles': {'forward': 0, 'right': 0, 'left': 0,
+                                                                     'veh_passed': turning_veh_passed[traffic_light]},
                                                 'veh_passed': veh_passed[traffic_light]}
                                 for traffic_light in self._traci.trafficlight.getIDList()}
 

@@ -94,12 +94,12 @@ def get_total_waiting_time_per_lane(traci):
     return lanes_waiting_time
 
 
-def get_num_passing_vehicles_detectors(traci, vehicles_passed: dict):
+def get_num_passing_vehicles_detectors(traci, traffic_info: dict):
     """
     Retrieve the number of vehicles passing detectors on each direction related to each traffic lights.
 
-    :param vehicles_passed: dict with set of ids of the vehicles that has been counted per traffic light
-    :type vehicles_passed: dict
+    :param traffic_info: dict with set of ids of the vehicles that has been counted per traffic light
+    :type traffic_info: dict
     :param traci: TraCI instance
     :return: dict with the direction and the number of vehicle passing per each controlled lane
     :rtype: dict
@@ -108,10 +108,7 @@ def get_num_passing_vehicles_detectors(traci, vehicles_passed: dict):
     detectors = get_all_detectors(traci)
 
     # Create a dict with the accumulate of vehicles per direction
-    passing_veh = {traffic_light: {'north': 0,
-                                   'east': 0,
-                                   'south': 0,
-                                   'west': 0} for traffic_light
+    passing_veh = {traffic_light: {'north': 0, 'east': 0, 'south': 0, 'west': 0} for traffic_light
                    in traci.trafficlight.getIDList()}
 
     # Iterate over the detectors
@@ -127,16 +124,63 @@ def get_num_passing_vehicles_detectors(traci, vehicles_passed: dict):
         cur_veh = set(traci.inductionloop.getLastStepVehicleIDs(detector))
 
         # Calculate the difference between the sets
-        not_counted_veh = cur_veh - vehicles_passed[detector_tl]
+        not_counted_veh = cur_veh - traffic_info[detector_tl]['veh_passed']
 
         # If there are no counted vehicles
         if not_counted_veh:
             # Add the not counted vehicles
-            vehicles_passed[detector_tl].update(not_counted_veh)
+            traffic_info[detector_tl]['veh_passed'].update(not_counted_veh)
 
             passing_veh[detector_tl][detector_direction] += len(not_counted_veh)
 
     return passing_veh
+
+
+def update_passing_vehicles(traci, traffic_info, rows, cols):
+    num_passing_vehicles_detectors = get_num_passing_vehicles_detectors(traci, traffic_info)
+
+    # Update number of vehicles passing
+    for traffic_light, info in num_passing_vehicles_detectors.items():
+        # Increase the direction counters
+        traffic_info[traffic_light]['passing_veh_n_s'] += info['north'] + info['south']
+        traffic_info[traffic_light]['passing_veh_e_w'] += info['east'] + info['west']
+
+
+def update_current_waiting_time(traci, prev_total_waiting_time_per_lane, traffic_info, cols):
+    current_total_waiting_time = get_total_waiting_time_per_lane(traci)
+    # Iterate over the current time on lanes
+    for junction, lanes in current_total_waiting_time.items():
+        for lane, waiting_time in lanes.items():
+            # Store when the waiting time is calculated (Next value is 0, meaning it has passed)
+            if prev_total_waiting_time_per_lane[junction][lane] > waiting_time:
+
+                # Retrieve the traffic lights
+                origin, destination, _ = lane.split('_')
+
+                if ('n' in destination or ('s' in origin and 'c' in destination)) or \
+                        ('s' in destination or ('n' in origin and 'c' in destination)):
+                    traffic_info[junction]['waiting_time_veh_n_s'] += \
+                        prev_total_waiting_time_per_lane[junction][lane]
+                if ('e' in destination or ('w' in origin and 'c' in destination)) or \
+                        ('w' in destination or ('e' in origin and 'c' in destination)):
+                    traffic_info[junction]['waiting_time_veh_e_w'] += \
+                        prev_total_waiting_time_per_lane[junction][lane]
+                if 'c' in origin and 'c' in destination:
+                    # Get the TL identifiers
+                    prev_tl_id = int(origin[1:])
+                    next_tl_id = int(destination[1:])
+
+                    # North-South
+                    if prev_tl_id + cols == next_tl_id or \
+                            prev_tl_id - cols == next_tl_id:
+                        traffic_info[junction]['waiting_time_veh_n_s'] += \
+                            prev_total_waiting_time_per_lane[junction][lane]
+                    # East-West
+                    elif prev_tl_id + 1 == next_tl_id or prev_tl_id - 1 == next_tl_id:
+                        traffic_info[junction]['waiting_time_veh_e_w'] += \
+                            prev_total_waiting_time_per_lane[junction][lane]
+
+    return current_total_waiting_time
 
 
 def get_new_vehicles(traci):
@@ -199,16 +243,17 @@ def update_route_with_turns(traci, traffic_info, rows, cols, turn_prob):
 
     # Retrieve current vehicles
     cur_vehicles = get_new_vehicles(traci)
+
     # Iterate over the vehicles
     for direction, vehicles in cur_vehicles.items():
         for vehicle in vehicles:
             # Get closest junction
             next_traffic_light = traci.vehicle.getNextTLS(vehicle)[0][0]
-            if vehicle not in traffic_info[next_traffic_light]['veh_passed']:
+            if vehicle not in traffic_info[next_traffic_light]['turning_vehicles']['veh_passed']:
                 # Retrieve turn type [0.0, 1.0)
                 turn_type = random.random()
-                # Retrieve randomly the target edge # TODO update this to be topology dependent (the 2 value)
-                target = random.randint(0, 2)
+                # Initialize target to -1
+                target = -1
                 # Create a possible targets list
                 possible_target = list()
                 # If the vehicle has a next TLS
@@ -220,47 +265,77 @@ def update_route_with_turns(traci, traffic_info, rows, cols, turn_prob):
                         if 'north' in direction:
                             # Example with 3x3 topology: ['c3_e1', 'c6_e2', 'c9_e3']
                             possible_target = [f'c{cols * i}_e{i}' for i in range(1, rows + 1)]
+                            # Retrieve random target (based on number of rows)
+                            target = random.randint(0, rows - 1)
                         elif 'east' in direction:
                             # Example with 3x3 topology: ['c7_s1', 'c8_s2', 'c9_s3']
                             possible_target = [f'c{cols * (rows - 1) + i}_s{i}' for i in range(1, cols + 1)]
+                            # Retrieve random target (based on number of cols)
+                            target = random.randint(0, cols - 1)
                         elif 'south' in direction:
                             # Example with 3x3 topology: ['c1_w1', 'c4_w2', 'c7_w3']
                             possible_target = [f'c{(i - 1) * cols + 1}_w{i}' for i in range(1, rows + 1)]
+                            # Retrieve random target (based on number of rows)
+                            target = random.randint(0, rows - 1)
                         elif 'west' in direction:
                             # Example with 3x3 topology: ['c1_n1', 'c2_n2', 'c3_n3']
                             possible_target = [f'c{i}_n{i}' for i in range(1, cols + 1)]
+                            # Retrieve random target (based on number of cols)
+                            target = random.randint(0, cols - 1)
                     elif turn_type < turn_prob_left:  # left
                         if 'north' in direction:
                             # Example with 3x3 topology: ['c1_w1', 'c4_w2', 'c7_w3']
                             possible_target = [f'c{(i - 1) * cols + 1}_w{i}' for i in range(1, rows + 1)]
+                            # Retrieve random target (based on number of rows)
+                            target = random.randint(0, rows - 1)
                         elif 'east' in direction:
                             # Example with 3x3 topology: ['c1_n1', 'c2_n2', 'c3_n3']
                             possible_target = [f'c{i}_n{i}' for i in range(1, cols + 1)]
+                            # Retrieve random target (based on number of cols)
+                            target = random.randint(0, cols - 1)
                         elif 'south' in direction:
                             # Example with 3x3 topology: ['c3_e1', 'c6_e2', 'c9_e3']
                             possible_target = [f'c{cols * i}_e{i}' for i in range(1, rows + 1)]
+                            # Retrieve random target (based on number of rows)
+                            target = random.randint(0, rows - 1)
                         elif 'west' in direction:
                             # Example with 3x3 topology: ['c7_s1', 'c8_s2', 'c9_s3']
                             possible_target = [f'c{cols * (rows - 1) + i}_s{i}' for i in range(1, cols + 1)]
+                            # Retrieve random target (based on number of cols)
+                            target = random.randint(0, cols - 1)
 
                     # Calculate is the target is valid
                     if possible_target:
                         # Get the vehicle route
                         vehicle_route = traci.vehicle.getRoute(vehicle)
+
                         # Check if the current lane is on the second last lane. Which means that it is at the end of its
                         # route so it can not go to any other target. Otherwise, update the target route
-                        if not traci.vehicle.getRoadID(vehicle) == vehicle_route[-2]:
-                            traci.vehicle.changeTarget(vehicle, possible_target[target])
+                        if len(vehicle_route) >= 2 and traci.vehicle.getRoadID(vehicle) != vehicle_route[-2]:
 
-                            if turn_type < turn_prob_right:  # right
-                                # Increase the TL right counter
-                                traffic_info[next_traffic_light]['turning_vehicles']['right'] += 1
-                            elif turn_type < turn_prob_left:  # left
-                                # Increase the TL left counter
-                                traffic_info[next_traffic_light]['turning_vehicles']['left'] += 1
+                            # Retrieve current lane
+                            cur_vehicle_lane = traci.vehicle.getRoadID(vehicle)
+                            # Retrieve vehicle type
+                            cur_vehicle_type = traci.vehicle.getTypeID(vehicle)
+                            # Find new route
+                            new_route = traci.simulation.findRoute(fromEdge=cur_vehicle_lane,
+                                                                   toEdge=possible_target[target],
+                                                                   vType=cur_vehicle_type).edges
 
-                            # Count new vehicle
-                            traffic_info[next_traffic_light]['veh_passed'].add(vehicle)
+                            # Check if there are routes available (from and to) based on the current vehicle type
+                            if new_route:
+                                # Set new route
+                                traci.vehicle.setRoute(vehicle, new_route)
+
+                                if turn_type < turn_prob_right:  # right
+                                    # Increase the TL right counter
+                                    traffic_info[next_traffic_light]['turning_vehicles']['right'] += 1
+                                elif turn_type < turn_prob_left:  # left
+                                    # Increase the TL left counter
+                                    traffic_info[next_traffic_light]['turning_vehicles']['left'] += 1
+
+                                # Count new vehicle
+                                traffic_info[next_traffic_light]['turning_vehicles']['veh_passed'].add(vehicle)
 
 
 def calculate_turning_vehicles(traci, traffic_info, rows, cols):
@@ -283,7 +358,7 @@ def calculate_turning_vehicles(traci, traffic_info, rows, cols):
         for vehicle in vehicles:
             # Get closest junction
             next_traffic_light = traci.vehicle.getNextTLS(vehicle)[0][0]
-            if vehicle not in traffic_info[next_traffic_light]['veh_passed']:
+            if vehicle not in traffic_info[next_traffic_light]['turning_vehicles']['veh_passed']:
                 # Retrieve vehicle route and current edge
                 veh_route = traci.vehicle.getRoute(vehicle)
                 cur_edge_index = traci.vehicle.getRouteIndex(vehicle)
@@ -343,7 +418,7 @@ def calculate_turning_vehicles(traci, traffic_info, rows, cols):
                                 # Increase the TL straight counter
                                 traffic_info[next_traffic_light]['turning_vehicles']['forward'] += 1
                     # Count new vehicle
-                    traffic_info[next_traffic_light]['veh_passed'].add(vehicle)
+                    traffic_info[next_traffic_light]['turning_vehicles']['veh_passed'].add(vehicle)
 
 
 # Simulation related utils
@@ -351,9 +426,12 @@ def process_payload(traffic_info, date_info):
     # Format to be Telegraf valid
     traffic_info_payload = list()
     for traffic_light_id, tl_info in traffic_info.items():
-        # Remove "veh_passed" key from traffic_info dict
-        tl_info.pop("veh_passed", None)
-        # Store the concatenation of both dicts
+        if traffic_light_id != 'summary':
+            # Remove "veh_passed" key from traffic_info dict
+            tl_info.pop("veh_passed", None)
+            # Remove also the "veh_passed" key from the turning vehicles
+            tl_info['turning_vehicles'].pop("veh_passed", None)
+            # Store the concatenation of both dicts
         traffic_info_payload.append(dict({'tl_id': traffic_light_id}, **dict(tl_info), **dict(date_info)))
 
     return traffic_info_payload
@@ -398,48 +476,3 @@ def retrieve_date_info(timestep, time_pattern):
             date_info["date_year"] = DEFAULT_DATE_YEAR
 
     return date_info
-
-
-def update_current_waiting_time(traci, prev_total_waiting_time_per_lane, traffic_info, cols):
-    current_total_waiting_time = get_total_waiting_time_per_lane(traci)
-    # Iterate over the current time on lanes
-    for junction, lanes in current_total_waiting_time.items():
-        for lane, waiting_time in lanes.items():
-            # Store when the waiting time is calculated
-            if prev_total_waiting_time_per_lane[junction][lane] > waiting_time:
-                # Store by direction
-                if 'n' in lane or 's' in lane:
-                    traffic_info[junction]['waiting_time_veh_n_s'] += \
-                        prev_total_waiting_time_per_lane[junction][lane]
-                if 'e' in lane or 'w' in lane:
-                    traffic_info[junction]['waiting_time_veh_e_w'] += \
-                        prev_total_waiting_time_per_lane[junction][lane]
-                elif 'c' in lane:
-                    # Retrieve the traffic lights
-                    prev_traffic_light, next_traffic_light, _ = lane.split('_')
-
-                    # Get the TL identifiers
-                    prev_tl_id = int(prev_traffic_light[1:])
-                    next_tl_id = int(next_traffic_light[1:])
-
-                    # North-South
-                    if prev_tl_id + cols == next_tl_id or \
-                            prev_tl_id - cols == next_tl_id:
-                        traffic_info[junction]['waiting_time_veh_n_s'] += \
-                            prev_total_waiting_time_per_lane[junction][lane]
-                    # East-West
-                    elif prev_tl_id + 1 == next_tl_id or prev_tl_id - 1 == next_tl_id:
-                        traffic_info[junction]['waiting_time_veh_e_w'] += \
-                            prev_total_waiting_time_per_lane[junction][lane]
-
-        return current_total_waiting_time
-
-
-def update_passing_vehicles(traci, traffic_info, passing_veh):
-    num_passing_vehicles_detectors = get_num_passing_vehicles_detectors(traci, passing_veh)
-
-    # Update number of vehicles passing
-    for traffic_light, info in num_passing_vehicles_detectors.items():
-        # Increase the direction counters
-        traffic_info[traffic_light]['passing_veh_n_s'] += info['north'] + info['south']
-        traffic_info[traffic_light]['passing_veh_e_w'] += info['east'] + info['west']
