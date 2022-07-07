@@ -230,7 +230,8 @@ def generate_network_file(rows: int = MIN_ROWS, cols: int = MIN_COLS, lanes: int
             break
 
 
-def generate_flow_file(flows_path: str, rows: int, cols: int, time_pattern_path: str = '', dates: str = ''):
+def generate_flow_file(flows_path: str, rows: int, cols: int, time_pattern_path: str = '', dates: str = '',
+                       calendar_pattern_file: str = DEFAULT_TIME_PATTERN_FILE):
     """
     Generate the traffic flows and store it on the output file.
 
@@ -258,6 +259,8 @@ def generate_flow_file(flows_path: str, rows: int, cols: int, time_pattern_path:
     :type time_pattern_path: pd.DataFrame
     :param dates: time pattern input file. Default is ''.
     :type dates: str
+    :param calendar_pattern_file: Calendar time pattern file. Default is '../time_patterns/generated_calendar.csv'.
+    :type calendar_pattern_file: str
     :return: None
     """
     # Retrieve time pattern
@@ -266,7 +269,7 @@ def generate_flow_file(flows_path: str, rows: int, cols: int, time_pattern_path:
         time_pattern = TimePattern(file_dir=time_pattern_path)
     elif dates != '':
         # Retrieve time pattern from given dates
-        time_pattern = TimePattern(file_dir=DEFAULT_TIME_PATTERN_FILE)
+        time_pattern = TimePattern(file_dir=calendar_pattern_file)
         start_date, end_date = dates.split('-')
         time_pattern.retrieve_pattern_days(start_date=start_date, end_date=end_date)
     else:
