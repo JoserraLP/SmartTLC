@@ -249,13 +249,15 @@ def update_route_with_turns(traci, traffic_info, rows, cols, turn_prob):
         for vehicle in vehicles:
             # Get closest junction
             next_traffic_light = traci.vehicle.getNextTLS(vehicle)[0][0]
+
+            # Initialize target to -1
+            target = -1
+            # Create a possible targets list
+            possible_target = list()
+            # Vehicle is not updated yet
             if vehicle not in traffic_info[next_traffic_light]['turning_vehicles']['veh_passed']:
                 # Retrieve turn type [0.0, 1.0)
                 turn_type = random.random()
-                # Initialize target to -1
-                target = -1
-                # Create a possible targets list
-                possible_target = list()
                 # If the vehicle has a next TLS
                 if next_traffic_light:
                     if turn_type < turn_prob_forward:  # straight
@@ -304,38 +306,30 @@ def update_route_with_turns(traci, traffic_info, rows, cols, turn_prob):
                             # Retrieve random target (based on number of cols)
                             target = random.randint(0, cols - 1)
 
-                    # Calculate is the target is valid
-                    if possible_target:
-                        # Get the vehicle route
-                        vehicle_route = traci.vehicle.getRoute(vehicle)
+                    # Calculate if the target is valid
+                    if possible_target and target != -1:
+                        # Retrieve current lane
+                        cur_vehicle_lane = traci.vehicle.getRoadID(vehicle)
+                        # Retrieve vehicle type
+                        cur_vehicle_type = traci.vehicle.getTypeID(vehicle)
+                        # Find new route
+                        new_route = traci.simulation.findRoute(fromEdge=cur_vehicle_lane,
+                                                               toEdge=possible_target[target],
+                                                               vType=cur_vehicle_type).edges
 
-                        # Check if the current lane is on the second last lane. Which means that it is at the end of its
-                        # route so it can not go to any other target. Otherwise, update the target route
-                        if len(vehicle_route) >= 2 and traci.vehicle.getRoadID(vehicle) != vehicle_route[-2]:
+                        # Check if there are routes available (from and to) based on the current vehicle type
+                        if new_route:
+                            # Set new route
+                            traci.vehicle.setRoute(vehicle, new_route)
+                            if turn_type < turn_prob_right:  # right
+                                # Increase the TL right counter
+                                traffic_info[next_traffic_light]['turning_vehicles']['right'] += 1
+                            elif turn_type < turn_prob_left:  # left
+                                # Increase the TL left counter
+                                traffic_info[next_traffic_light]['turning_vehicles']['left'] += 1
 
-                            # Retrieve current lane
-                            cur_vehicle_lane = traci.vehicle.getRoadID(vehicle)
-                            # Retrieve vehicle type
-                            cur_vehicle_type = traci.vehicle.getTypeID(vehicle)
-                            # Find new route
-                            new_route = traci.simulation.findRoute(fromEdge=cur_vehicle_lane,
-                                                                   toEdge=possible_target[target],
-                                                                   vType=cur_vehicle_type).edges
-
-                            # Check if there are routes available (from and to) based on the current vehicle type
-                            if new_route:
-                                # Set new route
-                                traci.vehicle.setRoute(vehicle, new_route)
-
-                                if turn_type < turn_prob_right:  # right
-                                    # Increase the TL right counter
-                                    traffic_info[next_traffic_light]['turning_vehicles']['right'] += 1
-                                elif turn_type < turn_prob_left:  # left
-                                    # Increase the TL left counter
-                                    traffic_info[next_traffic_light]['turning_vehicles']['left'] += 1
-
-                                # Count new vehicle
-                                traffic_info[next_traffic_light]['turning_vehicles']['veh_passed'].add(vehicle)
+                            # Count new vehicle
+                            traffic_info[next_traffic_light]['turning_vehicles']['veh_passed'].add(vehicle)
 
 
 def calculate_turning_vehicles(traci, traffic_info, rows, cols):
