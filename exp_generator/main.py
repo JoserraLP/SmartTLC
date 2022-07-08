@@ -65,6 +65,12 @@ def get_options():
                                      help="calendar dates from start to end to simulate. Format is "
                                           "dd/mm/yyyy-dd/mm/yyyy.")
 
+    # Turn pattern group
+    turn_pattern_group = optparse.OptionGroup(optParser, "Turn pattern parameters",
+                                                 "Set the turn pattern file if required")
+    turn_pattern_group.add_option("--turn-pattern", dest="turn_pattern_path", action='store',
+                                     help="turn pattern of the simulation.")
+
     options, args = optParser.parse_args()
     return options
 
@@ -90,6 +96,7 @@ if __name__ == '__main__':
     # Retrieve traffic time pattern
     time_pattern_path = exec_options.time_pattern_path
     dates = exec_options.dates
+    turn_pattern_path = exec_options.turn_pattern_path
 
     # 1. We need to create the flows.rou.xml file based on the time pattern and network topology
     # Execute the SUMO utils generator script
@@ -112,7 +119,12 @@ if __name__ == '__main__':
             tlc_pattern = 'date#' + dates
         # If time pattern set pattern parameter
         elif time_pattern_path:
-            tlc_pattern = 'pattern#' + time_pattern_path
+            # Replace ../ for /etc/ -> For Docker-compose generation
+            tlc_pattern = 'pattern#' + time_pattern_path.replace('../', '/etc/')
+
+        if turn_pattern_path:
+            # Replace ../ for /etc/ -> For Docker-compose generation
+            tlc_pattern += ':turn#' + turn_pattern_path.replace('../', '/etc/')
 
         # Define output executable sh file
         file_name = output_dir + '/' + adaptation_name + ".sh"
