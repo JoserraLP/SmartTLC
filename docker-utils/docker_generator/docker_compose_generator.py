@@ -156,7 +156,7 @@ class DockerGenerator:
                     pattern_str += f' -l {DEFAULT_ROUTE_DIR}'
                 # Add turn probabilities file to SUMO generator
                 elif param_type == 'turn':
-                    sumo_generator_str += f'--turn-pattern {param_value} '
+                    pattern_str += f' --turn-pattern {param_value} '
                 # Add output experiment file
                 elif param_type == 'exp_file':
                     exp_file = param_value
