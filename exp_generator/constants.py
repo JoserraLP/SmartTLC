@@ -3,8 +3,8 @@ CALENDAR_PATTERN_FILE = '../sumo-utils/time_patterns/generated_calendar.csv'
 ADAPTATION_COMPONENTS = {
     'no_adaptation': '',
     'analyzer_adaptation': ',traffic_analyzer',
-    'prediction_date_adaptation': ',traffic_light_predictor_date',
-    'analyzer_predictor_adaptation': ',traffic_light_predictor_context,traffic_analyzer'
+    'prediction_date_adaptation': ',traffic_predictor_date',
+    'analyzer_predictor_adaptation': ',traffic_predictor_context,traffic_analyzer'
 }
 
 ADAPTATION_FILE_SCHEMA = '#!/bin/sh \n\

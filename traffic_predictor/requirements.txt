@@ -1,0 +1,13 @@
+pandas
+sumolib==1.10.0
+traci==1.10.0
+seaborn
+setuptools
+matplotlib
+sklearn
+scikit-learn
+numpy
+paho-mqtt~=1.6.1
+
+# Editable install with no version control
+-e /etc/traffic_predictor/

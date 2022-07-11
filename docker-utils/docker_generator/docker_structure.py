@@ -37,28 +37,28 @@ ALL_CONTAINERS = {
         'volumes': './telegraf/telegraf.conf:/etc/telegraf/telegraf.conf',
         'ipv4_address': '172.20.0.5'
     },
-    'traffic_light_predictor_date': {
-        'build': './traffic_light_predictor',
-        'container_name': 'traffic_light_predictor',
-        'env_file': 'traffic_light_predictor/eclipse-sumo-image/env.sumo',
+    'traffic_predictor_date': {
+        'build': './traffic_predictor',
+        'container_name': 'traffic_predictor',
+        'env_file': 'traffic_redictor/eclipse-sumo-image/env.sumo',
         'restart': 'on-failure',
         'links': 'mosquitto',
-        'volumes': './traffic_light_predictor:/etc/traffic_light_predictor/',
-        'command': 'bash -c "pip3 install -r /etc/traffic_light_predictor/requirements.txt && '
-                   'cd /etc/traffic_light_predictor/tl_predictor/ && dockerize -wait '
+        'volumes': './traffic_predictor:/etc/traffic_predictor/',
+        'command': 'bash -c "pip3 install -r /etc/traffic_predictor/requirements.txt && '
+                   'cd /etc/traffic_predictor/t_predictor/ && dockerize -wait '
                    'tcp://172.20.0.3:8086 -timeout 120s -wait-retry-interval 40s python3 ml_trainer.py --component -n 1'
                    ' --middleware_host 172.20.0.2 --middleware_port 1883 -d"',
         'ipv4_address': '172.20.0.6'
     },
-    'traffic_light_predictor_context': {
-        'build': './traffic_light_predictor',
-        'container_name': 'traffic_light_predictor',
-        'env_file': 'traffic_light_predictor/eclipse-sumo-image/env.sumo',
+    'traffic_predictor_context': {
+        'build': './traffic_predictor',
+        'container_name': 'traffic_predictor',
+        'env_file': 'traffic_predictor/eclipse-sumo-image/env.sumo',
         'restart': 'on-failure',
         'links': 'mosquitto',
-        'volumes': './traffic_light_predictor:/etc/traffic_light_predictor/',
-        'command': 'bash -c "pip3 install -r /etc/traffic_light_predictor/requirements.txt && '
-                   'cd /etc/traffic_light_predictor/tl_predictor/ && dockerize -wait '
+        'volumes': './traffic_predictor:/etc/traffic_predictor/',
+        'command': 'bash -c "pip3 install -r /etc/traffic_predictor/requirements.txt && '
+                   'cd /etc/traffic_predictor/t_predictor/ && dockerize -wait '
                    'tcp://172.20.0.3:8086 -timeout 120s -wait-retry-interval 40s python3 ml_trainer.py --component -n 1'
                    ' --middleware_host 172.20.0.2 --middleware_port 1883"',
         'ipv4_address': '172.20.0.6'
@@ -125,7 +125,7 @@ DOCKER_EXECUTION_OPTIONS = {
         'date': 'main.py -c /etc/sumo-utils/output/simulation.sumocfg --nogui -d {}'
 
     },
-    'traffic_light_predictor': {
+    'traffic_predictor': {
         'train_date': 'ml_trainer.py -t {} -c -d',
         'train_context': 'ml_trainer.py -t {} -c',
         'component_date': 'ml_trainer.py --component -n 1 --middleware_host 172.20.0.2 --middleware_port 1883 -d',

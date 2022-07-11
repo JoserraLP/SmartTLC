@@ -17,8 +17,8 @@ six==1.16.0
 sklearn==0.0
 sumolib==1.10.0
 -e git+https://github.com/JoserraLP/SmartTLC.git@f9dfc2b24c3307a402206e7113e4a3d0a271a0b3#egg=t_analyzer&subdirectory=traffic_analyzer
+-e git+https://github.com/JoserraLP/SmartTLC.git@f9dfc2b24c3307a402206e7113e4a3d0a271a0b3#egg=t_predictor&subdirectory=traffic_predictor
 threadpoolctl==3.0.0
 -e git+https://github.com/JoserraLP/SmartTLC.git@f9dfc2b24c3307a402206e7113e4a3d0a271a0b3#egg=tl_controller&subdirectory=traffic_light_controller
--e git+https://github.com/JoserraLP/SmartTLC.git@f9dfc2b24c3307a402206e7113e4a3d0a271a0b3#egg=tl_predictor&subdirectory=traffic_light_predictor
 -e git+https://github.com/JoserraLP/SmartTLC.git@f9dfc2b24c3307a402206e7113e4a3d0a271a0b3#egg=tl_study&subdirectory=traffic_light_study
 traci==1.10.0
