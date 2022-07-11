@@ -43,7 +43,7 @@ Where it can be seen that most of the components have an IP direction, in order 
 - **Middleware**: publish-subscribe middleware to exchange information along the system. It uses the MQTT protocol, and 
   the [Eclipse Mosquitto] broker.
 - **Traffic Analyzer**: analyze the current vehicle flows based on the contextual information provided by the TLC.
-- **Traffic Light Predictor**: it is composed by several machine learning models that will predict the traffic flows 
+- **Traffic Predictor**: it is composed by several machine learning models that will predict the traffic flows 
   based on two different approaches.
   - Using contextual information such as the number of vehicles passing, and the current date-time.
   - Using only date-time information.
