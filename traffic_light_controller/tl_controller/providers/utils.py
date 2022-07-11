@@ -235,11 +235,38 @@ def update_route_with_turns(traci, traffic_info, rows, cols, turn_prob):
     :param turn_prob: probabilities of turning
     :type turn_prob: pd.DataFrame
     """
+
     # Retrieve probabilities
-    turn_prob_right, turn_prob_left, turn_prob_forward = turn_prob.values.T.tolist()
-    # Calculate ranges
-    turn_prob_right = turn_prob_right + turn_prob_forward
-    turn_prob_left = turn_prob_left + turn_prob_right + turn_prob_forward
+    turn_prob_right, turn_prob_left, turn_prob_forward, junction_id = turn_prob.values.T.tolist()
+
+    # Get all junctions
+    all_junctions = [f'c{i}' for i in range(1, get_traffic_light_number(traci) + 1)]
+
+    prod_by_junctions = {}
+    # Same probabilities to all junctions
+    if junction_id == 'all':
+        for index, junction in enumerate(all_junctions):
+            prod_by_junctions[junction] = {'turn_prob_right': float(turn_prob_right) + float(turn_prob_forward),
+                                           'turn_prob_left': float(turn_prob_left) + float(turn_prob_right) +
+                                                             float(turn_prob_forward),
+                                           'turn_prob_forward': float(turn_prob_forward)}
+    else:  # Specific probabilities
+        turn_prob_right, turn_prob_left, turn_prob_forward, specific_junctions = turn_prob_right.split(';'), \
+                                                                                 turn_prob_left.split(';'), \
+                                                                                 turn_prob_forward.split(';'), \
+                                                                                 junction_id.split(';')
+        # Specific junctions
+        for index, junction in enumerate(specific_junctions):
+            prod_by_junctions[junction] = {'turn_prob_right': float(turn_prob_right[index]) +
+                                                              float(turn_prob_forward[index]),
+                                           'turn_prob_left': float(turn_prob_left[index]) +
+                                                             float(turn_prob_forward[index]) +
+                                                             float(turn_prob_right[index]),
+                                           'turn_prob_forward': float(turn_prob_forward[index])}
+
+        # Default probabilities (0.0, 0.0, 100.0)
+        for index, junction in enumerate(list(set(all_junctions)-set(specific_junctions))):
+            prod_by_junctions[junction] = {'turn_prob_right': 0.0, 'turn_prob_left': 0.0, 'turn_prob_forward': 100.0}
 
     # Retrieve current vehicles
     cur_vehicles = get_new_vehicles(traci)
@@ -260,10 +287,10 @@ def update_route_with_turns(traci, traffic_info, rows, cols, turn_prob):
                 turn_type = random.random()
                 # If the vehicle has a next TLS
                 if next_traffic_light:
-                    if turn_type < turn_prob_forward:  # straight
+                    if turn_type < prod_by_junctions[next_traffic_light]['turn_prob_forward']:  # straight
                         # Increase the TL straight counter
                         traffic_info[next_traffic_light]['turning_vehicles']['forward'] += 1
-                    elif turn_type < turn_prob_right:  # right
+                    elif turn_type < prod_by_junctions[next_traffic_light]['turn_prob_right']:  # right
                         if 'north' in direction:
                             # Example with 3x3 topology: ['c3_e1', 'c6_e2', 'c9_e3']
                             possible_target = [f'c{cols * i}_e{i}' for i in range(1, rows + 1)]
@@ -284,7 +311,7 @@ def update_route_with_turns(traci, traffic_info, rows, cols, turn_prob):
                             possible_target = [f'c{i}_n{i}' for i in range(1, cols + 1)]
                             # Retrieve random target (based on number of cols)
                             target = random.randint(0, cols - 1)
-                    elif turn_type < turn_prob_left:  # left
+                    elif turn_type < prod_by_junctions[next_traffic_light]['turn_prob_left']:  # left
                         if 'north' in direction:
                             # Example with 3x3 topology: ['c1_w1', 'c4_w2', 'c7_w3']
                             possible_target = [f'c{(i - 1) * cols + 1}_w{i}' for i in range(1, rows + 1)]
@@ -321,10 +348,10 @@ def update_route_with_turns(traci, traffic_info, rows, cols, turn_prob):
                         if new_route:
                             # Set new route
                             traci.vehicle.setRoute(vehicle, new_route)
-                            if turn_type < turn_prob_right:  # right
+                            if turn_type < prod_by_junctions[next_traffic_light]['turn_prob_right']:  # right
                                 # Increase the TL right counter
                                 traffic_info[next_traffic_light]['turning_vehicles']['right'] += 1
-                            elif turn_type < turn_prob_left:  # left
+                            elif turn_type < prod_by_junctions[next_traffic_light]['turn_prob_left']:  # left
                                 # Increase the TL left counter
                                 traffic_info[next_traffic_light]['turning_vehicles']['left'] += 1
 
