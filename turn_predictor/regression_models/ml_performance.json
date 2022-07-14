@@ -1,0 +1,1952 @@
+[
+    {
+        "elapse_time": 0.00235748291015625,
+        "mse": 298.6867788187688,
+        "rmse": 15.000383648906267,
+        "mea": 13.620559657613436,
+        "fold": 0,
+        "model": "linear_regression"
+    },
+    {
+        "elapse_time": 0.03146672248840332,
+        "mse": 248.55532428075404,
+        "rmse": 13.687284585784575,
+        "mea": 5.67596726190473,
+        "fold": 0,
+        "model": "knn",
+        "num_neighbors": 1
+    },
+    {
+        "elapse_time": 0.026935100555419922,
+        "mse": 152.96821201223455,
+        "rmse": 10.736902557131392,
+        "mea": 6.003348214285708,
+        "fold": 0,
+        "model": "knn",
+        "num_neighbors": 2
+    },
+    {
+        "elapse_time": 0.03287005424499512,
+        "mse": 145.49830706202576,
+        "rmse": 10.471141996539346,
+        "mea": 6.705853174603054,
+        "fold": 0,
+        "model": "knn",
+        "num_neighbors": 3
+    },
+    {
+        "elapse_time": 0.037413835525512695,
+        "mse": 157.5366070007639,
+        "rmse": 10.89565812951517,
+        "mea": 7.420293898809649,
+        "fold": 0,
+        "model": "knn",
+        "num_neighbors": 4
+    },
+    {
+        "elapse_time": 0.032584190368652344,
+        "mse": 174.62910267857583,
+        "rmse": 11.471624292096545,
+        "mea": 8.123958333333517,
+        "fold": 0,
+        "model": "knn",
+        "num_neighbors": 5
+    },
+    {
+        "elapse_time": 0.047042131423950195,
+        "mse": 187.7281541648266,
+        "rmse": 11.893679931740564,
+        "mea": 8.661954365079485,
+        "fold": 0,
+        "model": "knn",
+        "num_neighbors": 6
+    },
+    {
+        "elapse_time": 0.03601884841918945,
+        "mse": 198.3237868438573,
+        "rmse": 12.225060332395563,
+        "mea": 9.05617559523831,
+        "fold": 0,
+        "model": "knn",
+        "num_neighbors": 7
+    },
+    {
+        "elapse_time": 0.03974580764770508,
+        "mse": 207.82146302884186,
+        "rmse": 12.514692114874556,
+        "mea": 9.394810267857125,
+        "fold": 0,
+        "model": "knn",
+        "num_neighbors": 8
+    },
+    {
+        "elapse_time": 0.044909000396728516,
+        "mse": 215.52984651339088,
+        "rmse": 12.744784214886257,
+        "mea": 9.671378968254158,
+        "fold": 0,
+        "model": "knn",
+        "num_neighbors": 9
+    },
+    {
+        "elapse_time": 0.042391300201416016,
+        "mse": 221.63769743303556,
+        "rmse": 12.9240474975188,
+        "mea": 9.89672619047631,
+        "fold": 0,
+        "model": "knn",
+        "num_neighbors": 10
+    },
+    {
+        "elapse_time": 0.05238008499145508,
+        "mse": 225.91797901566972,
+        "rmse": 13.048064488713344,
+        "mea": 10.073288690476355,
+        "fold": 0,
+        "model": "knn",
+        "num_neighbors": 11
+    },
+    {
+        "elapse_time": 0.05201125144958496,
+        "mse": 228.23858172668153,
+        "rmse": 13.114814442206479,
+        "mea": 10.193824404762031,
+        "fold": 0,
+        "model": "knn",
+        "num_neighbors": 12
+    },
+    {
+        "elapse_time": 0.05469250679016113,
+        "mse": 227.94069396381863,
+        "rmse": 13.106457107604092,
+        "mea": 10.250486492674023,
+        "fold": 0,
+        "model": "knn",
+        "num_neighbors": 13
+    },
+    {
+        "elapse_time": 0.051080942153930664,
+        "mse": 225.9041282969678,
+        "rmse": 13.047701469247153,
+        "mea": 10.26193635440294,
+        "fold": 0,
+        "model": "knn",
+        "num_neighbors": 14
+    },
+    {
+        "elapse_time": 0.0025949478149414062,
+        "mse": 271.3063344001712,
+        "rmse": 14.290699910743875,
+        "mea": 12.349314847358414,
+        "fold": 0,
+        "model": "decision_tree",
+        "max_depth": 2
+    },
+    {
+        "elapse_time": 0.004343986511230469,
+        "mse": 247.82035689652812,
+        "rmse": 13.660200487809428,
+        "mea": 11.272001653335108,
+        "fold": 0,
+        "model": "decision_tree",
+        "max_depth": 4
+    },
+    {
+        "elapse_time": 0.006540536880493164,
+        "mse": 223.92970553985796,
+        "rmse": 12.987418093475837,
+        "mea": 10.194204864485556,
+        "fold": 0,
+        "model": "decision_tree",
+        "max_depth": 6
+    },
+    {
+        "elapse_time": 0.007294654846191406,
+        "mse": 202.5138363951039,
+        "rmse": 12.354525792777958,
+        "mea": 9.22242816373234,
+        "fold": 0,
+        "model": "decision_tree",
+        "max_depth": 8
+    },
+    {
+        "elapse_time": 0.009398698806762695,
+        "mse": 140.3031594841564,
+        "rmse": 10.28389437239182,
+        "mea": 6.40172004412528,
+        "fold": 0,
+        "model": "decision_tree",
+        "max_depth": 10
+    },
+    {
+        "elapse_time": 0.009503602981567383,
+        "mse": 61.82147122391513,
+        "rmse": 6.827634125871552,
+        "mea": 2.860281533006179,
+        "fold": 0,
+        "model": "decision_tree",
+        "max_depth": 12
+    },
+    {
+        "elapse_time": 0.009532928466796875,
+        "mse": 22.474268121769427,
+        "rmse": 4.105185502385677,
+        "mea": 1.056040262375875,
+        "fold": 0,
+        "model": "decision_tree",
+        "max_depth": 14
+    },
+    {
+        "elapse_time": 0.010084867477416992,
+        "mse": 5.321215029962774e-31,
+        "rmse": 7.017863756754331e-16,
+        "mea": 2.3298013191661396e-16,
+        "fold": 0,
+        "model": "decision_tree",
+        "max_depth": 16
+    },
+    {
+        "elapse_time": 0.01057744026184082,
+        "mse": 5.2398753785697885e-31,
+        "rmse": 6.917899901872054e-16,
+        "mea": 2.306499577236848e-16,
+        "fold": 0,
+        "model": "decision_tree",
+        "max_depth": 18
+    },
+    {
+        "elapse_time": 0.003815174102783203,
+        "mse": 271.3628978936158,
+        "rmse": 14.292177233423525,
+        "mea": 12.450086561444976,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 1
+    },
+    {
+        "elapse_time": 0.0062749385833740234,
+        "mse": 247.85464280970788,
+        "rmse": 13.661126787437135,
+        "mea": 11.243881886635696,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 1
+    },
+    {
+        "elapse_time": 0.004673480987548828,
+        "mse": 133.9077034677704,
+        "rmse": 10.04408870565198,
+        "mea": 6.076561088544637,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 1
+    },
+    {
+        "elapse_time": 0.005543708801269531,
+        "mse": 89.32053208612884,
+        "rmse": 8.194963220192532,
+        "mea": 4.084627277975379,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 1
+    },
+    {
+        "elapse_time": 0.00589752197265625,
+        "mse": 271.3105699562082,
+        "rmse": 14.29081096920279,
+        "mea": 12.342134553191633,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 2
+    },
+    {
+        "elapse_time": 0.008019208908081055,
+        "mse": 230.680571860676,
+        "rmse": 13.18373298000535,
+        "mea": 10.578816153461466,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 2
+    },
+    {
+        "elapse_time": 0.011003255844116211,
+        "mse": 139.38017101931072,
+        "rmse": 10.24892246168726,
+        "mea": 8.155528737574876,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 2
+    },
+    {
+        "elapse_time": 0.012240409851074219,
+        "mse": 94.75592968125598,
+        "rmse": 8.447135990815317,
+        "mea": 5.610084466341235,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 2
+    },
+    {
+        "elapse_time": 0.009687423706054688,
+        "mse": 271.31092133698775,
+        "rmse": 14.290819215803408,
+        "mea": 12.341645056197521,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 3
+    },
+    {
+        "elapse_time": 0.012384891510009766,
+        "mse": 227.5364092165714,
+        "rmse": 13.092644400280234,
+        "mea": 11.06837122656996,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 3
+    },
+    {
+        "elapse_time": 0.01585865020751953,
+        "mse": 158.8603903831776,
+        "rmse": 10.940962534445184,
+        "mea": 8.868639963614854,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 3
+    },
+    {
+        "elapse_time": 0.018097400665283203,
+        "mse": 129.75164320493457,
+        "rmse": 9.886841305418224,
+        "mea": 7.467941634529225,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 3
+    },
+    {
+        "elapse_time": 0.01163792610168457,
+        "mse": 271.3053118623782,
+        "rmse": 14.29067373056283,
+        "mea": 12.395427221147939,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 4
+    },
+    {
+        "elapse_time": 0.01652216911315918,
+        "mse": 245.98110350649372,
+        "rmse": 13.609427534035524,
+        "mea": 11.278677169766004,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 4
+    },
+    {
+        "elapse_time": 0.016972064971923828,
+        "mse": 133.2769005809973,
+        "rmse": 10.018560220736028,
+        "mea": 7.688644595069647,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 4
+    },
+    {
+        "elapse_time": 0.01757025718688965,
+        "mse": 81.74481865718961,
+        "rmse": 7.838804987050316,
+        "mea": 5.348332560564759,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 4
+    },
+    {
+        "elapse_time": 0.01148223876953125,
+        "mse": 271.30036519290167,
+        "rmse": 14.290542936258275,
+        "mea": 12.369376623790131,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 5
+    },
+    {
+        "elapse_time": 0.016879558563232422,
+        "mse": 224.4103682013712,
+        "rmse": 13.003917899501673,
+        "mea": 10.740035033434735,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 5
+    },
+    {
+        "elapse_time": 0.02262711524963379,
+        "mse": 149.71141176009536,
+        "rmse": 10.621477830029246,
+        "mea": 8.587865117926974,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 5
+    },
+    {
+        "elapse_time": 0.02643299102783203,
+        "mse": 92.40914734292909,
+        "rmse": 8.337648284400636,
+        "mea": 6.132968805551688,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 5
+    },
+    {
+        "elapse_time": 0.014711141586303711,
+        "mse": 271.3106391222311,
+        "rmse": 14.290813068481688,
+        "mea": 12.341994633151764,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 6
+    },
+    {
+        "elapse_time": 0.02089715003967285,
+        "mse": 222.85902490132102,
+        "rmse": 12.958875513732352,
+        "mea": 10.804470830841352,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 6
+    },
+    {
+        "elapse_time": 0.02427196502685547,
+        "mse": 126.15433820866748,
+        "rmse": 9.750487661724597,
+        "mea": 6.867583194232002,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 6
+    },
+    {
+        "elapse_time": 0.033323049545288086,
+        "mse": 131.91465939754198,
+        "rmse": 9.973187021597441,
+        "mea": 7.445292052458807,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 6
+    },
+    {
+        "elapse_time": 0.018496036529541016,
+        "mse": 271.30680648590555,
+        "rmse": 14.290710831454163,
+        "mea": 12.34852107391191,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 7
+    },
+    {
+        "elapse_time": 0.025710344314575195,
+        "mse": 230.05298125890022,
+        "rmse": 13.164425114262045,
+        "mea": 11.040861983843138,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 7
+    },
+    {
+        "elapse_time": 0.02897191047668457,
+        "mse": 141.6408119994894,
+        "rmse": 10.329216239742498,
+        "mea": 7.394456106199569,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 7
+    },
+    {
+        "elapse_time": 0.038309574127197266,
+        "mse": 111.6984856572705,
+        "rmse": 9.170365229573735,
+        "mea": 6.995933074078461,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 7
+    },
+    {
+        "elapse_time": 0.02091193199157715,
+        "mse": 271.3006160167546,
+        "rmse": 14.29054962491773,
+        "mea": 12.367052578922435,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 8
+    },
+    {
+        "elapse_time": 0.03179764747619629,
+        "mse": 217.4132047523362,
+        "rmse": 12.799280362962406,
+        "mea": 10.816548511806682,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 8
+    },
+    {
+        "elapse_time": 0.03890275955200195,
+        "mse": 128.78956523365846,
+        "rmse": 9.850656450562326,
+        "mea": 7.165358870062782,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 8
+    },
+    {
+        "elapse_time": 0.04185295104980469,
+        "mse": 106.38439963398052,
+        "rmse": 8.943724777645716,
+        "mea": 6.642497966040577,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 8
+    },
+    {
+        "elapse_time": 0.022752046585083008,
+        "mse": 271.3016428488115,
+        "rmse": 14.290575868010047,
+        "mea": 12.361805210187063,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 9
+    },
+    {
+        "elapse_time": 0.03576064109802246,
+        "mse": 222.05550031693383,
+        "rmse": 12.93552683133349,
+        "mea": 10.800255753589703,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 9
+    },
+    {
+        "elapse_time": 0.04126930236816406,
+        "mse": 186.45530362528368,
+        "rmse": 11.852450516425469,
+        "mea": 9.570430216591433,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 9
+    },
+    {
+        "elapse_time": 0.06326055526733398,
+        "mse": 137.70647381442086,
+        "rmse": 10.181935295221106,
+        "mea": 7.869608864934954,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 9
+    },
+    {
+        "elapse_time": 0.03217434883117676,
+        "mse": 271.30957745856176,
+        "rmse": 14.290783006376946,
+        "mea": 12.34376273485717,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 10
+    },
+    {
+        "elapse_time": 0.03115057945251465,
+        "mse": 234.40382128858764,
+        "rmse": 13.287503910106315,
+        "mea": 11.113331796389316,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 10
+    },
+    {
+        "elapse_time": 0.04057741165161133,
+        "mse": 139.3248970946332,
+        "rmse": 10.245938415319507,
+        "mea": 7.62927044534264,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 10
+    },
+    {
+        "elapse_time": 0.04912376403808594,
+        "mse": 77.58580878686655,
+        "rmse": 7.635519290975581,
+        "mea": 5.1580435862564356,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 10
+    },
+    {
+        "elapse_time": 0.025928497314453125,
+        "mse": 271.3050529533438,
+        "rmse": 14.290666699600992,
+        "mea": 12.351933814695151,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 11
+    },
+    {
+        "elapse_time": 0.040167808532714844,
+        "mse": 224.2574732353947,
+        "rmse": 12.99871194513502,
+        "mea": 10.935864938774833,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 11
+    },
+    {
+        "elapse_time": 0.050705909729003906,
+        "mse": 168.24934903681887,
+        "rmse": 11.259674893899275,
+        "mea": 9.104574705978283,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 11
+    },
+    {
+        "elapse_time": 0.05901956558227539,
+        "mse": 78.17893580004956,
+        "rmse": 7.669078931966912,
+        "mea": 5.453023748875125,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 11
+    },
+    {
+        "elapse_time": 0.029588699340820312,
+        "mse": 271.302691848892,
+        "rmse": 14.290604469235198,
+        "mea": 12.357994691124418,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 12
+    },
+    {
+        "elapse_time": 0.042062997817993164,
+        "mse": 235.20184770291112,
+        "rmse": 13.309778406614612,
+        "mea": 11.165191685123638,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 12
+    },
+    {
+        "elapse_time": 0.051828861236572266,
+        "mse": 135.80190138449024,
+        "rmse": 10.116406671975211,
+        "mea": 7.987620163971855,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 12
+    },
+    {
+        "elapse_time": 0.0555417537689209,
+        "mse": 90.48731891068472,
+        "rmse": 8.249773925280387,
+        "mea": 6.053165330376337,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 12
+    },
+    {
+        "elapse_time": 0.028655529022216797,
+        "mse": 271.3120876492964,
+        "rmse": 14.290851015566465,
+        "mea": 12.339895190087256,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 13
+    },
+    {
+        "elapse_time": 0.04168105125427246,
+        "mse": 235.99312211888915,
+        "rmse": 13.332045692635367,
+        "mea": 11.159601230449638,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 13
+    },
+    {
+        "elapse_time": 0.05635976791381836,
+        "mse": 136.03636076123638,
+        "rmse": 10.125329433531856,
+        "mea": 8.019255481843778,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 13
+    },
+    {
+        "elapse_time": 0.06056094169616699,
+        "mse": 107.26924928115464,
+        "rmse": 8.985626697725651,
+        "mea": 6.93305926915378,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 13
+    },
+    {
+        "elapse_time": 0.03388476371765137,
+        "mse": 271.33108426269956,
+        "rmse": 14.29135281536196,
+        "mea": 12.319321722389484,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 14
+    },
+    {
+        "elapse_time": 0.052663326263427734,
+        "mse": 224.32957427720513,
+        "rmse": 13.000697190914778,
+        "mea": 10.959479550539541,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 14
+    },
+    {
+        "elapse_time": 0.07203102111816406,
+        "mse": 134.11789386434532,
+        "rmse": 10.05344846817452,
+        "mea": 7.861699072499644,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 14
+    },
+    {
+        "elapse_time": 0.08238840103149414,
+        "mse": 103.18458469867352,
+        "rmse": 8.814723151753945,
+        "mea": 6.659880211496069,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 14
+    },
+    {
+        "elapse_time": 0.045920372009277344,
+        "mse": 271.3163671148789,
+        "rmse": 14.290963324701236,
+        "mea": 12.334336093199331,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 15
+    },
+    {
+        "elapse_time": 0.05361819267272949,
+        "mse": 225.13568250100522,
+        "rmse": 13.023838708620614,
+        "mea": 11.011011683346737,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 15
+    },
+    {
+        "elapse_time": 0.06849479675292969,
+        "mse": 146.88742641850163,
+        "rmse": 10.52032274835542,
+        "mea": 8.483596031242099,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 15
+    },
+    {
+        "elapse_time": 0.0769498348236084,
+        "mse": 86.38148206088437,
+        "rmse": 8.060393019339854,
+        "mea": 5.8330373254330645,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 15
+    },
+    {
+        "elapse_time": 0.041083574295043945,
+        "mse": 271.3027967484456,
+        "rmse": 14.2906061550553,
+        "mea": 12.357806529184124,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 16
+    },
+    {
+        "elapse_time": 0.06142425537109375,
+        "mse": 228.26204519387022,
+        "rmse": 13.113293837326177,
+        "mea": 11.056805801061223,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 16
+    },
+    {
+        "elapse_time": 0.07075047492980957,
+        "mse": 145.8554381232629,
+        "rmse": 10.4836327367927,
+        "mea": 8.426639977046406,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 16
+    },
+    {
+        "elapse_time": 0.08074522018432617,
+        "mse": 114.94963393409779,
+        "rmse": 9.301478486825248,
+        "mea": 7.045603348198745,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 16
+    },
+    {
+        "elapse_time": 0.04360032081604004,
+        "mse": 271.31286847134703,
+        "rmse": 14.290873117740057,
+        "mea": 12.338731706134624,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 17
+    },
+    {
+        "elapse_time": 0.06136727333068848,
+        "mse": 226.73447577178501,
+        "rmse": 13.069671017213642,
+        "mea": 11.025102711226163,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 17
+    },
+    {
+        "elapse_time": 0.07553505897521973,
+        "mse": 140.09880168146287,
+        "rmse": 10.27516599699043,
+        "mea": 8.165362766038706,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 17
+    },
+    {
+        "elapse_time": 0.08170294761657715,
+        "mse": 69.5534833729497,
+        "rmse": 7.226332386594684,
+        "mea": 4.798990259792819,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 17
+    },
+    {
+        "elapse_time": 0.040517568588256836,
+        "mse": 271.30898799520327,
+        "rmse": 14.29077002049169,
+        "mea": 12.344557786759117,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 18
+    },
+    {
+        "elapse_time": 0.06249523162841797,
+        "mse": 227.38731206040794,
+        "rmse": 13.088346889851609,
+        "mea": 11.059068900326233,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 18
+    },
+    {
+        "elapse_time": 0.08783340454101562,
+        "mse": 142.10042448988477,
+        "rmse": 10.348294460448324,
+        "mea": 8.241162979564452,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 18
+    },
+    {
+        "elapse_time": 0.09241724014282227,
+        "mse": 144.05725234027904,
+        "rmse": 10.419972643085394,
+        "mea": 7.782833554174029,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 18
+    },
+    {
+        "elapse_time": 0.043580055236816406,
+        "mse": 271.317072954543,
+        "rmse": 14.290983308190873,
+        "mea": 12.333429213943825,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 19
+    },
+    {
+        "elapse_time": 0.06280183792114258,
+        "mse": 223.50664116512982,
+        "rmse": 12.977046611009142,
+        "mea": 10.940259098658013,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 19
+    },
+    {
+        "elapse_time": 0.07838129997253418,
+        "mse": 139.43868323363617,
+        "rmse": 10.25089406321404,
+        "mea": 8.16853230420689,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 19
+    },
+    {
+        "elapse_time": 0.09361052513122559,
+        "mse": 96.82331584040952,
+        "rmse": 8.533866358777159,
+        "mea": 6.466629785033008,
+        "fold": 0,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 19
+    },
+    {
+        "elapse_time": 0.0015037059783935547,
+        "mse": 298.23574133152425,
+        "rmse": 14.9896253069056,
+        "mea": 13.622578606609471,
+        "fold": 1,
+        "model": "linear_regression"
+    },
+    {
+        "elapse_time": 0.02839040756225586,
+        "mse": 241.30381138392886,
+        "rmse": 13.488468585733449,
+        "mea": 5.512276785714255,
+        "fold": 1,
+        "model": "knn",
+        "num_neighbors": 1
+    },
+    {
+        "elapse_time": 0.030668973922729492,
+        "mse": 151.32046099950315,
+        "rmse": 10.68012929112914,
+        "mea": 5.8723958333333215,
+        "fold": 1,
+        "model": "knn",
+        "num_neighbors": 2
+    },
+    {
+        "elapse_time": 0.037836313247680664,
+        "mse": 143.2204401592841,
+        "rmse": 10.390563142963162,
+        "mea": 6.54761904761894,
+        "fold": 1,
+        "model": "knn",
+        "num_neighbors": 3
+    },
+    {
+        "elapse_time": 0.03310441970825195,
+        "mse": 153.3227492042818,
+        "rmse": 10.750970652341563,
+        "mea": 7.251488095238185,
+        "fold": 1,
+        "model": "knn",
+        "num_neighbors": 4
+    },
+    {
+        "elapse_time": 0.032736778259277344,
+        "mse": 171.26816548446072,
+        "rmse": 11.362768892310578,
+        "mea": 7.981547619047807,
+        "fold": 1,
+        "model": "knn",
+        "num_neighbors": 5
+    },
+    {
+        "elapse_time": 0.034844398498535156,
+        "mse": 185.9242994527541,
+        "rmse": 11.838485306916562,
+        "mea": 8.545336612654477,
+        "fold": 1,
+        "model": "knn",
+        "num_neighbors": 6
+    },
+    {
+        "elapse_time": 0.034101247787475586,
+        "mse": 197.5252483997094,
+        "rmse": 12.202137884796679,
+        "mea": 8.994791666666886,
+        "fold": 1,
+        "model": "knn",
+        "num_neighbors": 7
+    },
+    {
+        "elapse_time": 0.03547525405883789,
+        "mse": 206.48581217447892,
+        "rmse": 12.475582683078878,
+        "mea": 9.327799479166652,
+        "fold": 1,
+        "model": "knn",
+        "num_neighbors": 8
+    },
+    {
+        "elapse_time": 0.03690338134765625,
+        "mse": 215.589634990552,
+        "rmse": 12.747588866736805,
+        "mea": 9.651827050264751,
+        "fold": 1,
+        "model": "knn",
+        "num_neighbors": 9
+    },
+    {
+        "elapse_time": 0.03864264488220215,
+        "mse": 221.6626480406742,
+        "rmse": 12.925867879613108,
+        "mea": 9.888950892857261,
+        "fold": 1,
+        "model": "knn",
+        "num_neighbors": 10
+    },
+    {
+        "elapse_time": 0.040079593658447266,
+        "mse": 226.56776394730426,
+        "rmse": 13.068183348942298,
+        "mea": 10.070690912097328,
+        "fold": 1,
+        "model": "knn",
+        "num_neighbors": 11
+    },
+    {
+        "elapse_time": 0.0571599006652832,
+        "mse": 227.97463586016514,
+        "rmse": 13.108543452390625,
+        "mea": 10.178478422619163,
+        "fold": 1,
+        "model": "knn",
+        "num_neighbors": 12
+    },
+    {
+        "elapse_time": 0.05413651466369629,
+        "mse": 227.59860341014166,
+        "rmse": 13.097662239224988,
+        "mea": 10.23852449633704,
+        "fold": 1,
+        "model": "knn",
+        "num_neighbors": 13
+    },
+    {
+        "elapse_time": 0.05368208885192871,
+        "mse": 225.03874817889871,
+        "rmse": 13.023960810092973,
+        "mea": 10.252577593537461,
+        "fold": 1,
+        "model": "knn",
+        "num_neighbors": 14
+    },
+    {
+        "elapse_time": 0.0023429393768310547,
+        "mse": 269.93393946007467,
+        "rmse": 14.254616303021715,
+        "mea": 12.335321289458433,
+        "fold": 1,
+        "model": "decision_tree",
+        "max_depth": 2
+    },
+    {
+        "elapse_time": 0.0037686824798583984,
+        "mse": 247.11666833902223,
+        "rmse": 13.640894774131775,
+        "mea": 11.307370343807634,
+        "fold": 1,
+        "model": "decision_tree",
+        "max_depth": 4
+    },
+    {
+        "elapse_time": 0.005099773406982422,
+        "mse": 224.46661221454414,
+        "rmse": 13.002931290694002,
+        "mea": 10.269438848725288,
+        "fold": 1,
+        "model": "decision_tree",
+        "max_depth": 6
+    },
+    {
+        "elapse_time": 0.0072214603424072266,
+        "mse": 184.65803297263605,
+        "rmse": 11.795516586976595,
+        "mea": 8.414317905060743,
+        "fold": 1,
+        "model": "decision_tree",
+        "max_depth": 8
+    },
+    {
+        "elapse_time": 0.007465362548828125,
+        "mse": 135.63645120387446,
+        "rmse": 10.121443322287465,
+        "mea": 6.1885995320633,
+        "fold": 1,
+        "model": "decision_tree",
+        "max_depth": 10
+    },
+    {
+        "elapse_time": 0.008764982223510742,
+        "mse": 63.6701140899733,
+        "rmse": 6.930119806245479,
+        "mea": 2.8714639372900277,
+        "fold": 1,
+        "model": "decision_tree",
+        "max_depth": 12
+    },
+    {
+        "elapse_time": 0.009515047073364258,
+        "mse": 22.625992222374595,
+        "rmse": 4.119019276229263,
+        "mea": 1.0221238938053157,
+        "fold": 1,
+        "model": "decision_tree",
+        "max_depth": 14
+    },
+    {
+        "elapse_time": 0.008828401565551758,
+        "mse": 5.499942395578581e-31,
+        "rmse": 7.153827854682169e-16,
+        "mea": 2.383621344469097e-16,
+        "fold": 1,
+        "model": "decision_tree",
+        "max_depth": 16
+    },
+    {
+        "elapse_time": 0.00926351547241211,
+        "mse": 5.172773931733009e-31,
+        "rmse": 6.963422630528656e-16,
+        "mea": 2.312190204512539e-16,
+        "fold": 1,
+        "model": "decision_tree",
+        "max_depth": 18
+    },
+    {
+        "elapse_time": 0.003293752670288086,
+        "mse": 269.92783316846834,
+        "rmse": 14.254455665469038,
+        "mea": 12.312732992106007,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 1
+    },
+    {
+        "elapse_time": 0.004276752471923828,
+        "mse": 247.14251139352385,
+        "rmse": 13.641609661636139,
+        "mea": 11.330759813536277,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 1
+    },
+    {
+        "elapse_time": 0.004805803298950195,
+        "mse": 224.46733316649102,
+        "rmse": 13.002958165825811,
+        "mea": 10.216808631324136,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 1
+    },
+    {
+        "elapse_time": 0.006077766418457031,
+        "mse": 202.65716871066843,
+        "rmse": 12.358737233071134,
+        "mea": 9.267055426643365,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 1
+    },
+    {
+        "elapse_time": 0.005059003829956055,
+        "mse": 269.9418030271964,
+        "rmse": 14.254820591658174,
+        "mea": 12.2743968417213,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 2
+    },
+    {
+        "elapse_time": 0.0059583187103271484,
+        "mse": 223.69799945366177,
+        "rmse": 12.982740109238705,
+        "mea": 10.894231914344024,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 2
+    },
+    {
+        "elapse_time": 0.008915424346923828,
+        "mse": 224.48037746821228,
+        "rmse": 13.003328715657894,
+        "mea": 10.283631546465813,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 2
+    },
+    {
+        "elapse_time": 0.009821414947509766,
+        "mse": 87.4189819453644,
+        "rmse": 8.108014708136388,
+        "mea": 4.061725908712135,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 2
+    },
+    {
+        "elapse_time": 0.0066525936126708984,
+        "mse": 269.9278909620246,
+        "rmse": 14.254456512876251,
+        "mea": 12.313517385040015,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 3
+    },
+    {
+        "elapse_time": 0.00880742073059082,
+        "mse": 227.8151098243884,
+        "rmse": 13.100679847873343,
+        "mea": 11.014915173165909,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 3
+    },
+    {
+        "elapse_time": 0.011916637420654297,
+        "mse": 224.46366141001954,
+        "rmse": 13.002845761729697,
+        "mea": 10.265188150328814,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 3
+    },
+    {
+        "elapse_time": 0.015088558197021484,
+        "mse": 118.72346890282783,
+        "rmse": 9.451734842889598,
+        "mea": 6.954344812332395,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 3
+    },
+    {
+        "elapse_time": 0.00840139389038086,
+        "mse": 269.9414584498517,
+        "rmse": 14.254813641825663,
+        "mea": 12.347243233621477,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 4
+    },
+    {
+        "elapse_time": 0.012002944946289062,
+        "mse": 231.1617205378659,
+        "rmse": 13.195837463004189,
+        "mea": 11.103416831390438,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 4
+    },
+    {
+        "elapse_time": 0.01711750030517578,
+        "mse": 137.8588351272186,
+        "rmse": 10.192073469548294,
+        "mea": 8.084895064260055,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 4
+    },
+    {
+        "elapse_time": 0.022471189498901367,
+        "mse": 98.10812047354149,
+        "rmse": 8.58790497936798,
+        "mea": 6.216035084648897,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 4
+    },
+    {
+        "elapse_time": 0.014764070510864258,
+        "mse": 269.9280938303281,
+        "rmse": 14.254462478029055,
+        "mea": 12.316305527622006,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 5
+    },
+    {
+        "elapse_time": 0.019140958786010742,
+        "mse": 222.91413167307496,
+        "rmse": 12.96031867175318,
+        "mea": 10.687238819697841,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 5
+    },
+    {
+        "elapse_time": 0.023379802703857422,
+        "mse": 129.9317093504055,
+        "rmse": 9.894824300810596,
+        "mea": 7.674689879699062,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 5
+    },
+    {
+        "elapse_time": 0.029824256896972656,
+        "mse": 142.54637352968655,
+        "rmse": 10.360496941083342,
+        "mea": 7.8865271342126135,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 5
+    },
+    {
+        "elapse_time": 0.016994953155517578,
+        "mse": 269.9280450256687,
+        "rmse": 14.254460923575571,
+        "mea": 12.306204560725286,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 6
+    },
+    {
+        "elapse_time": 0.023043394088745117,
+        "mse": 235.72734588181777,
+        "rmse": 13.32472389319595,
+        "mea": 11.17900891026791,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 6
+    },
+    {
+        "elapse_time": 0.02590179443359375,
+        "mse": 137.7169805894828,
+        "rmse": 10.186844757871398,
+        "mea": 8.12417936813573,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 6
+    },
+    {
+        "elapse_time": 0.028398752212524414,
+        "mse": 85.41816655525615,
+        "rmse": 8.012802660477421,
+        "mea": 5.669593444876256,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 6
+    },
+    {
+        "elapse_time": 0.01804661750793457,
+        "mse": 269.9310653140275,
+        "rmse": 14.254542625423051,
+        "mea": 12.293050528568434,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 7
+    },
+    {
+        "elapse_time": 0.025768041610717773,
+        "mse": 222.60145526087808,
+        "rmse": 12.951213855967332,
+        "mea": 10.832221633332258,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 7
+    },
+    {
+        "elapse_time": 0.032457590103149414,
+        "mse": 144.95013038496535,
+        "rmse": 10.450776207671368,
+        "mea": 8.42510394195893,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 7
+    },
+    {
+        "elapse_time": 0.03612685203552246,
+        "mse": 151.23029221984584,
+        "rmse": 10.670888708849468,
+        "mea": 8.00548966525766,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 7
+    },
+    {
+        "elapse_time": 0.01833820343017578,
+        "mse": 269.9279831465855,
+        "rmse": 14.25445928210116,
+        "mea": 12.315130906494877,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 8
+    },
+    {
+        "elapse_time": 0.02998208999633789,
+        "mse": 223.464094786229,
+        "rmse": 12.97597081645057,
+        "mea": 10.88130100038743,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 8
+    },
+    {
+        "elapse_time": 0.034245967864990234,
+        "mse": 124.12397083703003,
+        "rmse": 9.670857820150827,
+        "mea": 7.0366948844913395,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 8
+    },
+    {
+        "elapse_time": 0.036927223205566406,
+        "mse": 98.89223014405538,
+        "rmse": 8.625194961072005,
+        "mea": 6.355246242024454,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 8
+    },
+    {
+        "elapse_time": 0.02979755401611328,
+        "mse": 269.9341698848393,
+        "rmse": 14.254621960071178,
+        "mea": 12.33574110061715,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 9
+    },
+    {
+        "elapse_time": 0.04284262657165527,
+        "mse": 227.62466925876836,
+        "rmse": 13.09519564705377,
+        "mea": 11.040988730880207,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 9
+    },
+    {
+        "elapse_time": 0.04030466079711914,
+        "mse": 133.2000627033468,
+        "rmse": 10.018457043853802,
+        "mea": 7.843760157085039,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 9
+    },
+    {
+        "elapse_time": 0.04580283164978027,
+        "mse": 118.47525360406068,
+        "rmse": 9.444066660024058,
+        "mea": 7.120263214377992,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 9
+    },
+    {
+        "elapse_time": 0.027361631393432617,
+        "mse": 269.92859987864136,
+        "rmse": 14.254475325380673,
+        "mea": 12.319696587994983,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 10
+    },
+    {
+        "elapse_time": 0.034175872802734375,
+        "mse": 222.5829748645217,
+        "rmse": 12.950948143729903,
+        "mea": 10.769539613508675,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 10
+    },
+    {
+        "elapse_time": 0.046942949295043945,
+        "mse": 162.91945004916127,
+        "rmse": 11.07922081203377,
+        "mea": 8.955671262924136,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 10
+    },
+    {
+        "elapse_time": 0.05333685874938965,
+        "mse": 110.08958763071139,
+        "rmse": 9.102517130771538,
+        "mea": 6.768591065358476,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 10
+    },
+    {
+        "elapse_time": 0.02808237075805664,
+        "mse": 269.9507477039327,
+        "rmse": 14.255059640189193,
+        "mea": 12.35805258196901,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 11
+    },
+    {
+        "elapse_time": 0.06677508354187012,
+        "mse": 224.54390796224573,
+        "rmse": 13.007818602034087,
+        "mea": 10.623737635823142,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 11
+    },
+    {
+        "elapse_time": 0.06809091567993164,
+        "mse": 153.51801802420778,
+        "rmse": 10.755088159882119,
+        "mea": 8.695751498880888,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 11
+    },
+    {
+        "elapse_time": 0.06746530532836914,
+        "mse": 117.70736404919943,
+        "rmse": 9.415331571611189,
+        "mea": 6.985469120682187,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 11
+    },
+    {
+        "elapse_time": 0.030146121978759766,
+        "mse": 269.95206850931754,
+        "rmse": 14.255089790699799,
+        "mea": 12.359207848554709,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 12
+    },
+    {
+        "elapse_time": 0.03784537315368652,
+        "mse": 225.1942369897594,
+        "rmse": 13.025649206340082,
+        "mea": 10.96983710833255,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 12
+    },
+    {
+        "elapse_time": 0.05740070343017578,
+        "mse": 146.86647113747307,
+        "rmse": 10.519627893479349,
+        "mea": 8.466018367564518,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 12
+    },
+    {
+        "elapse_time": 0.06618046760559082,
+        "mse": 135.7890540110684,
+        "rmse": 10.112092129491224,
+        "mea": 7.738835002020726,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 12
+    },
+    {
+        "elapse_time": 0.03322196006774902,
+        "mse": 269.9296608113743,
+        "rmse": 14.254503895188293,
+        "mea": 12.324422895235378,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 13
+    },
+    {
+        "elapse_time": 0.048938751220703125,
+        "mse": 228.9182567510572,
+        "rmse": 13.132130400570551,
+        "mea": 11.061004004480727,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 13
+    },
+    {
+        "elapse_time": 0.0616757869720459,
+        "mse": 148.75089879647086,
+        "rmse": 10.588614602242952,
+        "mea": 8.536189153040885,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 13
+    },
+    {
+        "elapse_time": 0.06318068504333496,
+        "mse": 164.80384122610653,
+        "rmse": 11.139336583342834,
+        "mea": 8.382461458771598,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 13
+    },
+    {
+        "elapse_time": 0.033342838287353516,
+        "mse": 269.9291872305244,
+        "rmse": 14.254491061984714,
+        "mea": 12.322545064193271,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 14
+    },
+    {
+        "elapse_time": 0.047276973724365234,
+        "mse": 224.83273587230838,
+        "rmse": 13.015282558630153,
+        "mea": 10.95283849370709,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 14
+    },
+    {
+        "elapse_time": 0.10234904289245605,
+        "mse": 141.0674691265758,
+        "rmse": 10.310046331238,
+        "mea": 8.26919142791472,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 14
+    },
+    {
+        "elapse_time": 0.08623266220092773,
+        "mse": 99.46205560637351,
+        "rmse": 8.65249128728464,
+        "mea": 6.454223751936315,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 14
+    },
+    {
+        "elapse_time": 0.0408782958984375,
+        "mse": 269.9451125604632,
+        "rmse": 14.254909703404612,
+        "mea": 12.35180522656672,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 15
+    },
+    {
+        "elapse_time": 0.05977678298950195,
+        "mse": 222.82900772431415,
+        "rmse": 12.957668850981532,
+        "mea": 10.856892741740722,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 15
+    },
+    {
+        "elapse_time": 0.07175636291503906,
+        "mse": 138.74587405015382,
+        "rmse": 10.225406751142476,
+        "mea": 8.145728365139433,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 15
+    },
+    {
+        "elapse_time": 0.0747687816619873,
+        "mse": 101.88316722041465,
+        "rmse": 8.75798440585718,
+        "mea": 6.5790951241251205,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 15
+    },
+    {
+        "elapse_time": 0.03490900993347168,
+        "mse": 269.94550082646197,
+        "rmse": 14.254921818371713,
+        "mea": 12.352347209608808,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 16
+    },
+    {
+        "elapse_time": 0.051377296447753906,
+        "mse": 223.63338047941468,
+        "rmse": 12.980899212331735,
+        "mea": 10.919165493406028,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 16
+    },
+    {
+        "elapse_time": 0.06324362754821777,
+        "mse": 144.12884431382616,
+        "rmse": 10.421166001332205,
+        "mea": 8.407283256131647,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 16
+    },
+    {
+        "elapse_time": 0.07755327224731445,
+        "mse": 87.1866539646782,
+        "rmse": 8.094558296832476,
+        "mea": 5.7934262659118785,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 16
+    },
+    {
+        "elapse_time": 0.054550886154174805,
+        "mse": 269.9293693530198,
+        "rmse": 14.254495760743941,
+        "mea": 12.323265199931882,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 17
+    },
+    {
+        "elapse_time": 0.08367323875427246,
+        "mse": 223.85635994698325,
+        "rmse": 12.987213006631288,
+        "mea": 10.894852418228657,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 17
+    },
+    {
+        "elapse_time": 0.07958602905273438,
+        "mse": 130.4632485865753,
+        "rmse": 9.915014007673605,
+        "mea": 7.754878063982514,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 17
+    },
+    {
+        "elapse_time": 0.08786320686340332,
+        "mse": 91.84876544105889,
+        "rmse": 8.310411544193054,
+        "mea": 6.108169657744707,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 17
+    },
+    {
+        "elapse_time": 0.042110443115234375,
+        "mse": 269.9377830909944,
+        "rmse": 14.254720088496425,
+        "mea": 12.342164900353282,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 18
+    },
+    {
+        "elapse_time": 0.0619196891784668,
+        "mse": 224.3967069541866,
+        "rmse": 13.002731077075689,
+        "mea": 10.944134396020301,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 18
+    },
+    {
+        "elapse_time": 0.09475517272949219,
+        "mse": 129.22418145538128,
+        "rmse": 9.867817172000942,
+        "mea": 7.634241085301994,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 18
+    },
+    {
+        "elapse_time": 0.08780026435852051,
+        "mse": 97.46553019930884,
+        "rmse": 8.560631324134887,
+        "mea": 6.477041572374472,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 18
+    },
+    {
+        "elapse_time": 0.04698443412780762,
+        "mse": 269.9348230399987,
+        "rmse": 14.254639208939418,
+        "mea": 12.336986127912104,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 2,
+        "num_estimators": 19
+    },
+    {
+        "elapse_time": 0.0697176456451416,
+        "mse": 223.2090773004704,
+        "rmse": 12.9686897736507,
+        "mea": 10.887364796251768,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 4,
+        "num_estimators": 19
+    },
+    {
+        "elapse_time": 0.0805661678314209,
+        "mse": 128.09369975558516,
+        "rmse": 9.82452499942451,
+        "mea": 7.5505747184121015,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 6,
+        "num_estimators": 19
+    },
+    {
+        "elapse_time": 0.08992218971252441,
+        "mse": 91.57929096171421,
+        "rmse": 8.299671921655856,
+        "mea": 5.992645859994853,
+        "fold": 1,
+        "model": "random_forest",
+        "max_depth": 8,
+        "num_estimators": 19
+    }
+]
