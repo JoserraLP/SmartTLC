@@ -88,7 +88,7 @@ class Predictor:
 
                 # Remove unused model features
                 traffic_data = traffic_data.drop(
-                    labels=['tl_program', 'waiting_time_veh_e_w', 'waiting_time_veh_n_s', 'turning_vehicles'], axis=1)
+                    labels=['tl_program', 'waiting_time_veh_e_w', 'waiting_time_veh_n_s', 'turning_vehicles', 'roads'], axis=1)
 
                 # Remove the number of vehicles passing features
                 if self._date:

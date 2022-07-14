@@ -110,7 +110,10 @@ class TraCISimulator:
         traffic_info = {traffic_light: {'tl_program': '', 'passing_veh_n_s': 0, 'passing_veh_e_w': 0,
                                         'waiting_time_veh_n_s': 0, 'waiting_time_veh_e_w': 0,
                                         'turning_vehicles': {'forward': 0, 'right': 0, 'left': 0, 'veh_passed': set()},
-                                        'veh_passed': set()}
+                                        'veh_passed': set(),
+                                        'roads': set([self._traci.lane.getEdgeID(lane) for lane in
+                                                              set(self._traci.trafficlight.getControlledLanes(
+                                                                  traffic_light))])}
                         for traffic_light in self._traci.trafficlight.getIDList()}
 
         # Append traffic global information
@@ -147,10 +150,10 @@ class TraCISimulator:
                 # Update the route of the passed vehicles or count them
                 if load_vehicles_dir != '':
                     # If vehicles are not loaded means that they need to calculate the new route
-    
+
                     # Retrieve turn probabilities from turn pattern
                     turn_probabilities = self._turn_pattern.retrieve_turn_prob(timestep=cur_timestep)
-    
+
                     # Update current vehicles routes to enable turns
                     # Insert the traffic info to store the number of turning vehicles
                     update_route_with_turns(self._traci, traffic_info, rows=self._topology_rows,
@@ -192,7 +195,10 @@ class TraCISimulator:
                                                 'waiting_time_veh_n_s': 0, 'waiting_time_veh_e_w': 0,
                                                 'turning_vehicles': {'forward': 0, 'right': 0, 'left': 0,
                                                                      'veh_passed': turning_veh_passed[traffic_light]},
-                                                'veh_passed': veh_passed[traffic_light]}
+                                                'veh_passed': veh_passed[traffic_light],
+                                                'roads': set([self._traci.lane.getEdgeID(lane) for lane in
+                                                              set(self._traci.trafficlight.getControlledLanes(
+                                                                  traffic_light))])}
                                 for traffic_light in self._traci.trafficlight.getIDList()}
 
             # Simulate a step
