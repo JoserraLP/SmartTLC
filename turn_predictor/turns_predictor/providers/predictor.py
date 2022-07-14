@@ -113,7 +113,7 @@ class Predictor:
         turn_predictions_per_road = dict()
         # iterate over the roads and store the predictions
         for index, road in enumerate(roads):
-            turn_predictions_per_road[road] = turn_predictions[index]
+            turn_predictions_per_road[road] = turn_predictions[index][0]
 
         # Publish the message
         self._mqtt_client.publish(topic=PREDICTION_TOPIC, payload=str(turn_predictions_per_road).replace('\'', '"')
