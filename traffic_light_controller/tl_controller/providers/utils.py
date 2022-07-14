@@ -221,7 +221,7 @@ def get_new_vehicles(traci):
     return vehicles_per_direction
 
 
-def update_route_with_turns(traci, traffic_info, rows, cols, turn_prob):
+def update_route_with_turns_by_junction(traci, traffic_info, rows, cols, turn_prob):
     """
     Update the route of the vehicles that have passed the detectors in order to perform turns
 
@@ -265,7 +265,7 @@ def update_route_with_turns(traci, traffic_info, rows, cols, turn_prob):
                                            'turn_prob_forward': float(turn_prob_forward[index])}
 
         # Default probabilities (0.0, 0.0, 100.0)
-        for index, junction in enumerate(list(set(all_junctions)-set(specific_junctions))):
+        for index, junction in enumerate(list(set(all_junctions) - set(specific_junctions))):
             prod_by_junctions[junction] = {'turn_prob_right': 0.0, 'turn_prob_left': 0.0, 'turn_prob_forward': 100.0}
 
     # Retrieve current vehicles
@@ -352,6 +352,220 @@ def update_route_with_turns(traci, traffic_info, rows, cols, turn_prob):
                                 # Increase the TL right counter
                                 traffic_info[next_traffic_light]['turning_vehicles']['right'] += 1
                             elif turn_type < prod_by_junctions[next_traffic_light]['turn_prob_left']:  # left
+                                # Increase the TL left counter
+                                traffic_info[next_traffic_light]['turning_vehicles']['left'] += 1
+
+                            # Count new vehicle
+                            traffic_info[next_traffic_light]['turning_vehicles']['veh_passed'].add(vehicle)
+
+
+def update_route_with_turns(traci, traffic_info, rows, cols, turn_prob):
+    """
+    Update the route of the vehicles that have passed the detectors in order to perform turns
+
+    :param traci: TraCI instance
+    :param traffic_info: dict with the number of vehicles directions per traffic light
+    :type traffic_info: dict
+    :param rows: number of topology rows
+    :type rows: int
+    :param cols: number of topology cols
+    :type cols: int
+    :param turn_prob: probabilities of turning
+    :type turn_prob: pd.DataFrame
+    """
+
+    # Retrieve probabilities
+    turn_prob_right, turn_prob_left, turn_prob_forward, edges_id = turn_prob.values.T.tolist()
+
+    # Get all junctions
+    all_edges = [edge for edge in traci.edge.getIDList() if ':' not in edge]
+
+    prod_by_edges = {}
+    # Same probabilities to all roads
+    if edges_id == 'all':
+        for index, edge in enumerate(all_edges):
+            prod_by_edges[edge] = {'turn_prob_right': float(turn_prob_right) + float(turn_prob_forward),
+                                           'turn_prob_left': float(turn_prob_left) + float(turn_prob_right) +
+                                                             float(turn_prob_forward),
+                                           'turn_prob_forward': float(turn_prob_forward)}
+    else:  # Specific probabilities
+        turn_prob_right, turn_prob_left, turn_prob_forward, specific_edges = turn_prob_right.split(';'), \
+                                                                                 turn_prob_left.split(';'), \
+                                                                                 turn_prob_forward.split(';'), \
+                                                                                 edges_id.split(';')
+        # Specific junctions
+        for index, edge in enumerate(specific_edges):
+            prod_by_edges[edge] = {'turn_prob_right': float(turn_prob_right[index]) +
+                                                              float(turn_prob_forward[index]),
+                                           'turn_prob_left': float(turn_prob_left[index]) +
+                                                             float(turn_prob_forward[index]) +
+                                                             float(turn_prob_right[index]),
+                                           'turn_prob_forward': float(turn_prob_forward[index])}
+
+        # Default probabilities (20.0, 20.0, 60.0)
+        for index, edge in enumerate(list(set(all_edges) - set(specific_edges))):
+            prod_by_edges[edge] = DEFAULT_TURN_DICT
+
+    # Get all vehicles from simulation
+    vehicles = traci.vehicle.getIDList()
+
+    # Iterate over the vehicles
+    # for direction, vehicles in cur_vehicles.items():
+    for vehicle in vehicles:
+
+        # Get current vehicle road, origin and destination
+        vehicle_road = traci.vehicle.getRoadID(vehicle)
+        if ':' not in vehicle_road:
+            origin, destination = vehicle_road.split('_')
+            origin_id = int(origin[1:])
+            destination_id = int(destination[1:])
+
+            # Retrieve next traffic light
+            next_traffic_light = destination if 'c' in destination else ''
+
+            if next_traffic_light != '':
+
+                target = ''
+                # Vehicle is not updated yet
+                if vehicle not in traffic_info[next_traffic_light]['turning_vehicles']['veh_passed']:
+                    # Retrieve turn type [0.0, 1.0)
+                    turn_type = random.random()
+
+                    # TODO reduce boolean logic
+                    if turn_type < prod_by_edges[vehicle_road]['turn_prob_forward']:  # straight
+                        # Increase the TL straight counter
+                        traffic_info[next_traffic_light]['turning_vehicles']['forward'] += 1
+                    elif turn_type < prod_by_edges[vehicle_road]['turn_prob_right']:  # right
+                        if 'n' in origin:
+                            # Left-side roads
+                            if destination_id % cols == 1:
+                                target = f'c{destination_id}_w{origin_id}'
+                            else:
+                                target = f'c{destination_id}_c{destination_id-1}'
+                        elif 's' in origin:
+                            # Right-side roads
+                            if destination_id % cols == 0:
+                                target = f'c{destination_id}_e{int(destination_id/cols)}'
+                            else:
+                                target = f'c{destination_id}_c{destination_id+1}'
+                        elif 'e' in origin:
+                            # Up-side roads
+                            if math.ceil(destination_id / cols) == 1:
+                                target = f'c{destination_id}_n{cols}'
+                            else:
+                                target = f'c{destination_id}_c{destination_id-cols}'
+                        elif 'w' in origin:
+                            # Down-side roads
+                            if math.ceil(destination_id / cols) == rows:
+                                target = f'c{destination_id}_s1'
+                            else:
+                                target = f'c{destination_id}_c{destination_id+cols}'
+                        elif 'c' in origin and 'c' in destination:
+                            # From left to right
+                            if origin_id == destination_id-1:
+                                # Down-side roads
+                                if math.ceil(destination_id / cols) == rows:
+                                    target = f'c{destination_id}_s{destination_id-(cols*(rows-1))}'
+                                else:
+                                    target = f'c{destination_id}_c{destination_id+cols}'
+                            # From right to left
+                            elif origin_id == destination_id+1:
+                                # Up-side roads
+                                if math.ceil(destination_id / cols) == 1:
+                                    target = f'c{destination_id}_n{destination_id}'
+                                else:
+                                    target = f'c{destination_id}_c{destination_id-cols}'
+                            # From down to up
+                            elif origin_id == destination_id + cols:
+                                # Right-side roads
+                                if destination_id % cols == 0:
+                                    target = f'c{destination_id}_e{math.ceil(destination_id/cols)}'
+                                else:
+                                    target = f'c{destination_id}_c{destination_id + 1}'
+                            # From up to down
+                            elif origin_id == destination_id - cols:
+                                # Left-side roads
+                                if destination_id % cols == 1:
+                                    target = f'c{destination_id}_w{math.ceil(destination_id/cols)}'
+                                else:
+                                    target = f'c{destination_id}_c{destination_id - 1}'
+
+                        #print(f"Vehicle {vehicle} turning RIGHT from {vehicle_road} to {target}")
+
+                    elif turn_type < prod_by_edges[vehicle_road]['turn_prob_left']:  # left
+                        if 'n' in origin:
+                            # Right-side roads
+                            if destination_id % cols == 0:
+                                target = f'c{destination_id}_e1'
+                            else:
+                                target = f'c{destination_id}_c{destination_id + 1}'
+                        elif 's' in origin:
+                            # Left-side roads
+                            if destination_id % cols == 1:
+                                target = f'c{destination_id}_w{rows}'
+                            else:
+                                target = f'c{destination_id}_c{destination_id - 1}'
+                        elif 'e' in origin:
+                            # Down-side roads
+                            if math.ceil(destination_id / cols) == rows:
+                                target = f'c{destination_id}_s{cols}'
+                            else:
+                                target = f'c{destination_id}_c{destination_id + cols}'
+                        elif 'w' in origin:
+                            # Up-side roads
+                            if math.ceil(destination_id / cols) == 1:
+                                target = f'c{destination_id}_n1'
+                            else:
+                                target = f'c{destination_id}_c{destination_id - cols}'
+                        elif 'c' in origin and 'c' in destination:
+                            # From left to right
+                            if origin_id == destination_id - 1:
+                                # Up-side roads
+                                if math.ceil(destination_id / cols) == 1:
+                                    target = f'c{destination_id}_n{destination_id}'
+                                else:
+                                    target = f'c{destination_id}_c{destination_id - cols}'
+                            # From right to left
+                            elif origin_id == destination_id + 1:
+                                # Down-side roads
+                                if math.ceil(destination_id / cols) == rows:
+                                    target = f'c{destination_id}_s{destination_id%cols}'
+                                else:
+                                    target = f'c{destination_id}_c{destination_id + cols}'
+                            # From down to up
+                            elif origin_id == destination_id + cols:
+                                # Left-side roads
+                                if destination_id % cols == 1:
+                                    target = f'c{destination_id}_w{math.ceil(destination_id/cols)}'
+                                else:
+                                    target = f'c{destination_id}_c{destination_id - 1}'
+                            # From up to down
+                            elif origin_id == destination_id - cols:
+                                # Right-side roads
+                                if destination_id % cols == 0:
+                                    target = f'c{destination_id}_e{math.ceil(destination_id/cols)}'
+                                else:
+                                    target = f'c{destination_id}_c{destination_id + 1}'
+
+                        #print(f"Vehicle {vehicle} turning LEFT from {vehicle_road} to {target}")
+
+                    # Calculate if the target is valid
+                    if target != '':
+                        # Retrieve vehicle type
+                        cur_vehicle_type = traci.vehicle.getTypeID(vehicle)
+                        # Find new route
+                        new_route = traci.simulation.findRoute(fromEdge=vehicle_road,
+                                                               toEdge=target,
+                                                               vType=cur_vehicle_type).edges
+
+                        # Check if there are routes available (from and to) based on the current vehicle type
+                        if new_route:
+                            # Set new route
+                            traci.vehicle.setRoute(vehicle, new_route)
+                            if turn_type < prod_by_edges[vehicle_road]['turn_prob_right']:  # right
+                                # Increase the TL right counter
+                                traffic_info[next_traffic_light]['turning_vehicles']['right'] += 1
+                            elif turn_type < prod_by_edges[vehicle_road]['turn_prob_left']:  # left
                                 # Increase the TL left counter
                                 traffic_info[next_traffic_light]['turning_vehicles']['left'] += 1
 

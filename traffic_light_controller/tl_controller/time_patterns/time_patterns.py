@@ -34,8 +34,8 @@ class TimePattern:
 
         if time_pattern_id < len(self._pattern):
             if 'turn_right' or 'turn_left' or 'turn_forward' in self._pattern.columns:
-                # Index for those columns are 1,2 and 3 respectively. Besides retrieve the junction id (4)
-                return self._pattern.iloc[time_pattern_id, [1, 2, 3, 4]]
+                # Index for relevant columns
+                return self._pattern.iloc[time_pattern_id, 4:]
 
     def get_num_sim(self):
         """
