@@ -1,5 +1,5 @@
 import ast
-
+import copy
 import paho.mqtt.client as mqtt
 import pandas as pd
 from turns_predictor.ml.model_predictor import ModelPredictor
@@ -69,7 +69,6 @@ class Predictor:
 
         # Define used variables
         processed_data = []
-        roads = set()
 
         # Iterate over the traffic lights
         for traffic_light_info in traffic_info:
@@ -101,19 +100,21 @@ class Predictor:
                         'date_day': traffic_data['date_day'][0],
                         'hour': traffic_data['hour'][0]
                     })
-                    roads.add(road)
 
         # Parse dict list to dataframe
         processed_data = pd.DataFrame.from_dict(processed_data)
 
+        # Store an auxiliary variable for training data as it is parsed
+        aux_processed_data = copy.copy(processed_data)
+
         # Retrieve predictions
-        turn_predictions = self._model_predictor.predict(processed_data, num_models=self._num_models)[0]
+        turn_predictions = self._model_predictor.predict(aux_processed_data, num_models=self._num_models)[0]
 
         # Define a dict for the predicted values per road
         turn_predictions_per_road = dict()
         # iterate over the roads and store the predictions
-        for index, road in enumerate(roads):
-            turn_predictions_per_road[road] = turn_predictions[index].tolist()
+        for index, row in processed_data.iterrows():
+            turn_predictions_per_road[row['road']] = turn_predictions[index].tolist()
 
         # Publish the message
         self._mqtt_client.publish(topic=PREDICTION_TOPIC, payload=str(turn_predictions_per_road).replace('\'', '"')
