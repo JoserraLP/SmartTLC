@@ -55,9 +55,6 @@ class TraCISimulator:
         # TL program to the middle one
         self._tl_program = TL_PROGRAMS[int(len(TL_PROGRAMS) / 2)]
 
-        # Initialize the Traffic Light Adapter
-        self._adapter = TrafficLightAdapter()
-
         # Create the MQTT client, its callbacks and its connection to the broker
         self._mqtt_client = mqtt.Client()
         self._mqtt_client.connect(mqtt_url, mqtt_port)
@@ -102,6 +99,12 @@ class TraCISimulator:
         # Retrieve network topology
         self._topology_rows, self._topology_cols = get_topology_dim(self._traci)
 
+        # Retrieve all roads
+        roads = [road for road in self._traci.edge.getIDList() if ':' not in road]
+
+        # Initialize the Traffic Light Adapter
+        adapter = TrafficLightAdapter(rows=self._topology_rows, cols=self._topology_cols, roads=roads)
+
         # Load TL program
         for traffic_light in self._traci.trafficlight.getIDList():
             self._traci.trafficlight.setProgram(traffic_light, self._tl_program)
@@ -128,7 +131,7 @@ class TraCISimulator:
         while cur_timestep < max_timesteps:
 
             # Get new TL programs per traffic light from the adapter
-            adapter_tl_programs = self._adapter.get_new_tl_program()
+            adapter_tl_programs = adapter.get_new_tl_program()
 
             # If the adapter is available (it returns a dict with TL programs per traffic light)
             if adapter_tl_programs is not None:
@@ -209,7 +212,7 @@ class TraCISimulator:
 
         # Close TraCI simulation, the adapter connection and the MQTT client
         self._traci.close()
-        self._adapter.close_connection()
+        adapter.close_connection()
         self._mqtt_client.loop_stop()
 
     def apply_tl_programs(self, tl_programs: dict):

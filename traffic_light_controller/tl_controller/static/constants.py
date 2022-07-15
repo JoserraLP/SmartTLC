@@ -47,7 +47,8 @@ DEFAULT_TURN_PATTERN_FILE = '../../sumo-utils/time_patterns/base_patterns/turn_p
 MQTT_URL = '172.20.0.2'
 MQTT_PORT = 1883
 TRAFFIC_INFO_TOPIC = 'traffic_info'
-PREDICTION_TOPIC = 'traffic_prediction'
+TRAFFIC_PREDICTION_TOPIC = 'traffic_prediction'
+TURN_PREDICTION_TOPIC = 'turn_prediction'
 ANALYSIS_TOPIC = 'traffic_analysis'
 
 # Threshold for analyzer and prediction error
@@ -87,3 +88,5 @@ TRAFFIC_TYPE_TL_ALGORITHMS = {
     '10': 'static_program_4',
     '11': 'static_program_3',
 }
+
+DEFAULT_TURN_DICT = {'turn_prob_right': 20.0, 'turn_prob_left': 20.0, 'turn_prob_forward': 60.0}
