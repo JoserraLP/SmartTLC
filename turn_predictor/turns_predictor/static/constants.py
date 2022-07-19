@@ -15,4 +15,4 @@ MQTT_PORT = 1883
 TRAFFIC_INFO_TOPIC = 'traffic_info'
 PREDICTION_TOPIC = 'turn_prediction'
 
-DEFAULT_TURN_DICT = {'turn_prob_right': 20.0, 'turn_prob_left': 20.0, 'turn_prob_forward': 60.0}
+DEFAULT_TURN_DICT = {'turn_prob_right': 0.20, 'turn_prob_left': 0.20, 'turn_prob_forward': 0.60}
