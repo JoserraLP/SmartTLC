@@ -1,16 +1,21 @@
-import optparse
+import argparse
 import os
 import stat
 
 from sumo_generators.config_generator import generate_flow_file
+
+from argparse_types import check_file, check_dimension, check_valid_format
 from constants import CALENDAR_PATTERN_FILE, ADAPTATION_COMPONENTS, ADAPTATION_FILE_SCHEMA
 
 
-def get_num_parent_folders(folder_name: str):
+def get_num_parent_folders(folder_name: str) -> int:
     """
+    Calculate the number of parent folders where a given folder is from the current directory.
+
     :param folder_name: folder name to be searched on parents folder.
     :type folder_name: str
     :return: number of parents folder
+    :rtype: int
     """
 
     # Directory from where search starts (Actual one); found flag and counter of folders (started to 1 because of the
@@ -27,9 +32,9 @@ def get_num_parent_folders(folder_name: str):
         else:
             # Increase counter and update the directory
             num_folders += 1
-            if cur_dir == parent_dir:  # if dir is root dir
+            if cur_dir == parent_dir:  # If dir is root dir
                 break
-            else:
+            else:  # Otherwise update the current directory
                 cur_dir = parent_dir
 
     return num_folders
@@ -37,42 +42,51 @@ def get_num_parent_folders(folder_name: str):
 
 def get_options():
     """
-    Define options for the executable script.
+    Get options for the executable script.
 
-    :return: options
-    :rtype: object
+    :return: Arguments options
     """
-    optParser = optparse.OptionParser()
-    optParser.add_option("-o", "--output-dir", dest="output_directory", action='store',
-                         help="output directory location")
+    # Create the Argument Parser
+    arg_parser = argparse.ArgumentParser(description='Script to generate an experiment based on the information '
+                                                     'provided by parameters. This script generates the folder, each '
+                                                     'adaptation approach bash and the vehicles flows related.')
+
+    # Define the arguments options
+    arg_parser.add_argument("-o", "--output-dir", dest="output_directory", action='store',
+                            help="output directory location.", required=True)
 
     # Topology parameters
-    topology_group = optparse.OptionGroup(optParser, "Network topology parameters",
-                                          "Define network related variables")
-    topology_group.add_option("-c", "--columns", dest="cols", action='store',
-                              help="grid topology columns. Actual dimension + 2")
-    topology_group.add_option("-r", "--rows", dest="rows", action='store',
-                              help="grid topology rows. Actual dimension + 2")
-    topology_group.add_option("-l", "--lanes", dest="lanes", action='store', help="grid topology lanes.")
+    topology_group = arg_parser.add_argument_group("Network topology parameters",
+                                                   description="Define network related variables")
+    topology_group.add_argument("-c", "--columns", dest="cols", action='store',
+                                help="grid topology columns. Must be greater than 1.", required=True,
+                                type=check_dimension)
+    topology_group.add_argument("-r", "--rows", dest="rows", action='store',
+                                help="grid topology rows. Must be greater than 1.", required=True, type=check_dimension)
+    topology_group.add_argument("-l", "--lanes", dest="lanes", action='store', help="grid topology lanes. "
+                                                                                    "Must be greater than 1.",
+                                required=True, type=check_dimension)
 
     # Traffic time pattern group
-    traffic_pattern_group = optparse.OptionGroup(optParser, "Time pattern parameters",
-                                                 "Select between date interval or specific time pattern")
-    traffic_pattern_group.add_option("-t", "--time-pattern", dest="time_pattern_path", action='store',
-                                     help="time pattern to create the flows.")
+    traffic_pattern_group = arg_parser.add_argument_group("Time pattern parameters",
+                                                          description="Select between date interval or specific time "
+                                                                      "pattern. One must be selected")
+    traffic_pattern_group.add_argument("-t", "--time-pattern", dest="time_pattern_path", action='store',
+                                       help="time pattern to load the flows.", type=check_file)
 
-    traffic_pattern_group.add_option("-d", "--dates", dest="dates", action="store",
-                                     help="calendar dates from start to end to simulate. Format is "
-                                          "dd/mm/yyyy-dd/mm/yyyy.")
+    traffic_pattern_group.add_argument("-d", "--dates", dest="dates", action="store",
+                                       help="calendar dates from start to end to simulate. Format is "
+                                            "dd/mm/yyyy-dd/mm/yyyy.", type=check_valid_format)
 
     # Turn pattern group
-    turn_pattern_group = optparse.OptionGroup(optParser, "Turn pattern parameters",
-                                                 "Set the turn pattern file if required")
-    turn_pattern_group.add_option("--turn-pattern", dest="turn_pattern_path", action='store',
-                                     help="turn pattern of the simulation.")
+    turn_pattern_group = arg_parser.add_argument_group("Turn pattern parameters",
+                                                       description="Set the turn pattern file if required")
+    turn_pattern_group.add_argument("--turn-pattern", dest="turn_pattern_path", action='store',
+                                    help="turn pattern of the simulation.", type=check_file)
 
-    options, args = optParser.parse_args()
-    return options
+    # Retrieve the arguments parsed
+    args = arg_parser.parse_args()
+    return args
 
 
 if __name__ == '__main__':
@@ -93,7 +107,7 @@ if __name__ == '__main__':
     # Retrieve topology parameters values
     cols, rows, lanes = int(exec_options.cols), int(exec_options.rows), int(exec_options.lanes)
 
-    # Retrieve traffic time pattern
+    # Retrieve traffic time pattern, dates interval and turn pattern
     time_pattern_path = exec_options.time_pattern_path
     dates = exec_options.dates
     turn_pattern_path = exec_options.turn_pattern_path
@@ -122,15 +136,17 @@ if __name__ == '__main__':
             # Replace ../ for /etc/ -> For Docker-compose generation
             tlc_pattern = 'pattern#' + time_pattern_path.replace('../', '/etc/')
 
+        # If turns follows a given pattern
         if turn_pattern_path:
             # Replace ../ for /etc/ -> For Docker-compose generation
             tlc_pattern += ':turn#' + turn_pattern_path.replace('../', '/etc/')
 
         # Define output executable sh file
         file_name = output_dir + '/' + adaptation_name + ".sh"
+
         # Create each sh file
         with open(file_name, "w") as adaptation_file:
-            adaptation_file.write(file_str.format(num_parent_folders=num_parent_folders*'../',
+            adaptation_file.write(file_str.format(num_parent_folders=num_parent_folders * '../',
                                                   tlc_pattern=tlc_pattern, rows=rows, cols=cols, lanes=lanes,
                                                   exp_file=f'grid_{rows}x{cols}_{adaptation_name}.xlsx',
                                                   add_components=add_components))
