@@ -1,21 +1,25 @@
 import numpy as np
 
-from dependencies_graph import DependenciesGraph
-from docker_structure import ALL_CONTAINERS, DOCKER_EXECUTION_OPTIONS, DEFAULT_ROUTE_DIR
-from decorators import check_containers
+from typing import Union
+
+from docker_generator.graph.dependencies_graph import DependenciesGraph
+from docker_generator.utils.docker_structure import ALL_CONTAINERS, DOCKER_EXECUTION_OPTIONS, DEFAULT_ROUTE_DIR
+from docker_generator.utils.decorators import check_containers
 
 
-def generate_index_list(data):
-    """ Generate a list with the indexes of the input data, compared to the default containers list
+def retrieve_container_index_list(container_names) -> list:
+    """
+    Generate a list with the indexes of the parameter containers, compared to the default containers list
 
-    :param data: List with the containers name that are related
-    :return: list with the indexes of the containers that exists in the input data
+    :param container_names: container names list
+    :return: indexes of the containers that exists in the input container_names
+    :rtype: list
     """
     # Retrieve a list of all the default containers list
-    keys, indexes = list(ALL_CONTAINERS.keys()), []
+    keys, indexes = list(ALL_CONTAINERS.keys()), list()
     # If the data is a list process each element
-    if type(data) == list:
-        for item in data:
+    if type(container_names) == list:
+        for item in container_names:
             # Retrieve the index of the item
             index = keys.index(item)
             # Check the index is valid and append it
@@ -23,7 +27,7 @@ def generate_index_list(data):
                 indexes.append(index)
     else:
         # Retrieve the index of the item
-        index = keys.index(data)
+        index = keys.index(container_names)
         # Check the index is valid and append it
         if index >= 0:
             indexes.append(index)
@@ -31,24 +35,37 @@ def generate_index_list(data):
     return list(set(indexes))
 
 
-def generate_list_items(field):
-    """ Generate a string representing the specific container field information
+def parse_field_to_str(field: Union[list, str]) -> str:
+    """ 
+    Generate a string representing the specific container field information
 
-    :param field:
-    :return:
+    :param field: container field
+    :type: list or str
+    :return: string representing a container field
+    :rtype: str
     """
     all_items_str, item_str = '', '      - \"{}\"\n'
     # If the field is a list process each element
     if type(field) == list:
         for item in field:
             all_items_str += item_str.format(item)
-    else:
+    # Otherwise it is a str
+    elif type(field) == str:
         all_items_str = item_str.format(field)
     return all_items_str
 
 
-class DockerGenerator:
-    """ Class representing the docker-compose file generator
+class DockerComposeGenerator:
+    """ 
+    Class representing the docker-compose file generator
+    
+    Attributes:
+        
+    - container_schema (str): container basic string schema
+    - network_schema (str): network basic string schema
+    - max_num_containers (int): maximum number of containers available
+    - dependencies (numpy ndarray): container dependencies matrix
+
     """
 
     def __init__(self):
@@ -71,16 +88,19 @@ class DockerGenerator:
                                "       - subnet: 172.20.0.0/16\n"
 
         # Retrieve the number of possible containers
-        self._num_containers = len(ALL_CONTAINERS.keys())
+        self._max_num_containers = len(ALL_CONTAINERS.keys())
 
         # Create the dependencies graph
-        self.dependencies = DependenciesGraph(self._num_containers)
+        self._dependencies = DependenciesGraph(self._max_num_containers)
 
-    def generate_connections_list(self):
-        """ Generate the connections list and store it in the dependencies graph
+    def generate_container_connections_matrix(self) -> None:
+        """ 
+        Generate the connections matrix and store it in the dependencies graph
+        
+        :return: None
         """
         # Define the connection matrix as a numpy matrix of zeros
-        connections_matrix = np.zeros((self._num_containers, self._num_containers))
+        connections_matrix = np.zeros((self._max_num_containers, self._max_num_containers))
 
         # Define an iterator matrix over the columns
         i = 0
@@ -89,9 +109,9 @@ class DockerGenerator:
             link_indexes, dependencies_indexes = [], []
             # Generate the lists of links and dependencies of the default containers
             if 'links' in v:
-                link_indexes = generate_index_list(data=v['links'])
+                link_indexes = retrieve_container_index_list(container_names=v['links'])
             if 'depends_on' in v:
-                dependencies_indexes = generate_index_list(data=v['depends_on'])
+                dependencies_indexes = retrieve_container_index_list(container_names=v['depends_on'])
 
             # Merge lists and remove duplicates
             total_indexes = link_indexes + list(set(dependencies_indexes) - set(link_indexes))
@@ -100,22 +120,23 @@ class DockerGenerator:
                 connections_matrix[i][index] = 1
             i += 1
         # Store the connections matrix on the dependencies graph
-        self.dependencies.graph = connections_matrix
+        self._dependencies.graph = connections_matrix
 
-    def generate_container_item(self, container_name: str, container: dict):
-        """ Generate the string representing a given container
+    def parse_container_item(self, container_name: str, container: dict) -> str:
+        """ 
+        Generate the string representing a given container
 
-        :param container_name: Container name
+        :param container_name: container name
         :type container_name: str
-        :param container: Container data
+        :param container: container data
         :type container: dict
-        :return:
+        :return: container information
+        :rtype: str
         """
-
         # Default params to None
         params = None
 
-        # Check if container has params (indicated by ':') and retrieve them
+        # Check if container has params (indicated by ':') retrieve them
         if ':' in container_name:
             params = container_name.split(':')
             # Retrieve container name and remove it from params
@@ -174,7 +195,7 @@ class DockerGenerator:
                 sumo_generator_str += f"--date {date_range}"
 
         # Generate the volumes field
-        volumes = generate_list_items(container['volumes'])
+        volumes = parse_field_to_str(container['volumes'])
 
         # If the 'build' tag is defined on the container modify the container schema and change the 'image' tag for
         # 'build' and append all the information to it
@@ -197,15 +218,15 @@ class DockerGenerator:
         # Generate the fields for all the possible info in a container (ports, env_file, user, links, depends_on,
         # command and entrypoint). More coming soon.
         if "ports" in container:
-            container_str += "    ports:\n{}".format(generate_list_items(container['ports']))
+            container_str += "    ports:\n{}".format(parse_field_to_str(container['ports']))
         if "env_file" in container:
-            container_str += "    env_file:\n{}".format(generate_list_items(container['env_file']))
+            container_str += "    env_file:\n{}".format(parse_field_to_str(container['env_file']))
         if "user" in container:
             container_str += "    user: \"{}\"\n".format(container['user'])
         if "links" in container:
-            container_str += "    links:\n{}".format(generate_list_items(container['links']))
+            container_str += "    links:\n{}".format(parse_field_to_str(container['links']))
         if "depends_on" in container:
-            container_str += "    depends_on:\n{}".format(generate_list_items(container['depends_on']))
+            container_str += "    depends_on:\n{}".format(parse_field_to_str(container['depends_on']))
         if "command" in container:
 
             # There exists some parameters
@@ -226,13 +247,15 @@ class DockerGenerator:
         return container_str
 
     @check_containers
-    def generate_containers(self, output_file: str, containers: list):
-        """ Generate the containers string and store it in the docker-compose file, both specified by params
+    def generate_containers(self, output_file: str, containers: list) -> None:
+        """ 
+        Generate all the containers string and store it in the docker-compose file, both specified by params
 
         :param output_file: Output file where the information will be stored
         :type output_file: str
         :param containers: Selected containers by the user
         :type containers: list
+        :return: None
         """
         # Open the output file as write only
         docker_file = open(output_file, 'w')
@@ -242,7 +265,7 @@ class DockerGenerator:
         docker_file.write("services: \n")
 
         # Define the generated container list and retrieve all the possible containers keys
-        generated_containers, keys = [0] * self._num_containers, list(ALL_CONTAINERS.keys())
+        generated_containers, keys = [0] * self._max_num_containers, list(ALL_CONTAINERS.keys())
         # Define index iterator over generated_containers list
         i = 0
 
@@ -257,10 +280,10 @@ class DockerGenerator:
                     container_name = [container for container in containers if k in container][0]
 
                     # Write the container info into the output file
-                    docker_file.write(self.generate_container_item(container_name, v))
+                    docker_file.write(self.parse_container_item(container_name, v))
 
                     # Retrieve connections from the dependencies graph
-                    connections = self.dependencies.graph[i]
+                    connections = self._dependencies.graph[i]
 
                     # Iterate over connections
                     for index, connection in enumerate(connections):
@@ -270,7 +293,7 @@ class DockerGenerator:
                             connection_name = keys[index]
                             connection_value = ALL_CONTAINERS[keys[index]]
                             # Generate container item and write it into the output file
-                            docker_file.write(self.generate_container_item(connection_name, connection_value))
+                            docker_file.write(self.parse_container_item(connection_name, connection_value))
 
                             # Update the flag for generated containers
                             generated_containers[index] = 1

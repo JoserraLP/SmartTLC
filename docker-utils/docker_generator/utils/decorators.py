@@ -1,9 +1,12 @@
 from functools import wraps
-from docker_structure import ALL_CONTAINERS
+from docker_generator.utils.docker_structure import ALL_CONTAINERS
 
 
 def check_containers(func):
-    """Decorator for checking valid containers"""
+    """Decorator for checking valid containers
+
+    :param func: function to execute if the containers selected are valid
+    :return: function wrapper"""
     @wraps(func)
     def wrapper_check_container(*args, **kwargs):
         # Check if all the values are False, meaning that the containers provided does not exists
