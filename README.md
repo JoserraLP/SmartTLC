@@ -29,7 +29,7 @@ Documentation is available on [Eclipse SUMO TraCI webpage](https://sumo.dlr.de/d
 ## Architecture
 The architecture is described in the next figure:
 
-![architecture](./img/architecture.png)
+![architecture](./others/img/architecture.png)
 
 Where it can be seen that most of the components have an IP direction, in order to connect between them.
 
