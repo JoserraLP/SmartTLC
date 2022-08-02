@@ -40,7 +40,7 @@ ALL_CONTAINERS = {
     'traffic_predictor_date': {
         'build': './traffic_predictor',
         'container_name': 'traffic_predictor',
-        'env_file': 'traffic_redictor/eclipse-sumo-image/env.sumo',
+        'env_file': 'traffic_predictor/eclipse-sumo-image/env.sumo',
         'restart': 'on-failure',
         'links': 'mosquitto',
         'volumes': './traffic_predictor:/etc/traffic_predictor/',
