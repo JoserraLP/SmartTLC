@@ -43,7 +43,7 @@ ALL_CONTAINERS = {
         'env_file': 'traffic_predictor/eclipse-sumo-image/env.sumo',
         'restart': 'on-failure',
         'links': 'mosquitto',
-        'volumes': './traffic_predictor:/etc/traffic_predictor/',
+        'volumes': ['./traffic_predictor:/etc/traffic_predictor/', './sumo-utils:/etc/sumo-utils/'],
         'command': 'bash -c "pip3 install -r /etc/traffic_predictor/requirements.txt && '
                    'cd /etc/traffic_predictor/t_predictor/ && dockerize -wait '
                    'tcp://172.20.0.3:8086 -timeout 120s -wait-retry-interval 40s python3 ml_trainer.py --component -n 1'
@@ -56,7 +56,7 @@ ALL_CONTAINERS = {
         'env_file': 'traffic_predictor/eclipse-sumo-image/env.sumo',
         'restart': 'on-failure',
         'links': 'mosquitto',
-        'volumes': './traffic_predictor:/etc/traffic_predictor/',
+        'volumes': ['./traffic_predictor:/etc/traffic_predictor/', './sumo-utils:/etc/sumo-utils/'],
         'command': 'bash -c "pip3 install -r /etc/traffic_predictor/requirements.txt && '
                    'cd /etc/traffic_predictor/t_predictor/ && dockerize -wait '
                    'tcp://172.20.0.3:8086 -timeout 120s -wait-retry-interval 40s python3 ml_trainer.py --component -n 1'
@@ -82,7 +82,7 @@ ALL_CONTAINERS = {
         'container_name': 'traffic_analyzer',
         'restart': 'on-failure',
         'links': 'mosquitto',
-        'volumes': './traffic_analyzer:/etc/traffic_analyzer/',
+        'volumes': ['./traffic_analyzer:/etc/traffic_analyzer/', './sumo-utils:/etc/sumo-utils/'],
         'command': 'bash -c "pip3 install -r /etc/traffic_analyzer/requirements.txt && '
                    'cd /etc/traffic_analyzer/t_analyzer/ && python3 main.py"',
         'ipv4_address': '172.20.0.8'
