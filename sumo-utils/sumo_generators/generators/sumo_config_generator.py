@@ -8,7 +8,7 @@ class SumoConfigGenerator(BaseGenerator):
     Class that generates the SUMO configuration file
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         SumoConfigGenerator initializer
         """
@@ -18,7 +18,7 @@ class SumoConfigGenerator(BaseGenerator):
         self._root.set("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance")
         self._root.set("xsi:noNamespaceSchemaLocation", "http://sumo.dlr.de/xsd/sumoConfiguration.xsd")
 
-    def set_input_files(self, files: dict):
+    def set_input_files(self, files: dict) -> None:
         """
         Add files directories to the input tag.
 
@@ -32,7 +32,7 @@ class SumoConfigGenerator(BaseGenerator):
         for file_tag, file_value in files.items():
             ET.SubElement(input_tag, file_tag, value=file_value)
 
-    def set_begin_time(self, value: int = 0):
+    def set_begin_time(self, value: int = 0) -> None:
         """
         Set the begin time for the simulation.
 
@@ -45,7 +45,7 @@ class SumoConfigGenerator(BaseGenerator):
         # Set the value
         ET.SubElement(time, "begin", value=str(value))
 
-    def set_report_policy(self, policy_values: dict):
+    def set_report_policy(self, policy_values: dict) -> None:
         """
         Add the report policy.
 

@@ -6,9 +6,14 @@ from tl_controller.generators.base_generator import BaseGenerator
 class TrafficLightProgramGenerator(BaseGenerator):
     """
     Class that generates the traffic lights programs in an additional file
+
+    :param topology_rows: number of rows
+    :type topology_rows: int
+    :param topology_cols: number of columns
+    :type topology_cols: int
     """
 
-    def __init__(self, topology_rows, topology_cols):
+    def __init__(self, topology_rows: int, topology_cols: int) -> None:
         """
         TrafficLightProgramGenerator initializer
         """
@@ -16,9 +21,9 @@ class TrafficLightProgramGenerator(BaseGenerator):
         super().__init__(tag='additional')
 
         # Define traffic lights ids
-        self._traffic_light_ids = [f'c{i}' for i in range(1, topology_rows*topology_cols+1)]
+        self._traffic_light_ids = [f'c{i}' for i in range(1, topology_rows * topology_cols + 1)]
 
-    def add_static_program(self, phases: list, program_id: str = 'static_program', offset: int = '0'):
+    def add_static_program(self, phases: list, program_id: str = 'static_program', offset: int = '0') -> None:
         """
         Add a static program with given phases.
 
@@ -40,7 +45,7 @@ class TrafficLightProgramGenerator(BaseGenerator):
             for phase in phases:
                 ET.SubElement(tl_logic, "phase", duration=phase['duration'], state=phase['state'])
 
-    def add_actuated_program(self, phases: list, params_type: str = "", params=None):
+    def add_actuated_program(self, phases: list, params_type: str = "", params: list = None) -> None:
         """
         Add a static program with given phases.
 
@@ -48,7 +53,7 @@ class TrafficLightProgramGenerator(BaseGenerator):
         :type phases: list
         :param params_type: type of the parameters
         :type params_type: str
-        :param params: actuated program params
+        :param params: actuated program params. Default to None.
         :type params: list
         :return:  None
         """

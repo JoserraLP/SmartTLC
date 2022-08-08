@@ -14,18 +14,19 @@ class NetMatrix:
     """
 
     def __init__(self, num_rows: int = MIN_ROWS, num_cols: int = MIN_COLS):
-        # Define the
+        # Define the number of rows and columns of the matrix
         self._num_rows = num_rows
         self._num_cols = num_cols
 
-        # Define the matrix
+        # Define the matrix as a 1's matrix
         self._matrix = np.ones((num_rows, num_cols), dtype='U5')  # Full string
 
-    def generate_connections_matrix(self):
+    def generate_connections_matrix(self) -> np.ndarray:
         """
         Generate connections matrix, setting the ids for each node and 0 to the corners
 
         :return: connections matrix
+        :rtype: numpy ndarray
         """
         # Retrieve corners
         corners = [(0, 0), (0, self._num_cols - 1), (self._num_rows - 1, 0), (self._num_rows - 1, self._num_cols - 1)]
@@ -41,17 +42,14 @@ class NetMatrix:
 
         return self._matrix
 
-    def generate_nodes_id(self):
+    def generate_nodes_id(self) -> None:
         """
         Generate nodes ids and store them into the matrix
 
-        :return:
+        :return: None
         """
         # Define initial ids
         c_id, n_id, w_id, e_id, s_id = 1, 1, 1, 1, 1
-
-        # Calculate the real number of rows and cols (subtracting 2)
-        actual_cols, actual_rows = self._num_cols-2, self._num_rows-2
 
         # Iterate over the matrix
         for row in range(self._num_rows):
@@ -79,16 +77,17 @@ class NetMatrix:
                     c_id += 1
 
     @property
-    def matrix(self):
+    def matrix(self) -> np.ndarray:
         """
         Getter of the connection matrix
 
         :return: connection matrix
+        :rtype: numpy ndarray
         """
         return self._matrix
 
     @matrix.setter
-    def matrix(self, matrix):
+    def matrix(self, matrix) -> None:
         """
         Setter of the connection matrix
 

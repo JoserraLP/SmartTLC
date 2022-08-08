@@ -52,8 +52,8 @@ Where the parameters defined are, grouped by its functionality:
     - **-s SUMO_CONFIG_PATH, --sumo-config-path SUMO_CONFIG_PATH**: SUMO configuration file location. Default is
       *../output/simulation.sumocfg*.
 - **Network generator**:
-    - **-r ROWS, --rows ROWS**: define the number of rows of the network. Must be greater than 2. Default is *3*.
-    - **-c COLS, --cols COLS**: define the number of cols of the network. Must be greater than 2. Default is *3*.
+    - **-r ROWS, --rows ROWS**: define the number of rows of the network. Default is *1*.
+    - **-c COLS, --cols COLS**: define the number of cols of the network. Default is *1*.
     - **-l LANES, --lanes LANES**: define the number of lanes per edge. Must be greater than 0. Default is *1*.
     - **--distance DISTANCE**: define the distance between the nodes. Must be greater than 0. Default is *500*. 
     - **-j JUNCTION, --junction JUNCTION**: define the junction type on central nodes. Possible types are: *priority*, 
@@ -67,9 +67,10 @@ Where the parameters defined are, grouped by its functionality:
 - **Traffic Light generator**:
   - **-i INTERVAL, --interval INTERVAL**: interval of seconds to be used in the traffic light generator. 
   - **-p, --proportion**: flag to use proportions in the traffic light generator.
+  - **--allow-add-turn-phases**: flag allowing left turns in traffic light phases. Default to False.  
     
 - **Flows generator**:
-  - **time-pattern TIME_PATTERN**: define the path where the time pattern file is stored to create the flows.
+  - **time-pattern TIME_PATTERN_PATH**: define the path where the time pattern file is stored to create the flows.
   - **--dates DATES**: indicates the range of dates, retrieved from the generated calendar, that will be simulated. 
   The format is dd/mm/yyyy-dd/mm/yyyy, where the first date is the start, and the second one is the end, both included.
   

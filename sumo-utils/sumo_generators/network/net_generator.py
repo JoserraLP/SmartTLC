@@ -28,7 +28,7 @@ class NetGenerator:
 
     def __init__(self, rows: int = MIN_ROWS, cols: int = MIN_COLS, lanes: int = MIN_LANES, distance: float = DISTANCE,
                  junction: str = JUNCTION_TYPE, tl_type: str = TL_TYPE, tl_layout: str = TL_LAYOUT,
-                 nodes_path: str = DEFAULT_NODES_DIR, edges_path: str = DEFAULT_EDGES_DIR):
+                 nodes_path: str = DEFAULT_NODES_DIR, edges_path: str = DEFAULT_EDGES_DIR) -> None:
 
         # Define class attributes
         self._distance = distance
@@ -45,7 +45,7 @@ class NetGenerator:
         # Generate connections matrix
         self._net_matrix = net_matrix.generate_connections_matrix()
 
-    def generate_topology(self):
+    def generate_topology(self) -> None:
         """
         Generate the nodes and edges of the topology and store the generated files
 
@@ -89,16 +89,18 @@ class NetGenerator:
         with open(self._edges_path, "w") as edges:
             print(all_edges, file=edges)
 
-    def generate_edges(self, node_id: str, row: int, col: int):
+    def generate_edges(self, node_id: str, row: int, col: int) -> str:
         """
-        Creates a string representing two edges between a node and the closes center node
+        Creates a string representing two edges between a node and the closes center node.
+
         :param node_id: node identifier
         :type node_id: str
         :param row: row where the node is in the matrix
         :type row: int
         :param col: col where the node is in the matrix
         :type col: int
-        :return: string representing one node
+        :return: string representing the edges of one node
+        :rtype: str
         """
 
         # Define the edges string and the closest center node identifier
@@ -140,9 +142,10 @@ class NetGenerator:
 
         return edges
 
-    def generate_node(self, node_id: str, row: int, col: int, junction_type: str, tl_type: str, tl_layout: str):
+    def generate_node(self, node_id: str, row: int, col: int, junction_type: str, tl_type: str, tl_layout: str) -> str:
         """
-        Creates a string representing one node
+        Creates a string representing one node.
+
         :param node_id: node identifier
         :type node_id: str
         :param row: row where the node is in the matrix
@@ -156,6 +159,7 @@ class NetGenerator:
         :param tl_layout: central nodes traffic light layout
         :type tl_layout: str
         :return: string representing one node
+        :rtype: str
         """
 
         # If the node is the central one, define the type as parameter

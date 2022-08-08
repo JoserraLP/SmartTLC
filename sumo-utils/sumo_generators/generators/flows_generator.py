@@ -8,7 +8,7 @@ class FlowsGenerator(BaseGenerator):
     Class that generates the different flows of a SUMO simulation
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         FlowsGenerator initializer
         """
@@ -16,7 +16,7 @@ class FlowsGenerator(BaseGenerator):
         super().__init__(tag='routes')
         self._flows = []
 
-    def add_flows(self, flows: list):
+    def add_flows(self, flows: list) -> None:
         """
         Add flows into a list variable
 
@@ -26,7 +26,7 @@ class FlowsGenerator(BaseGenerator):
         """
         self._flows.extend(flows)
 
-    def store_flows(self):
+    def store_flows(self) -> None:
         """
         Add flows to the XML object.
 
@@ -40,7 +40,7 @@ class FlowsGenerator(BaseGenerator):
             # This attribute is set in this way because the keyword "from" is reserved on Python
             flow_tag.set('from', flow['from'])
 
-    def clean_flows(self):
+    def clean_flows(self) -> None:
         """
         Clean the XML object creating an empty "routes" tag.
 

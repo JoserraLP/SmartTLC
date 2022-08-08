@@ -7,12 +7,15 @@ from xml.dom import minidom
 class BaseGenerator(ABC):
     """
     Parent abstract class for creating generators objects
+
+    :param tag: node tag
+    :type tag: str
     """
 
-    def __init__(self, tag):
+    def __init__(self, tag: str) -> None:
         self._root = ET.Element(tag)
 
-    def write_output_file(self, output_path: str):
+    def write_output_file(self, output_path: str) -> None:
         """
         Write the XML object into an output file given by parameters.
 
