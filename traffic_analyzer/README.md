@@ -8,14 +8,22 @@ In order to analyze those traffic values, there have been defined several bounds
 traffic types passing per each direction.
 - Lower bound: it is the upper bound of the previous type, except for the lowest type that is 0.
 - Upper bound: it is calculated by adding the number of vehicles per hour and the maximum possible value in its range, 
-  and dividing this sum by three (selected manually). 
+  and dividing this sum by proportion value based on the temporal window selected. 
 
 ## Usage
 
-This component does not have any execution parameters, and it is executed with the following command:
+This component is executed with the following command:
 ```sh
-python main.py
+python main.py <parameters>
 ```
+
+Where the parameters defined are:
+
+- **-h, --help**: show this help message and exit.
+- **-t TEMPORAL_WINDOW, --temporal-window TEMPORAL_WINDOW**: define the traffic monitoring temporal window. 
+  Default is 5.
+- **--middleware_host MQTT_URL**: middleware broker host. Default is 172.20.0.2.
+- **--middleware_port MQTT_PORT**: middleware broker port. Default is 1883.
 
 ## Data model
 The followed schema to publish the analyzed information into the middleware is:
