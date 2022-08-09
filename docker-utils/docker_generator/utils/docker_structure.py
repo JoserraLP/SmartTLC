@@ -87,6 +87,18 @@ ALL_CONTAINERS = {
                    'cd /etc/traffic_analyzer/t_analyzer/ && python3 main.py"',
         'ipv4_address': '172.20.0.8'
     },
+    'turn_predictor': {
+        'image': 'python:3.8.12-slim',
+        'container_name': 'turn_predictor',
+        'restart': 'on-failure',
+        'links': 'mosquitto',
+        'volumes': ['./turn_predictor:/etc/turn_predictor/'],
+        'command': 'bash -c "pip3 install -r /etc/turn_predictor/requirements.txt && '
+                   'cd /etc/turn_predictor/turns_predictor/ && dockerize -wait '
+                   'tcp://172.20.0.3:8086 -timeout 120s -wait-retry-interval 40s python3 ml_trainer.py --component -n 1'
+                   ' --middleware_host 172.20.0.2 --middleware_port 1883"',
+        'ipv4_address': '172.20.0.12'
+    },
     'player': {
         'image': 'python:3.8.12-slim',
         'container_name': 'player',
