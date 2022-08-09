@@ -10,4 +10,4 @@ numpy
 paho-mqtt~=1.6.1
 
 # Editable install with no version control
--e /etc/urn_predictor/
+-e /etc/turn_predictor/

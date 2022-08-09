@@ -1,8 +1,18 @@
 import numpy as np
 
 
-def generate_node_list(rows, cols):
-    # Define the matrix
+def create_matrix(rows: int, cols: int) -> np.ndarray:
+    """
+    Creates the network topology matrix
+
+    :param rows: matrix topology rows
+    :type rows: int
+    :param cols: matrix topology cols
+    :type cols: int
+    :return: network matrix
+    :rtype: numpy ndarray
+    """
+    # Define the matrix as a 1's matrix
     matrix = np.ones((rows, cols), dtype='U5')  # Full string
 
     # Retrieve corners
@@ -41,27 +51,58 @@ def generate_node_list(rows, cols):
             else:
                 matrix[row][col] = f'c{c_id}'
                 c_id += 1
+    return matrix
 
-    all_edges = []
+
+def generate_roads_list(rows: int, cols: int) -> list:
+    """
+    Generates a list of all the edges (roads) of the topology.
+    
+    :param rows: matrix topology rows
+    :type rows: int
+    :param cols: matrix topology cols
+    :type cols: int
+    :return: list of all the roads
+    :rtype: list
+    """
+    # Create the network matrix
+    matrix = create_matrix(rows=rows, cols=cols)
+
+    # Define the roads list
+    all_roads = []
 
     # Iterate over the matrix
     for row in range(matrix.shape[0]):
         for col in range(matrix.shape[1]):
-            # If the matrix cell is valid, generate the node and edges
+            # If the matrix cell is valid, get the roads info
             if matrix[row][col] != '0':
                 # Retrieve the node identifier
                 node_id = matrix[row][col]
 
                 # EDGES
-                all_edges += generate_edges(matrix, node_id=node_id, row=row, col=col)
+                all_roads += get_roads_by_node(matrix, node_id=node_id, row=row, col=col)
 
-    return all_edges
+    return all_roads
 
 
-def generate_edges(matrix, node_id, row, col):
-    edges = []
-    # Define the edges string and the closest center node identifier
-    closest_center_id = ""
+def get_roads_by_node(matrix: np.ndarray, node_id: str, row: int, col: int) -> list:
+    """
+    Get roads names given a node.
+
+    :param matrix: network topology matrix.
+    :type matrix: numpy ndarray
+    :param node_id: node identifier.
+    :type node_id: str
+    :param row: actual topology row
+    :type row: int
+    :param col: actual topology column.
+    :type col: int
+    :return: all the roads of a given node
+    :rtype: list
+    """
+
+    # Define the roads list and the closest center node identifier
+    roads, closest_center_id = [], ""
 
     # Retrieve closest center node identifier depending on the node id
     if 'n' in node_id:
@@ -78,18 +119,18 @@ def generate_edges(matrix, node_id, row, col):
         right_closest_id = matrix[row][col + 1]
         if 'c' in right_closest_id:
 
-            edges.append(node_id + "_" + right_closest_id)
-            edges.append(right_closest_id + "_" + node_id)
+            roads.append(node_id + "_" + right_closest_id)
+            roads.append(right_closest_id + "_" + node_id)
 
         # Below node
         below_closest_id = matrix[row + 1][col]
         if 'c' in below_closest_id:
-            edges.append(node_id + "_" + below_closest_id)
-            edges.append(below_closest_id + "_" + node_id)
+            roads.append(node_id + "_" + below_closest_id)
+            roads.append(below_closest_id + "_" + node_id)
 
     # If there are close center node, store the from and to nodes and the priority
     if closest_center_id:
-        edges.append(node_id + "_" + closest_center_id)
-        edges.append(closest_center_id + "_" + node_id)
+        roads.append(node_id + "_" + closest_center_id)
+        roads.append(closest_center_id + "_" + node_id)
 
-    return edges
+    return roads

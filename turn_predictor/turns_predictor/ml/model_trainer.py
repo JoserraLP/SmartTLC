@@ -1,9 +1,8 @@
 import json
-import pandas as pd
 import os
 
-from turns_predictor.ml.regression_algorithms import KNearestNeighbors, RandomForest, DecisionTree, LRegression
 from turns_predictor.ml.dataset import TurnDataset
+from turns_predictor.ml.regression_algorithms import KNearestNeighbors, RandomForest, DecisionTree, LRegression
 from turns_predictor.ml.utils import save_model
 from turns_predictor.static.constants import MODEL_BASE_DIR, MODEL_PARSED_VALUES_FILE, MODEL_PERFORMANCE_FILE, \
     KNN_MAX_NEIGHBORS, DT_MAX_DEPTH, RF_NUM_ESTIMATORS, RF_MAX_DEPTH, MODEL_NUM_FOLDS
@@ -12,46 +11,39 @@ from turns_predictor.static.constants import MODEL_BASE_DIR, MODEL_PARSED_VALUES
 class ModelTrainer:
     """
     Class for training all the different Machine Learning models.
+
+    :param dataset: dataset where all the turns information is stored.
+    :type dataset: TurnDataset
+    :param model_base_dir: directory where the models are stored. Default to '../regression_models/'.
+    :type model_base_dir: str
+    :param parsed_values_file: directory where the dataset parsed values are stored.
+        Default to '../output/parsed_values_dict.json'.
+    :type parsed_values_file: str
+    :param performance_file: File where the training performances have been stored.
+        Default to ''../regression_models/ml_performance.json''.
+    :type performance_file: str
     """
 
-    def __init__(self, dataset: TurnDataset, model_base_dir: str = '',
-                 parsed_values_file: str = MODEL_PARSED_VALUES_FILE, performance_file: str = '',) \
+    def __init__(self, dataset: TurnDataset, model_base_dir: str = MODEL_BASE_DIR,
+                 parsed_values_file: str = MODEL_PARSED_VALUES_FILE, performance_file: str = MODEL_PERFORMANCE_FILE) \
             -> None:
         """
         ModelTrainer initializer.
-        
-        :param dataset: Directory where the input dataset is stored. Default to ../output/simulation_calendar.csv.
-        :type dataset: TurnDataset
-        :param model_base_dir: directory where the models are stored. Default to ''. If empty, use default values with
-            'date' flag.
-        :type model_base_dir: str
-        :param parsed_values_file: directory where the dataset parsed values are stored. 
-            Default to ../output/parsed_values_dict.json.
-        :type parsed_values_file: str
-        :param performance_file: File where the training performances have been stored. Default to ''.
-            If empty, use default values with 'date' flag.
-        :type performance_file: str
         """
         # Initialize class variables
         self._performances = list()
         self._models = list()
         self._parsed_values_file = parsed_values_file
 
-        # Retrieve models loaded dir base on the parameters
-        if model_base_dir != '':
-            self._base_dir = model_base_dir
-        else:
-            self._base_dir = MODEL_BASE_DIR
+        # Model base directory
+        self._base_dir = model_base_dir
 
         # If the directory does not exists, create it
         if not os.path.exists(self._base_dir):
             os.makedirs(self._base_dir)
 
-        # Retrieve models performance dir base on the parameters
-        if performance_file != '':
-            self._performance_file = performance_file
-        else:
-            self._performance_file = MODEL_PERFORMANCE_FILE
+        # Model performance file
+        self._performance_file = performance_file
 
         # Define the input dataset file
         self._dataset = dataset
@@ -151,10 +143,10 @@ class ModelTrainer:
 
             else:
                 elapsed_time, mse, rmse, mea = model.training_process(
-                    k_fold_dataset['X_train'].values,
-                    k_fold_dataset['y_train'].values,
-                    k_fold_dataset['X_test'].values,
-                    k_fold_dataset['y_test'].values)
+                    k_fold_dataset['X_train'],
+                    k_fold_dataset['y_train'],
+                    k_fold_dataset['X_test'],
+                    k_fold_dataset['y_test'])
 
             # Retrieve results
             results = {'elapse_time': elapsed_time, 'mse': mse, 'rmse': rmse, 'mea': mea, 'fold': k_fold_index,

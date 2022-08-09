@@ -1,126 +1,46 @@
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import KFold, train_test_split
-from turns_predictor.net_gen.network_generator import generate_node_list
+from turns_predictor.ml.utils import drop_nan_values, parse_str_features
+from turns_predictor.net_gen.network_generator import generate_roads_list
 from turns_predictor.static.constants import DEFAULT_TURN_DICT
 
 
-def drop_nan_values(dataset: pd.DataFrame) -> None:
-    """
-    Replace the NaN values indicated by parameters with its mean.
-
-    :param dataset: dataset where the data will be replaced
-    :type dataset: DataFrame
-    :return: Non
-    """
-    # Drop the rows with NaN values
-    dataset.dropna(axis=0)
-
-
-def parse_str_features(dataset: pd.DataFrame) -> dict:
-    """
-    Parse the string features to int values
-
-    :param dataset: dataset where the data will be replaced
-    :type dataset: DataFrame
-    """
-    # Create dict to store all features parsed values
-    features_parsed_values = {}
-
-    # Create a list with the features with a "object" value = str object
-    features = list(dataset.select_dtypes(include='object').columns)
-
-    # Iterate over the features
-    for feature in features:
-
-        # Get unique values of the feature in a dict
-        feature_values = dict(enumerate(dataset[feature].unique().flatten(), 1))
-
-        # Store the values in the features_parsed_values dict
-        features_parsed_values[feature] = feature_values
-
-        # Parse the data from string to int value with the previous created dict
-        for k, v in feature_values.items():
-            dataset[feature] = dataset[feature].replace([v], k)
-
-    return features_parsed_values
-
-
-def check_dataset_bias(dataset: pd.DataFrame, field: str, bias: float = 30.0) -> bool:
-    """
-    Check if a given dataset is biased on a given feature.
-
-    :param dataset: DataFrame of the dataset
-    :type dataset: DataFrame
-    :param field: field to check bias
-    :type field: str
-    :param bias:  bias threshold
-    :type bias: float
-    :return True if the dataset is biased, False if not
-    :rtype bool
-    """
-    # Numpy array of percentages
-    percentages = np.array([])
-
-    try:
-        # Iterate over the field
-        for field_val in dataset[field].unique():
-            # Get number of maps values and percentage
-            field_values = dataset[dataset[field] == field_val].shape[0]
-            field_percentage = field_values / dataset[field].shape[0] * 100
-
-            '''
-            print(f"### Field {field_val} ###")
-            print(f"The number of values is \033[1m{field_values}\033[0m")
-            print(f"Percentage of the field is \033[1m{field_percentage}\033[0m %")
-            '''
-
-            # Append to the numpy array
-            percentages = np.append(percentages, field_percentage)
-
-    except Exception as e:
-        print(e)
-        return None
-
-    # Return boolean indicating either the dataset is biased on the map feature or not. For example 30% of difference
-    return np.max(np.abs(np.diff(percentages))) > bias
-
-
 class TurnDataset:
+    """
+    TurnDataset class.
+    
+    :param file_dir: directory where the time pattern is located. Default to current directory
+    :type file_dir: str
+    :param cols: network topology columns. Default to -1.
+    :type cols: int
+    :param rows: network topology rows. Default to -1.
+    :type rows: int
+    :return: None
+    """
 
-    def __init__(self, file_dir: str = '', cols=-1, rows=-1):
+    def __init__(self, file_dir: str = '.', cols: int = -1, rows: int = -1):
         """
-        SimulationDataset class initializer.
-
-        :param file_dir: directory where the time pattern is located.
-        :type file_dir: str
-        :return None
+        TurnDataset class initializer.
         """
+        # Load the dataset from the time pattern file 
         self._dataset = pd.read_csv(file_dir)
 
-        # Generate nodes matrix id -> Added 2 because of the external nodes
-        self._roads = generate_node_list(rows=rows+2, cols=cols+2)
+        # Generate roads -> Added 2 because of the external nodes
+        self._topology_roads = generate_roads_list(rows=rows + 2, cols=cols + 2)
 
-        # Process the dataset to store the lane and date info as index
-        self.process_dataset_info()
+        # Update the dataset to store the road, date info and turn probabilities in a valid format
+        self._dataset = self.process_dataset_info()
 
-        # Define features and target values (road, date_year, date_month, date_day, hour)
+        # Define features and target values
+        # Road, date_year, date_month, date_day and hour
         self._features_values = self._dataset.iloc[0:, 0:5]
 
         # Turn probabilities
         self._target_values = self._dataset.iloc[0:, 5:]
 
-    def get_dimensions(self):
-        """
-        Get the dimensions of the dataset.
-
-        :return: a tuple with the number of rows and columns of the dataset
-        :rtype: tuple
-        """
-        return self._dataset.shape
-
     @property
-    def features_values(self):
+    def features_values(self) -> pd.DataFrame:
         """
         Get the input features and its values.
 
@@ -130,7 +50,7 @@ class TurnDataset:
         return self._features_values
 
     @property
-    def target_values(self):
+    def target_values(self) -> pd.DataFrame:
         """
         Get the target feature ('traffic_type') and its values.
 
@@ -139,7 +59,18 @@ class TurnDataset:
         """
         return self._target_values
 
-    def clean_up_dataset(self):
+    def clean_up_dataset(self) -> dict:
+        """
+        Clean up the dataset by performing the following steps on both features and target datasets:
+
+        1. Check NaN values.
+        2. Drop rows with NaN values.
+        3. Parse str values to int.
+        4. Store parsed values.
+
+        :return: parsed values dictionary.
+        :rtype: dict.
+        """
         # 1. Check the NaN values of both datasets
         features_nan_values = self._features_values.isnull().sum().sum()
         target_nan_values = self._target_values.isnull().sum().sum()
@@ -161,12 +92,17 @@ class TurnDataset:
 
         return parsed_values_dict
 
-    def process_dataset_info(self):
+    def process_dataset_info(self) -> pd.DataFrame:
         """
-        Process the turn pattern information
+        Process the turn pattern information in order to achieve a valid training format with the values specified. 
+        The resulting dataset will have the following fields: road, date_year, date_month, date_day, hour, 
+        turn_right, turn_left, turn_forward.
+        
+        :return: processed dataset
+        :rtype: pd.DataFrame
         """
 
-        # Create an empty dataset with the columns
+        # Create a numpy array with the required columns and its types
         dtypes = np.dtype(
             [
                 ("road", str),
@@ -180,41 +116,58 @@ class TurnDataset:
             ]
         )
 
+        # Create an empty DataFrame with the columns
         processed_dataset = pd.DataFrame(np.empty(0, dtype=dtypes))
 
         # Iterate over each row to retrieve road turns information
         for index, row in self._dataset.iterrows():
-            turn_right, turn_left, turn_forward, roads = row['turn_right'].split(';'), row['turn_left'].split(';'), \
-                                                         row['turn_forward'].split(';'), row['road'].split(';')
+            # Check if there is specified more than one road.
+            if ';' in row['road']:
+                # Retrieve information related to the turns and the roads specified
+                turn_right, turn_left, turn_forward, turn_roads = row['turn_right'].split(';'), \
+                                                                  row['turn_left'].split(';'), \
+                                                                  row['turn_forward'].split(';'), \
+                                                                  row['road'].split(';')
+            # Otherwise it means all the roads have the same probabilities
+            else:
+                # Retrieve information related to the turns of all roads and set turn_roads to None
+                turn_right, turn_left, turn_forward, turn_roads = float(row['turn_right']), float(row['turn_left']), \
+                                                                  float(row['turn_forward']), None
 
-            for road in self._roads:
+            # Iterate over all the topology roads
+            for road in self._topology_roads:
                 # Create road info schema
                 road_info = {
-                            'road': road, 'date_year': int(row['date_year']), 'date_month': int(row['date_month']),
-                            'date_day': int(row['date_day']), 'hour': row['hour'], 'turn_right': 0.0,
-                            'turn_left': 0.0, 'turn_forward': 0.0
-                        }
-                # Retrieve info from dataset -> Remove 'all' value
-                if road in roads and road != 'all':
-                    # Iterate over all the specific road turns information
-                    road_idx = roads.index(road)
+                    'road': road, 'date_year': int(row['date_year']), 'date_month': int(row['date_month']),
+                    'date_day': int(row['date_day']), 'hour': row['hour'], 'turn_right': 0.0,
+                    'turn_left': 0.0, 'turn_forward': 0.0
+                }
+                # All the roads have the same probability
+                if row['road'] == 'all':
+                    road_info['turn_right'] = turn_right
+                    road_info['turn_left'] = turn_left
+                    road_info['turn_forward'] = turn_forward
+                # Retrieve info from dataset if road is specified
+                elif turn_roads and road in turn_roads:
+                    # Retrieve current road index
+                    road_idx = turn_roads.index(road)
+                    # Retrieve turn values
                     road_info['turn_right'] = float(turn_right[road_idx])
                     road_info['turn_left'] = float(turn_left[road_idx])
                     road_info['turn_forward'] = float(turn_forward[road_idx])
-                # Retrieve default turn info
+                # Otherwise use default turn info
                 else:
-                    road_info['turn_right'] = DEFAULT_TURN_DICT['turn_prob_right']
-                    road_info['turn_left'] = DEFAULT_TURN_DICT['turn_prob_left']
-                    road_info['turn_forward'] = DEFAULT_TURN_DICT['turn_prob_forward']
+                    road_info['turn_right'] = DEFAULT_TURN_DICT['turn_right']
+                    road_info['turn_left'] = DEFAULT_TURN_DICT['turn_left']
+                    road_info['turn_forward'] = DEFAULT_TURN_DICT['turn_forward']
 
                 # Store processed info
                 processed_dataset = processed_dataset.append(road_info, ignore_index=True)
 
-        # Update dataset
-        self._dataset = processed_dataset
+        return processed_dataset
 
     def train_test_split(self, train_percentage: float = 0.70, test_percentage: float = 0.30, random_state: int = 42,
-                         shuffle: bool = True):
+                         shuffle: bool = True) -> list:
         """
         Perform the train test split and return the datasets
 
@@ -232,9 +185,9 @@ class TurnDataset:
         return train_test_split(self._features_values, self._target_values, train_size=train_percentage,
                                 test_size=test_percentage, random_state=random_state, shuffle=shuffle)
 
-    def k_fold_split(self, k: int = 10, random_state: int = 1):
+    def k_fold_split(self, k: int = 10, random_state: int = 1) -> list:
         """
-        Perform the K-Fold split and return the datasets
+        Perform the K-Fold split and return the datasets.
 
         :param k: number of splits. Default to 10.
         :type k: int

@@ -15,7 +15,7 @@ class BaseRegression:
         """
         self._model = None
 
-    def train(self, train_features_dataset: pd.DataFrame, train_target_dataset: pd.DataFrame):
+    def train(self, train_features_dataset: pd.DataFrame, train_target_dataset: pd.DataFrame) -> None:
         """
         Train the model
 
@@ -23,10 +23,11 @@ class BaseRegression:
         :type train_features_dataset: pd.DataFrame
         :param train_target_dataset: Train target dataset
         :type train_target_dataset: pd.DataFrame
+        :return: None
         """
         self._model.fit(train_features_dataset, train_target_dataset)
 
-    def predict(self, features_dataset: pd.DataFrame):
+    def predict(self, features_dataset: pd.DataFrame) -> pd.DataFrame:
         """
         Predict the value from the features dataset
 
