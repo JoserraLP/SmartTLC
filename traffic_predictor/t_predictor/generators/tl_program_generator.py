@@ -15,8 +15,7 @@ class TrafficLightProgramGenerator(BaseGenerator):
         # Define root element
         super().__init__(tag='additional')
 
-        # TODO generalize the TL id
-        # Currently the id is unique as there is only one TL
+        # Currently the id is unique as there is only one traffic light due to the scenario
         self._cur_id = 'c1'
 
     def add_static_program(self, phases: list):

@@ -4,9 +4,9 @@ from t_predictor.generators.dataset_generator import DatasetGenerator
 from t_predictor.generators.utils import get_num_vehicles_waiting_per_queue
 
 
-class TrafficTypeGenerator(DatasetGenerator):
+class TrafficLightTypeGenerator(DatasetGenerator):
     """
-    Dataset generator from the TraCI simulations
+    Dataset generator from the TraCI simulations based on different traffic light types
     """
 
     def __init__(self, sumo_conf, num_sim: int = 0):
@@ -27,7 +27,7 @@ class TrafficTypeGenerator(DatasetGenerator):
         # Calculate the number of simulation per each TL program
         self._sim_portions = num_sim / self._num_tl_programs
 
-    def simulate(self):
+    def simulate(self) -> None:
         """
         Perform the dataset generation with number of simulations by simulating with TraCI.
 
@@ -87,7 +87,7 @@ class TrafficTypeGenerator(DatasetGenerator):
             # Close TraCI simulation in order to start another one in the next iteration
             self._traci.close()
 
-    def select_tl_program(self, sim_id: int):
+    def select_tl_program(self, sim_id: int) -> str:
         """
         Return the selected TL program depending on the simulation number.
 

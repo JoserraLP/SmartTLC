@@ -43,7 +43,7 @@ class ConsoleVisualizer:
         # Define the visualizer object
         self._visualizer = Visualizer()
 
-    def execute(self):
+    def execute(self) -> None:
         """
         Execute the command prompt application.
 
@@ -77,7 +77,7 @@ class ConsoleVisualizer:
 
         print("Bye bye!!")
 
-    def select_dataset(self):
+    def select_dataset(self) -> None:
         """
         Load the dataset indicated by the user and define the visualizer class.
 
@@ -105,7 +105,7 @@ class ConsoleVisualizer:
 
         print(f'Dataset {dataset_file} loaded successfully\n')
 
-    def select_plot(self):
+    def select_plot(self) -> None:
         """
         Retrieve the plot selected by the user and the required attributes.
 
@@ -148,7 +148,7 @@ class ConsoleVisualizer:
             # Recall the method
             self.select_plot()
 
-    def select_attributes(self):
+    def select_attributes(self) -> None:
         """
         Select the attributes that will be plotted.
 

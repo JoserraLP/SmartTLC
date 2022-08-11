@@ -1,21 +1,18 @@
 import time
 
-import traci
-
 import pandas as pd
-
-from t_predictor.static.constants import FLOWS_VALUES
+import traci
+from sumo_generators.static.constants import FLOWS_VALUES, TIMESTEPS_PER_HALF_HOUR
+from sumo_generators.time_patterns.time_patterns import TimePattern
+from sumo_generators.time_patterns.utils import retrieve_date_info
 from t_predictor.generators.dataset_generator import DatasetGenerator
-from t_predictor.time_patterns.time_patterns import TimePattern
-
 from t_predictor.generators.utils import get_num_passing_vehicles_detectors
-
-from t_predictor.static.constants import TIMESTEPS_TO_STORE_INFO, TL_PROGRAMS
+from t_predictor.static.constants import TL_PROGRAMS
 
 
 class TimePatternGenerator(DatasetGenerator):
     """
-    Dataset generator from the TraCI simulations
+    Dataset generator from the TraCI simulations based on time pattern
     """
 
     def __init__(self, sumo_conf, time_pattern_file: str = ''):
@@ -45,7 +42,7 @@ class TimePatternGenerator(DatasetGenerator):
         self.very_low_vehs_per_hour = FLOWS_VALUES['very_low']['vehsPerHour']
         self.very_low_vehs_range = FLOWS_VALUES['very_low']['vehs_range']
 
-    def simulate(self):
+    def simulate(self) -> None:
         """
         Perform the dataset generation with time pattern by simulating with TraCI.
 
@@ -74,7 +71,7 @@ class TimePatternGenerator(DatasetGenerator):
             self._traci.trafficlight.setProgram(traffic_light, tl_program)
 
         # Retrieve traffic type
-        time_pattern_id = cur_timestep / TIMESTEPS_TO_STORE_INFO
+        time_pattern_id = cur_timestep / TIMESTEPS_PER_HALF_HOUR
         traffic_type = self._time_pattern.retrieve_traffic_type(time_pattern_id)
 
         # Initialize basic data schema
@@ -98,41 +95,21 @@ class TimePatternGenerator(DatasetGenerator):
             data['passing_veh_e_w'] += passing_veh['e_w']
 
             # Calculate the time pattern id
-            time_pattern_id = cur_timestep / TIMESTEPS_TO_STORE_INFO
+            time_pattern_id = cur_timestep / TIMESTEPS_PER_HALF_HOUR
 
             # If next time pattern
             if time_pattern_id.is_integer() and time_pattern_id < len(self._time_pattern.pattern):
+                # Retrieve date info
+                date_info = retrieve_date_info(timestep=cur_timestep, time_pattern=self._time_pattern)
 
-                # Store year, month, week, day and hour
-                cur_hour = self._time_pattern.get_cur_hour(time_pattern_id)
-                if cur_hour:
-                    data['hour'] = cur_hour
-
-                cur_day = self._time_pattern.get_cur_day(time_pattern_id)
-                if cur_day:
-                    data['day'] = cur_day
-
-                cur_date_day = self._time_pattern.get_cur_date_day(time_pattern_id)
-                if cur_date_day:
-                    data['date_day'] = cur_date_day
-
-                cur_week = self._time_pattern.get_cur_week(time_pattern_id)
-                if cur_week:
-                    data['date_week'] = cur_week
-
-                cur_month = self._time_pattern.get_cur_month(time_pattern_id)
-                if cur_month:
-                    data['date_month'] = cur_month
-
-                cur_year = self._time_pattern.get_cur_year(time_pattern_id)
-                if cur_year:
-                    data['date_year'] = cur_year
+                # Append date info to data
+                data.update(date_info)
 
                 # Insert data
                 self._storage.insert_data(data_dict=data)
 
                 # Retrieve traffic type
-                traffic_type = self._time_pattern.retrieve_traffic_type(cur_timestep / TIMESTEPS_TO_STORE_INFO)
+                traffic_type = self._time_pattern.retrieve_traffic_type(cur_timestep / TIMESTEPS_PER_HALF_HOUR)
 
                 # Initialize basic data schema
                 data = {'sim_id': time_pattern_id, 'tl_id': 'c1', 'tl_program': tl_program,
@@ -153,7 +130,7 @@ class TimePatternGenerator(DatasetGenerator):
         elapsed_time = stop_time - start_time
         print(f'Total elapsed time in simulation: {elapsed_time}')
 
-    def generate_traffic_flows_by_time_pattern(self, time_pattern: pd.DataFrame):
+    def generate_traffic_flows_by_time_pattern(self, time_pattern: pd.DataFrame) -> None:
         """
         Generate the traffic flows and store it on the output file.
 
@@ -164,7 +141,7 @@ class TimePatternGenerator(DatasetGenerator):
         # Iter over the time pattern rows
         for index, row in time_pattern.iterrows():
             # Generate the row traffic flow
-            self.generate_traffic_flows(traffic_type=row['traffic_type'], begin=index * TIMESTEPS_TO_STORE_INFO,
-                                        end=TIMESTEPS_TO_STORE_INFO * (index + 1))
+            self.generate_traffic_flows(traffic_type=row['traffic_type'], begin=index * TIMESTEPS_PER_HALF_HOUR,
+                                        end=TIMESTEPS_PER_HALF_HOUR * (index + 1))
         # Store the flows in the output file
         self._store_flows()

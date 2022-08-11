@@ -25,17 +25,17 @@ class Storage:
         # Create empty dataset
         self._data = pd.DataFrame()
 
-    def insert_data(self, data_dict: dict):
+    def insert_data(self, data_dict: dict) -> None:
         """
         Insert data into the dataset.
 
         :param data_dict: information to store into the dataset
         :type data_dict: dict
-        :return:
+        :return: None
         """
         self._data = self._data.append(data_dict, ignore_index=True)  # Ignore index to insert dict
 
-    def to_csv(self, output_path: str):
+    def to_csv(self, output_path: str) -> None:
         """
         Write the dataset into an output file.
 

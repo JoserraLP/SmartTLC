@@ -1,8 +1,8 @@
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support
-
-import pickle
 import os
+import pickle
+
 import pandas as pd
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
 
 def check_file_extension(file_dir: str):
@@ -84,3 +84,86 @@ def calculate_pred_metrics(test_target_dataset: pd.DataFrame, pred_target_datase
     # Zero division = 0 because there are classes that are not represented in the dataset
 
     return accuracy, precision, recall, f1_score
+
+
+def drop_nan_values(dataset: pd.DataFrame) -> None:
+    """
+    Drop NaN values of the dataset
+
+    :param dataset: dataset where the data will be dropped
+    :type dataset: DataFrame
+    :return: None
+    """
+    # Drop the rows with NaN values
+    dataset.dropna(axis=0)
+
+
+def parse_str_features(dataset: pd.DataFrame) -> dict:
+    """
+    Parse the string features to int values
+
+    :param dataset: dataset where the data will be replaced
+    :type dataset: DataFrame
+    :return: parsed values dictionary
+    :rtype: dict
+    """
+    # Create dict to store all features parsed values
+    features_parsed_values = {}
+
+    # Create a list with the features with a "object" value = str object
+    features = list(dataset.select_dtypes(include='object').columns)
+
+    # Iterate over the features
+    for feature in features:
+
+        # Get unique values of the feature in a dict starting at 1
+        feature_values = dict(enumerate(dataset[feature].unique().flatten(), 1))
+
+        # Store the values in the features_parsed_values dict
+        features_parsed_values[feature] = feature_values
+
+        # Parse the data from string to int value with the previous created dict
+        for k, v in feature_values.items():
+            dataset[feature] = dataset[feature].replace([v], k)
+
+    return features_parsed_values
+
+
+def check_dataset_bias(dataset: pd.DataFrame, field: str, bias: float = 30.0) -> bool:
+    """
+    Check if a given dataset is biased on a given feature.
+
+    :param dataset: DataFrame of the dataset
+    :type dataset: DataFrame
+    :param field: field to check bias
+    :type field: str
+    :param bias: bias threshold. Default to 30.0
+    :type bias: float
+    :return: True if the dataset is biased, False if not
+    :rtype: bool
+    """
+    # Numpy array of percentages
+    percentages = np.array([])
+
+    try:
+        # Iterate over the field
+        for field_val in dataset[field].unique():
+            # Get number of maps values and percentage
+            field_values = dataset[dataset[field] == field_val].shape[0]
+            field_percentage = field_values / dataset[field].shape[0] * 100
+
+            '''
+            print(f"### Field {field_val} ###")
+            print(f"The number of values is \033[1m{field_values}\033[0m")
+            print(f"Percentage of the field is \033[1m{field_percentage}\033[0m %")
+            '''
+
+            # Append to the numpy array
+            percentages = np.append(percentages, field_percentage)
+
+    except Exception as e:
+        print(e)
+        return None
+
+    # Return boolean indicating either the dataset is biased on the map feature or not. For example 30% of difference
+    return np.max(np.abs(np.diff(percentages))) > bias

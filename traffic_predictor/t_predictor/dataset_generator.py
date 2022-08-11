@@ -1,13 +1,13 @@
-import optparse
+import argparse
 import os
 import sys
 
-from sumolib import checkBinary
-
-from t_predictor.generators.dataset_generator_time_pattern import TimePatternGenerator
-from t_predictor.generators.dataset_generator_traffic_light import TrafficTypeGenerator
-from t_predictor.visualization.console_visualizer import ConsoleVisualizer
 import t_predictor.static.constants as cnt
+from sumolib import checkBinary
+from t_predictor.generators.dataset_generator_time_pattern import TimePatternGenerator
+from t_predictor.generators.dataset_generator_traffic_light import TrafficLightTypeGenerator
+from t_predictor.static.argparse_types import check_file, check_greater_zero
+from t_predictor.visualization.console_visualizer import ConsoleVisualizer
 
 
 def import_required_libs():
@@ -27,35 +27,43 @@ def import_required_libs():
 
 def get_options():
     """
-    Define options for the executable script.
+    Get options from the execution command
 
-    :return: options
-    :rtype: object
+    :return: Arguments options
     """
-    optParser = optparse.OptionParser()
+    # Create the Argument Parser
+    arg_parser = argparse.ArgumentParser(description='Script for generating the traffic dataset based on a calendar or '
+                                                     'different traffic light types.')
 
     # Dataset generation group
-    dataset_group = optparse.OptionGroup(optParser, "Dataset Generation Options", "Generation tools")
-    dataset_group.add_option("--nogui", action="store_true",
-                             default=cnt.DEFAULT_GUI_FLAG, help="run the commandline version of sumo")
-    dataset_group.add_option("-c", "--config", dest="config", action='store',
-                             metavar="FILE", help="sumo configuration file location")
-    dataset_group.add_option("-n", "--num-sim", dest="num_sim", type='int', action="store",
-                             help="number of simulations", default=cnt.DEFAULT_NUMBER_OF_SIMULATIONS)
-    dataset_group.add_option("-t", "--time-pattern", dest="time_pattern", metavar='FILE', action="store",
-                             help="time pattern input file")
-    dataset_group.add_option("-o", "--output-file", dest="output_file", metavar='FILE', action="store",
-                             help="output file")
-    optParser.add_option_group(dataset_group)
+    dataset_group = arg_parser.add_argument_group("Dataset generator",
+                                                  description="Parameters related to the dataset generation")
+    dataset_group.add_argument("--nogui", action="store_true", type=bool,
+                               default=cnt.DEFAULT_GUI_FLAG, help="run the commandline version of sumo. Default to "
+                                                                  f"{cnt.DEFAULT_GUI_FLAG}")
+    dataset_group.add_argument("-c", "--config", dest="config", action='store', type=check_file,
+                               default=cnt.DEFAULT_CONFIG_FILE,
+                               help=f"sumo configuration file location. Default to {cnt.DEFAULT_CONFIG_FILE}")
+    dataset_group.add_argument("-n", "--num-sim", dest="num_sim", type=check_greater_zero, action="store",
+                               help=f"number of simulations. Default to {cnt.DEFAULT_NUMBER_OF_SIMULATIONS}",
+                               default=cnt.DEFAULT_NUMBER_OF_SIMULATIONS)
+    dataset_group.add_argument("-t", "--time-pattern", dest="time_pattern", type=check_file, action="store",
+                               help="time pattern input file")
+    dataset_group.add_argument("-o", "--output-file", dest="output_file", type=check_file, action="store",
+                               default=cnt.DEFAULT_OUTPUT_FILE,
+                               help=f"output file. Default to {cnt.DEFAULT_OUTPUT_FILE}")
 
     # Visualization group
-    visualization_group = optparse.OptionGroup(optParser, "Visualization Options", "Visualization tools")
-    visualization_group.add_option("--cli-visualize", dest="cli_visualize", action="store_true",
-                                   default=cnt.DEFAULT_CLI_VISUALIZE_FLAG, help="visualize option by command line")
-    optParser.add_option_group(visualization_group)
+    visualization_group = arg_parser.add_argument_group("Visualization tools",
+                                                        description="Parameters related to the visualization tools")
+    visualization_group.add_argument("--cli-visualize", dest="cli_visualize", action="store_true", type=bool,
+                                     default=cnt.DEFAULT_CLI_VISUALIZE_FLAG,
+                                     help=f"visualize option by command line. Default to "
+                                          f"{cnt.DEFAULT_CLI_VISUALIZE_FLAG}")
 
-    options, args = optParser.parse_args()
-    return options
+    # Retrieve the arguments parsed
+    args = arg_parser.parse_args()
+    return args
 
 
 if __name__ == "__main__":
@@ -84,21 +92,9 @@ if __name__ == "__main__":
         else:
             sumo_binary = checkBinary('sumo-gui')
 
-        # Retrieve configuration file by parameters or by default
-        if exec_options.config:
-            config_file = exec_options.config
-        else:
-            config_file = cnt.DEFAULT_CONFIG_FILE
-
-        # Define the output file by parameters or by default
-        if exec_options.output_file:
-            output_file = exec_options.output_file
-        else:
-            output_file = cnt.DEFAULT_OUTPUT_FILE
-
         # Create a dict with the simulation arguments
         sim_args = {
-            'config_file': config_file,
+            'config_file': exec_options.config_file,
             'sumo_binary': sumo_binary
         }
 
@@ -106,8 +102,8 @@ if __name__ == "__main__":
         traci_sim = None
 
         if exec_options.num_sim != 0:
-            # Create the TraCI Traffic Type simulator
-            traci_sim = TrafficTypeGenerator(sumo_conf=sim_args, num_sim=exec_options.num_sim)
+            # Create the TraCI Traffic Light Type simulator
+            traci_sim = TrafficLightTypeGenerator(sumo_conf=sim_args, num_sim=exec_options.num_sim)
 
         elif exec_options.time_pattern != '':
             # Create the TraCI Time Pattern simulator
@@ -120,4 +116,4 @@ if __name__ == "__main__":
         traci_sim.simulate()
 
         # Store the dataset into the output file
-        traci_sim.store_all_data(output_file)
+        traci_sim.store_all_data(exec_options.output_file)

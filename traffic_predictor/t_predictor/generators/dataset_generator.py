@@ -1,8 +1,8 @@
 import random
 
-from t_predictor.generators.flows_generator import FlowsGenerator
-from t_predictor.static.constants import FLOWS_VALUES, FLOWS_OUTPUT_DIR
-from t_predictor.static.constants import TL_PROGRAMS, NUM_TRAFFIC_TYPES
+from sumo_generators.generators.flows_generator import FlowsGenerator
+from sumo_generators.static.constants import FLOWS_VALUES, NUM_TRAFFIC_TYPES
+from t_predictor.static.constants import TL_PROGRAMS, FLOWS_OUTPUT_DIR
 from t_predictor.storage.storage import Storage
 
 
@@ -51,7 +51,7 @@ class DatasetGenerator:
         self.very_low_vehs_per_hour = FLOWS_VALUES['very_low']['vehsPerHour']
         self.very_low_vehs_range = FLOWS_VALUES['very_low']['vehs_range']
 
-    def simulate(self):
+    def simulate(self) -> None:
         """
         Perform the dataset generation with TraCI.
 
@@ -59,7 +59,7 @@ class DatasetGenerator:
         """
         pass
 
-    def store_all_data(self, output_file: str):
+    def store_all_data(self, output_file: str) -> None:
         """
         Store the dataset generated into a CSV file.
 
@@ -69,24 +69,9 @@ class DatasetGenerator:
         """
         self._storage.to_csv(output_file)
 
-    def select_traffic_type(self, sim_id: int):
+    def select_traffic_type(self, sim_id: int) -> int:
         """
         Return the selected traffic type depending on the simulation number.
-        Traffic types are:
-
-        - 0 : Very Low (NS) - Very Low (WE)\n
-        - 1 : Very Low (NS) - Low (WE)\n
-        - 2 : Low (NS) - Very Low (WE)\n
-        - 3 : Low (NS) - Low (WE)\n
-        - 4 : Low (NS) - Medium (WE)\n
-        - 5 : Low (NS) - High (WE)\n
-        - 6 : Medium (NS) - Low (WE)\n
-        - 7 : Medium (NS) - Medium (WE)\n
-        - 8 : Medium (NS) - High (WE)\n
-        - 9 : High (NS) - Low (WE)\n
-        - 10 : High (NS) - Medium (WE)\n
-        - 11 : High (NS) - High (WE)\n
-
 
         :param sim_id: simulation identifier
         :type sim_id: int
@@ -96,7 +81,7 @@ class DatasetGenerator:
         # It is calculated by the module of the simulation id and the number of traffic types
         return sim_id % self._num_traffic_types
 
-    def generate_traffic_flows(self, traffic_type: int, begin: int = 0, end: int = 500):
+    def generate_traffic_flows(self, traffic_type: int, begin: int = 0, end: int = 500) -> None:
         """
         Generate the list of traffic flows based on the traffic type and create the related file.
 
@@ -219,12 +204,10 @@ class DatasetGenerator:
                  'from': 's1i', 'to': 'n1o'}
             ])
 
-        # Future works -> also generate random traffic that turns
-
         # Add flows to the flows generator
         self._flow_generators.add_flows(flows)
 
-    def _store_flows(self):
+    def _store_flows(self) -> None:
         """
         Store the flows into the default output file.
 

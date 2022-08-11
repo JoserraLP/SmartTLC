@@ -1,5 +1,5 @@
+import argparse
 import json
-import optparse
 import os
 import shutil
 
@@ -8,8 +8,10 @@ from t_predictor.ml.dataset import SimulationDataset
 from t_predictor.ml.model_predictor import ModelPredictor
 from t_predictor.ml.model_trainer import ModelTrainer
 from t_predictor.providers.predictor import Predictor
+from t_predictor.static.argparse_types import check_greater_zero, check_valid_prediction_info
 from t_predictor.static.constants import MODEL_BASE_DIR_DATE, MODEL_BASE_DIR_CONTEXT, \
-    MODEL_PARSED_VALUES_FILE, MQTT_URL, MQTT_PORT, MODEL_PERFORMANCE_FILE_DATE, MODEL_PERFORMANCE_FILE_CONTEXT
+    MODEL_PARSED_VALUES_FILE, MQTT_URL, MQTT_PORT, MODEL_PERFORMANCE_FILE_DATE, MODEL_PERFORMANCE_FILE_CONTEXT, \
+    MODEL_NUM_FOLDS, DEFAULT_NUM_MODELS
 
 
 def get_options():
@@ -19,43 +21,50 @@ def get_options():
     :return: options
     :rtype: object
     """
-    optParser = optparse.OptionParser()
+    # Create the Argument Parser
+    arg_parser = argparse.ArgumentParser(description='Predictors of turning probabilities based on a given road.')
+
+    # Define generator groups
 
     # General option
-    optParser.add_option("-d", "--date", dest="date", action="store_true", default=False,
-                         help="Train models based on date. "
-                              "If not specified, train models based on context and date (default).")
+    arg_parser.add_argument("-d", "--date", dest="date", action="store_true", default=False, type=bool,
+                            help="Train models based on date. "
+                                 "If not specified, train models based on context and date (default).")
 
-    # Input dataset group
-    train_group = optparse.OptionGroup(optParser, "Training Options", "Training tools")
-    train_group.add_option("-t", "--train", dest="input_file", metavar='FILE', action="store",
-                           help="input file")
-    train_group.add_option("-c", "--clean", dest="clean", action="store_true",
-                           default=False, help="clean the model files.")
-    optParser.add_option_group(train_group)
+    # Train group
+    train_group = arg_parser.add_argument_group("Training options", description="Parameters related to the training "
+                                                                                "process of the ML models")
+    train_group.add_argument("-t", "--train", dest="input_file", metavar='FILE', action="store",
+                             help="input file")
+    train_group.add_argument("-f" "--folds", dest="folds", type=check_greater_zero, default=MODEL_NUM_FOLDS,
+                             action="store",
+                             help=f"k-fold number of folds. Default is {MODEL_NUM_FOLDS}")
+    train_group.add_argument("-c", "--clean", dest="clean", action="store_true",
+                             default=False, help="clean the model files.")
 
     # Predict value group
-    predict_group = optparse.OptionGroup(optParser, "Prediction Options", "Prediction tools")
-    predict_group.add_option("-p", "--predict", dest="predict", action="store",
-                             help="predict the given value: passing_veh_e_w, passing_veh_n_s, hour, day, date_day, "
-                                  "date_month, date_year. If 'date' flag active, the fields are: hour, day, date_day, "
-                                  "date_month, date_year")
-    optParser.add_option_group(predict_group)
+    # Predict value group
+    predict_group = arg_parser.add_argument_group("Prediction Options", description="Parameters related to the "
+                                                                                    "prediction process")
+    predict_group.add_argument("-p", "--predict", dest="predict", action="store", type=check_valid_prediction_info,
+                               help="predict the given value: passing_veh_e_w, passing_veh_n_s, hour, day, date_day, "
+                                    "date_month, date_year. If 'date' flag active, the fields are: hour, day, date_day, "
+                                    "date_month, date_year")
 
     # Full component group
-    component_group = optparse.OptionGroup(optParser, "Component Options", "Component tools")
-    component_group.add_option("--component", dest="component", action="store_true", default=True,
-                               help="deploy the full component")
-    component_group.add_option("-n", "--num-models", dest="num_models", action="store",
-                               help="number of models used for the predictor")
-    component_group.add_option("--middleware_host", dest="mqtt_url", action="store",
-                               help="middleware broker host")
-    component_group.add_option("--middleware_port", dest="mqtt_port", action="store",
-                               help="middleware broker port")
-    optParser.add_option_group(component_group)
+    component_group = arg_parser.add_argument_group("Component Options", "Parameters related to the Docker component")
+    component_group.add_argument("--component", dest="component", action="store_true", default=True,
+                                 help="deploy the full component")
+    component_group.add_argument("-n", "--num-models", dest="num_models", action="store", type=check_greater_zero,
+                                 help=f"number of models used for the predictor. Default is {DEFAULT_NUM_MODELS}",
+                                 default=DEFAULT_NUM_MODELS)
+    component_group.add_argument("--middleware_host", dest="mqtt_url", action="store", type=str,
+                                 help=f"middleware broker host. Default is {MQTT_URL}", default=MQTT_URL)
+    component_group.add_argument("--middleware_port", dest="mqtt_port", action="store", type=int,
+                                 help=f"middleware broker port. Default is {MQTT_PORT}", default=MQTT_PORT)
 
-    options, args = optParser.parse_args()
-    return options
+    args = arg_parser.parse_args()
+    return args
 
 
 if __name__ == "__main__":
@@ -99,7 +108,7 @@ if __name__ == "__main__":
         model = ModelTrainer(dataset_dir=exec_options.input_file, date=exec_options.date)
 
         # Perform the training process of all the models with a k-fold process
-        performances = model.train(k=2)
+        performances = model.train(k=exec_options.folds)
 
         # Set performance file
         if exec_options.date:
@@ -111,51 +120,34 @@ if __name__ == "__main__":
         with open(performance_file, 'w', encoding='utf-8') as f:
             json.dump(performances, f, ensure_ascii=False, indent=4)
 
-    else:
-        # Prediction process
-        if exec_options.predict:
-            # Parse data and store it as a DataFrame
-            data = exec_options.predict.replace(' ', '').split(',')
-            if exec_options.date:
-                data = pd.DataFrame(np.array([data]),
-                                    columns=['hour', 'day', 'date_day', 'date_month', 'date_year'])
-            else:
-                data = pd.DataFrame(np.array([data]),
-                                    columns=['passing_veh_e_w', 'passing_veh_n_s', 'hour', 'day', 'date_day',
-                                             'date_month', 'date_year'])
-            # Create model predictor
-            model = ModelPredictor(exec_options.date)
-            # Load best models
-            model.load_best_models(num_models=1)
-
-            # Parse data invalid values
-            with open(MODEL_PARSED_VALUES_FILE) as f:
-                parsed_values_dict = json.load(f)
-            for k, v in parsed_values_dict.items():
-                for field, value in v.items():
-                    data[k] = data[k].replace(value, field)
-
-            # Show prediction
-            print(model.predict(data, num_models=1))
+    # Prediction process
+    elif exec_options.predict:
+        # Parse data and store it as a DataFrame
+        data = exec_options.predict.replace(' ', '').split(',')
+        if exec_options.date:
+            data = pd.DataFrame(np.array([data]),
+                                columns=['hour', 'day', 'date_day', 'date_month', 'date_year'])
         else:
-            # Component process
-            if exec_options.component:
-                # Retrieve parameter values or default values
-                if exec_options.num_models:
-                    num_models = int(exec_options.num_models)
-                else:
-                    num_models = 1
+            data = pd.DataFrame(np.array([data]),
+                                columns=['passing_veh_e_w', 'passing_veh_n_s', 'hour', 'day', 'date_day',
+                                         'date_month', 'date_year'])
+        # Create model predictor
+        model = ModelPredictor(exec_options.date)
+        # Load best models
+        model.load_best_models(num_models=DEFAULT_NUM_MODELS)
 
-                if exec_options.mqtt_url:
-                    mqtt_url = exec_options.mqtt_url
-                else:
-                    mqtt_url = MQTT_URL
+        # Parse data invalid values
+        with open(MODEL_PARSED_VALUES_FILE) as f:
+            parsed_values_dict = json.load(f)
+        for k, v in parsed_values_dict.items():
+            for field, value in v.items():
+                data[k] = data[k].replace(value, field)
 
-                if exec_options.mqtt_port:
-                    mqtt_port = int(exec_options.mqtt_port)
-                else:
-                    mqtt_port = MQTT_PORT
+        # Show prediction
+        print(model.predict(data, num_models=DEFAULT_NUM_MODELS))
+    # Component process
+    elif exec_options.component:
 
-                # Start predictor process
-                predictor = Predictor(date=exec_options.date, mqtt_url=mqtt_url, mqtt_port=mqtt_port,
-                                      num_models=num_models)
+        # Start predictor process
+        predictor = Predictor(date=exec_options.date, mqtt_url=exec_options.mqtt_url, mqtt_port=exec_options.mqtt_port,
+                              num_models=exec_options.num_models)

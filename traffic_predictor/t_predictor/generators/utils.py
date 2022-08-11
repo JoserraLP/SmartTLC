@@ -1,30 +1,4 @@
 # UTILS
-def get_num_vehicles_waiting_per_queue(traci):
-    """
-    Retrieve from TraCI the number of vehicles waiting per each queue.
-    Order is: North, East, South, West
-
-    :param traci: TraCI instance
-    :return: lists with waiting time per each orientation
-    :rtype: list, list, list, list
-    """
-    # Retrieve the total waiting time per queue
-    waiting_time_queues = get_total_waiting_time(traci)
-
-    # Initialize queues lists
-    north_waiting_time, east_waiting_time, south_waiting_time, west_waiting_time = [], [], [], []
-
-    # Iterate over the waiting queues and store the values on its list
-    for tl_k, tl_v in waiting_time_queues.items():
-        waiting_times = list(waiting_time_queues[tl_k].values())
-        north_waiting_time.append(waiting_times[0])
-        east_waiting_time.append(waiting_times[1])
-        south_waiting_time.append(waiting_times[2])
-        west_waiting_time.append(waiting_times[3])
-
-    return north_waiting_time, east_waiting_time, south_waiting_time, west_waiting_time
-
-
 def get_all_lanes(traci):
     """
     Retrieve all the controlled lanes by the different traffic lights.
@@ -73,56 +47,30 @@ def get_total_waiting_time(traci):
     return lanes_waiting_time
 
 
-def get_density_per_queue(traci):
+def get_num_vehicles_waiting_per_queue(traci):
     """
-    Retrieve from TraCI the density per each queue.
+    Retrieve from TraCI the number of vehicles waiting per each queue.
     Order is: North, East, South, West
 
     :param traci: TraCI instance
     :return: lists with waiting time per each orientation
     :rtype: list, list, list, list
     """
-    # Retrieve the total density per queue
-    density_queues = get_density_per_queue(traci)
+    # Retrieve the total waiting time per queue
+    waiting_time_queues = get_total_waiting_time(traci)
 
     # Initialize queues lists
-    north_density, east_density, south_density, west_density = [], [], [], []
+    north_waiting_time, east_waiting_time, south_waiting_time, west_waiting_time = [], [], [], []
 
-    # Iterate over the density queues and store the values on its list
-    for tl_k, tl_v in density_queues.items():
-        density = list(density_queues[tl_k].values())
-        north_density.append(density[0])
-        east_density.append(density[1])
-        south_density.append(density[2])
-        west_density.append(density[3])
+    # Iterate over the waiting queues and store the values on its list
+    for tl_k, tl_v in waiting_time_queues.items():
+        waiting_times = list(waiting_time_queues[tl_k].values())
+        north_waiting_time.append(waiting_times[0])
+        east_waiting_time.append(waiting_times[1])
+        south_waiting_time.append(waiting_times[2])
+        west_waiting_time.append(waiting_times[3])
 
-    return north_density, east_density, south_density, west_density
-
-
-def get_density_per_lane(traci):
-    """
-    Retrieve the density of each lane related to each traffic lights.
-
-    :param traci: TraCI instance
-    :return: dict with the TL id and the density per each controlled lane
-    :rtype: dict
-    """
-    # Retrieve lanes
-    lanes = get_all_lanes(traci)
-
-    # Initialize the dict
-    queue_density = {}
-
-    # Iterate over the different lanes
-    for tl_id, tl_lanes in lanes.items():
-        # Create the dict per each traffic light
-        queue_density[tl_id] = {}
-        for lane in tl_lanes:
-            # Calculate and store the density per lane
-            queue_density[tl_id][lane] = len(traci.lane.getLastStepVehicleIDs(lane)) \
-                                         / traci.lane.getLength(lane)
-
-    return queue_density
+    return north_waiting_time, east_waiting_time, south_waiting_time, west_waiting_time
 
 
 def get_num_passing_vehicles_detectors(traci, vehicles_passed: set):
@@ -179,14 +127,3 @@ def get_num_passing_vehicles_detectors(traci, vehicles_passed: set):
                 passing_veh['e_w'] += len(not_counted_veh)
 
     return passing_veh
-
-
-def get_traffic_light_number(traci):
-    """
-    Retrieve the number of traffic lights in the simulation.
-
-    :param traci: TraCI instance
-    :return: number of traffic lights
-    :rtype: int
-    """
-    return len(traci.trafficlight.getIDList())

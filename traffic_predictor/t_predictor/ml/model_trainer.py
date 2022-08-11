@@ -12,6 +12,21 @@ from t_predictor.static.constants import MODEL_BASE_DIR_CONTEXT, MODEL_BASE_DIR_
 class ModelTrainer:
     """
     Class for training all the different Machine Learning models.
+
+    :param dataset_dir: directory where the input dataset is stored. Default to ../output/simulation_calendar.csv.
+    :type dataset_dir: str
+    :param model_base_dir: directory where the models are stored. Default to ''. If empty, use default values with
+        'date' flag.
+    :type model_base_dir: str
+    :param parsed_values_file: directory where the dataset parsed values are stored.
+        Default to ../output/parsed_values_dict.json.
+    :type parsed_values_file: str
+    :param performance_file: File where the training performances have been stored. Default to ''.
+        If empty, use default values with 'date' flag.
+    :type performance_file: str
+    :param date: if True train models based on date only, otherwise with contextual information too.
+        Default to True.
+    :type date: bool
     """
 
     def __init__(self, dataset_dir: str = DEFAULT_OUTPUT_FILE, model_base_dir: str = '',
@@ -19,21 +34,6 @@ class ModelTrainer:
             -> None:
         """
         ModelTrainer initializer.
-        
-        :param dataset_dir: Directory where the input dataset is stored. Default to ../output/simulation_calendar.csv.
-        :type dataset_dir: str
-        :param model_base_dir: directory where the models are stored. Default to ''. If empty, use default values with
-            'date' flag.
-        :type model_base_dir: str
-        :param parsed_values_file: directory where the dataset parsed values are stored. 
-            Default to ../output/parsed_values_dict.json.
-        :type parsed_values_file: str
-        :param performance_file: File where the training performances have been stored. Default to ''.
-            If empty, use default values with 'date' flag.
-        :type performance_file: str
-        :param date: if True train models based on date only, otherwise with contextual information too.
-            Default to True.
-        :type date: bool
         """
         # Initialize class variables
         self._performances = list()

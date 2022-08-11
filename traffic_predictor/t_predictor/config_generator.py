@@ -1,30 +1,43 @@
-import optparse
+import argparse
 import random
 
-from t_predictor.generators.flows_generator import FlowsGenerator
-from t_predictor.generators.sumo_config_generator import SumoConfigGenerator
-from t_predictor.generators.tl_program_generator import TrafficLightProgramGenerator
+from sumo_generators.generators.flows_generator import FlowsGenerator
+from sumo_generators.generators.sumo_config_generator import SumoConfigGenerator
+from sumo_generators.static.constants import FLOWS_VALUES
 from t_predictor.generators.time_pattern_generator import TimePatternGenerator
-from t_predictor.static.constants import FLOWS_VALUES, DEFAULT_GENERATED_CALENDAR_FILE
+from t_predictor.generators.tl_program_generator import TrafficLightProgramGenerator
+from t_predictor.static.constants import DEFAULT_GENERATED_CALENDAR_FILE
+
 
 def get_options():
     """
-    Define options for the executable script.
+    Get options from the execution command
 
-    :return: options
-    :rtype: object
+    :return: Arguments options
     """
-    optParser = optparse.OptionParser()
-    optParser.add_option("-t", "--tl-program-file", dest="tl_program_file", action='store',
-                         help="sumo traffic lights programs file location")
-    optParser.add_option("-s", "--sumo-config-file", dest="sumo_config_file", action='store',
-                         help="sumo configuration file location")
-    optParser.add_option("-f", "--flows-config-file", dest="flows_config_file", action='store',
-                         help="flow configuration file")
-    optParser.add_option("-c", "--calendar", dest="calendar_file", action='store',
-                         help="calendar file")
-    options, args = optParser.parse_args()
-    return options
+    # Create the Argument Parser
+    arg_parser = argparse.ArgumentParser(description='Script for generating traffic lights, SUMO configuration file, '
+                                                     'vehicle flows and calendar.')
+
+    # TL program file
+    arg_parser.add_argument("-t", "--tl-program-file", dest="tl_program_file", action='store',
+                            help="sumo traffic lights programs file location")
+
+    # SUMO configuration file
+    arg_parser.add_argument("-s", "--sumo-config-file", dest="sumo_config_file", action='store',
+                            help="sumo configuration file location")
+
+    # Flows configuration file
+    arg_parser.add_argument("-f", "--flows-config-file", dest="flows_config_file", action='store',
+                            help="flow configuration file")
+
+    # Calendar dataset generation
+    arg_parser.add_argument("-c", "--calendar", dest="calendar_file", action='store',
+                            help="calendar file")
+
+    # Retrieve the arguments parsed
+    args = arg_parser.parse_args()
+    return args
 
 
 if __name__ == "__main__":
@@ -164,14 +177,5 @@ if __name__ == "__main__":
         # Get random pattern calendar
         random_pattern_calendar = time_pattern_generator.get_random_pattern_calendar()
 
-        # Store one month only
-        # random_pattern_calendar.loc[0:1487].to_csv(DEFAULT_GENERATED_CALENDAR_FILE, index=False)
-
         # Store all the year
         random_pattern_calendar.to_csv(DEFAULT_GENERATED_CALENDAR_FILE, index=False)
-
-        # swapped_days =
-        # pd.concat([pattern_calendar, random_pattern_calendar]).drop_duplicates(keep=False).reset_index(drop=True)
-
-        # print(swapped_days)
-

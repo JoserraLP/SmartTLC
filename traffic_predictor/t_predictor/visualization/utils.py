@@ -3,7 +3,7 @@ import seaborn as sns
 from typing import Union
 
 
-def generate_random_palette(n_colors: int):
+def generate_random_palette(n_colors: int) -> list:
     """
     Generate a random palette with a given number of colors.
 
@@ -15,7 +15,7 @@ def generate_random_palette(n_colors: int):
     return sns.color_palette('Paired', n_colors=n_colors)
 
 
-def set_theme(style: str, palette: Union[str, list], n_colors: int):
+def set_theme(style: str, palette: Union[str, list], n_colors: int) -> None:
     """
     Set theme into the seaborn instance.
 

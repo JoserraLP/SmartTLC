@@ -24,22 +24,22 @@ class ModelPredictor:
     Model traffic type predictor.
 
     It stores the best ML models in order to perform the best traffic prediction.
+
+    :param date: if True train models based on date only, otherwise with contextual information too.
+        Default to True.
+    :type date: bool
+    :param model_base_dir: directory where the models are stored. Default to ''. If empty, use default values with
+        'date' flag.
+    :type model_base_dir: str
+    :param parsed_values_file: directory where the dataset parsed values are stored.
+        Default to '../output/parsed_values_dict.json'.
+    :type parsed_values_file: str
     """
 
     def __init__(self, date: bool = True, model_base_dir: str = '', parsed_values_file: str = MODEL_PARSED_VALUES_FILE) \
             -> None:
         """
         ModelPredictor initializer.
-
-        :param date: if True train models based on date only, otherwise with contextual information too.
-            Default to True.
-        :type date: bool
-        :param model_base_dir: directory where the models are stored. Default to ''. If empty, use default values with
-            'date' flag.
-        :type model_base_dir: str
-        :param parsed_values_file: directory where the dataset parsed values are stored.
-            Default to '../output/parsed_values_dict.json'.
-        :type parsed_values_file: str
         """
 
         # Initialize class variables
@@ -127,6 +127,7 @@ class ModelPredictor:
                 # Parse the traffic information to valid values
                 traffic_info = self.parse_input_data(traffic_info)
 
+                # KNN models uses ".values" to predict, otherwise is not required
                 if isinstance(self._best_models[i], KNearestNeighbors):
                     prediction = self._best_models[i].predict(traffic_info.values)[0]
                 else:

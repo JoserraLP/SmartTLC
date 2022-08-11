@@ -3,6 +3,7 @@ import random
 
 import pandas as pd
 import t_predictor.static.constants as cnt
+from sumo_generators.static.constants import NUM_TRAFFIC_TYPES
 
 
 def check_vacation(date: pd.DataFrame):
@@ -14,24 +15,33 @@ def check_vacation(date: pd.DataFrame):
 
     :param date: date with fields (date_year, date_month and date_day)
     :type date: pd.DataFrame
-
     :return: 0 if summer vacation, 1 if winter vacation, -1 otherwise.
     :rtype: int
     """
     # Calculate the current date
     current_date = datetime.date(year=date['date_year'], month=date['date_month'], day=date['date_day'])
-    # Check if date is between 20-7-2021 and 10-9-2021
-    if datetime.date(year=2021, month=7, day=20) <= current_date <= datetime.date(year=2021, month=9, day=10):
+    
+    # Retrieve vacation dates
+    start_summer_day, start_summer_month, start_summer_year = [int(x) for x in cnt.START_SUMMER_DATE.split('/')]
+    end_summer_day, end_summer_month, end_summer_year = [int(x) for x in cnt.END_SUMMER_DATE.split('/')]
+    start_winter_day, start_winter_month, start_winter_year = [int(x) for x in cnt.START_WINTER_DATE.split('/')]
+    end_winter_day, end_winter_month, end_winter_year = [int(x) for x in cnt.END_WINTER_DATE.split('/')]
+    
+    # Check if summer
+    if datetime.date(year=int(start_summer_year), month=start_summer_month, day=start_summer_day) <= current_date <= \
+            datetime.date(year=end_summer_year, month=end_summer_month, day=end_summer_day):
         return 0  # Summer
-    # Check if date is between 21-12-2020 and 7-1-2021 or 21-12-2021 and 7-1-2022
-    elif (datetime.date(year=2020, month=12, day=21) <= current_date <= datetime.date(year=2021, month=1, day=7)) or \
-            (datetime.date(year=2021, month=12, day=21) <= current_date <= datetime.date(year=2022, month=1, day=7)):
+    # Check if winter
+    elif (datetime.date(year=start_winter_year-1, month=start_winter_month, day=start_winter_day) <= current_date 
+          <= datetime.date(year=end_winter_year, month=end_winter_month, day=end_winter_day)) or \
+            (datetime.date(year=start_winter_year, month=start_winter_month, day=start_winter_day) <= current_date 
+             <= datetime.date(year=end_winter_year+1, month=end_winter_month, day=end_winter_day)):
         return 1  # Winter
     else:
         return -1  # Non-vacation
 
 
-def append_dates_info(dataframe: pd.DataFrame, date: pd.DataFrame):
+def append_dates_info(dataframe: pd.DataFrame, date: pd.DataFrame) -> pd.DataFrame:
     """
     Append date information into a dataframe
 
@@ -41,6 +51,7 @@ def append_dates_info(dataframe: pd.DataFrame, date: pd.DataFrame):
     :type date: pd.DataFrame
 
     :return: dataframe with date added
+    :rtype: pandas DataFrame
     """
     dataframe['day'] = date['day']
     dataframe['date_day'] = date['date_day']
@@ -67,24 +78,34 @@ class TimePatternGenerator:
 
         # Define the base temporal patterns
         self._base_patterns = {
-            'festive': pd.read_csv('../time_patterns/base_patterns/festive_day.csv', usecols=['hour', 'traffic_type']),
-            'friday': pd.read_csv('../time_patterns/base_patterns/friday.csv', usecols=['hour', 'traffic_type']),
-            'monday': pd.read_csv('../time_patterns/base_patterns/monday.csv', usecols=['hour', 'traffic_type']),
-            'saturday': pd.read_csv('../time_patterns/base_patterns/saturday.csv', usecols=['hour', 'traffic_type']),
-            'summer_vacations_day': pd.read_csv('../time_patterns/base_patterns/summer_vacations_day.csv',
+            'festive': pd.read_csv(cnt.DEFAULT_TIME_PATTERNS_FOLDER + 'base_patterns/festive_day.csv', 
+                                   usecols=['hour', 'traffic_type']),
+            'friday': pd.read_csv(cnt.DEFAULT_TIME_PATTERNS_FOLDER + 'base_patterns/friday.csv', 
+                                  usecols=['hour', 'traffic_type']),
+            'monday': pd.read_csv(cnt.DEFAULT_TIME_PATTERNS_FOLDER + 'base_patterns/monday.csv', 
+                                  usecols=['hour', 'traffic_type']),
+            'saturday': pd.read_csv(cnt.DEFAULT_TIME_PATTERNS_FOLDER + 'base_patterns/saturday.csv', 
+                                    usecols=['hour', 'traffic_type']),
+            'summer_vacations_day': pd.read_csv(cnt.DEFAULT_TIME_PATTERNS_FOLDER + 
+                                                'base_patterns/summer_vacations_day.csv', 
                                                 usecols=['hour', 'traffic_type']),
-            'sunday': pd.read_csv('../time_patterns/base_patterns/sunday.csv', usecols=['hour', 'traffic_type']),
-            'thursday': pd.read_csv('../time_patterns/base_patterns/thursday.csv', usecols=['hour', 'traffic_type']),
-            'tuesday': pd.read_csv('../time_patterns/base_patterns/tuesday.csv', usecols=['hour', 'traffic_type']),
-            'wednesday': pd.read_csv('../time_patterns/base_patterns/wednesday.csv', usecols=['hour', 'traffic_type']),
-            'winter_vacations_day': pd.read_csv('../time_patterns/base_patterns/winter_vacations_day.csv',
+            'sunday': pd.read_csv(cnt.DEFAULT_TIME_PATTERNS_FOLDER + 'base_patterns/sunday.csv', 
+                                  usecols=['hour', 'traffic_type']),
+            'thursday': pd.read_csv(cnt.DEFAULT_TIME_PATTERNS_FOLDER + 'base_patterns/thursday.csv', 
+                                    usecols=['hour', 'traffic_type']),
+            'tuesday': pd.read_csv(cnt.DEFAULT_TIME_PATTERNS_FOLDER + 'base_patterns/tuesday.csv', 
+                                   usecols=['hour', 'traffic_type']),
+            'wednesday': pd.read_csv(cnt.DEFAULT_TIME_PATTERNS_FOLDER + 'base_patterns/wednesday.csv', 
+                                     usecols=['hour', 'traffic_type']),
+            'winter_vacations_day': pd.read_csv(cnt.DEFAULT_TIME_PATTERNS_FOLDER + 
+                                                'base_patterns/winter_vacations_day.csv',
                                                 usecols=['hour', 'traffic_type']),
         }
 
         # Store working usual days
-        self._usual_days = ['monday', 'tuesday', 'friday', 'sunday', 'thursday', 'saturday', 'wednesday']
+        self._working_days = ['monday', 'tuesday', 'friday', 'sunday', 'thursday', 'saturday', 'wednesday']
 
-    def parse_calendar(self):
+    def parse_calendar(self) -> None:
         """
         Parse the unnecessary columns and rows from the calendar dataframe.
         The parsed values are:
@@ -119,11 +140,12 @@ class TimePatternGenerator:
         # Append working to NaN festive
         self._calendar = self._calendar.fillna('working')
 
-    def get_pattern_calendar(self):
+    def get_pattern_calendar(self) -> pd.DataFrame:
         """
         Creates the calendar with the traffic type patterns.
 
         :return: calendar pattern dataset
+        :rtype: pandas DataFrame
         """
         # Create pattern calendar
         pattern_calendar = pd.DataFrame()
@@ -157,11 +179,12 @@ class TimePatternGenerator:
 
         return pattern_calendar
 
-    def get_random_pattern_calendar(self):
+    def get_random_pattern_calendar(self) -> pd.DataFrame:
         """
         Creates the calendar with the traffic type patterns adding some randomness.
 
         :return: calendar pattern dataset
+        :rtype: pandas DataFrame
         """
         # Create pattern calendar
         pattern_calendar = pd.DataFrame()
@@ -185,12 +208,8 @@ class TimePatternGenerator:
                 swap_usual_to_vacation_day = random.randint(0, cnt.RANDOM_USUAL_TO_VACATION_DAY_RANGE)
                 # Swap a usual day as vacation
                 if swap_usual_to_vacation_day == 0:
-                    print(f'Swapping usual day {date["date_day"]}/{date["date_month"]} '
-                          f'-> to summer vacation day')
                     base_pattern = append_dates_info(self._base_patterns['summer_vacations_day'], date)
                 elif swap_usual_to_vacation_day == 1:
-                    print(f'Swapping usual day {date["date_day"]}/{date["date_month"]} '
-                          f'-> to winter vacation day')
                     base_pattern = append_dates_info(self._base_patterns['winter_vacations_day'], date)
                 else:
                     # Retrieve the given pattern
@@ -201,10 +220,8 @@ class TimePatternGenerator:
                         swap_usual_day = random.randint(0, cnt.RANDOM_USUAL_REPLACE)
                         # Swap value
                         if swap_usual_day == 0:
-                            random_day_index = random.randint(0, len(self._usual_days)-1)
-                            random_day = self._usual_days[random_day_index]
-                            print(f'Swapping usual day {date["date_day"]}/{date["date_month"]} '
-                                  f'-> to usual day {random_day}')
+                            random_day_index = random.randint(0, len(self._working_days)-1)
+                            random_day = self._working_days[random_day_index]
                             base_pattern = append_dates_info(self._base_patterns[random_day], date)
                         else:
                             base_pattern = append_dates_info(self._base_patterns[date['day']], date)
@@ -218,15 +235,11 @@ class TimePatternGenerator:
 
                 # Swap a vacation day as usual
                 if swap_vacation_to_usual_day == 0:
-                    print(
-                        f'Swapping vacation day {date["date_day"]}/{date["date_month"]} -> to usual day: {date["day"]}')
                     base_pattern = append_dates_info(self._base_patterns[date['day']], date)
                 # Summer vacation
                 elif vacation_type == 0:
                     # Swap from summer to winter
                     if swap_type_vacation_day == 0:
-                        print(f'Swapping summer vacation day {date["date_day"]}/{date["date_month"]} '
-                              f'-> to winter vacation day')
                         base_pattern = append_dates_info(self._base_patterns['winter_vacations_day'], date)
                     # Leave as a summer day
                     else:
@@ -235,8 +248,6 @@ class TimePatternGenerator:
                 elif vacation_type == 1:
                     # Swap from winter to summer
                     if swap_type_vacation_day == 0:
-                        print(f'Swapping winter vacation day {date["date_day"]}/{date["date_month"]} '
-                              f'-> to summer vacation day')
                         base_pattern = append_dates_info(self._base_patterns['summer_vacations_day'], date)
                     # Leave as winter day
                     else:
@@ -247,7 +258,7 @@ class TimePatternGenerator:
 
                 # Generate random variance on traffic type by getting a random hour range
                 hour_index = random.randint(0, cnt.RANDOM_TRAFFIC_TYPE_RANGE)
-                if hour_index < 48:  # Valid hour random generation
+                if hour_index < cnt.NUM_ROWS_PER_DAY:  # Valid hour random generation
                     # Generate the noise that will be applied to the traffic type field
                     noise_traffic_type = random.randint(cnt.RANDOM_TRAFFIC_TYPE_LOWER_BOUND,
                                                         cnt.RANDOM_TRAFFIC_TYPE_UPPER_BOUND)
@@ -257,7 +268,7 @@ class TimePatternGenerator:
                     # Check if the new traffic type is in a valid range
                     if cur_traffic_type - abs(noise_traffic_type) < 0:
                         cur_traffic_type = 0
-                    elif cur_traffic_type + abs(noise_traffic_type) > 11:
+                    elif cur_traffic_type + abs(noise_traffic_type) > NUM_TRAFFIC_TYPES:
                         cur_traffic_type = 11
                     else:
                         cur_traffic_type = cur_traffic_type + noise_traffic_type

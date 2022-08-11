@@ -16,7 +16,7 @@ class Visualizer:
         """
         self._dataset = pd.DataFrame()
 
-    def load_dataset(self, dataset_file: str):
+    def load_dataset(self, dataset_file: str) -> None:
         """
         Load dataset from a given directory.
 
@@ -26,7 +26,7 @@ class Visualizer:
         """
         self._dataset = pd.read_csv(dataset_file)
 
-    def create_box_plot(self, x: str, y: str, hue: str, palette: Union[str, list]):
+    def create_box_plot(self, x: str, y: str, hue: str, palette: Union[str, list]) -> None:
         """
         Create a box plot and show it.
 
@@ -43,7 +43,7 @@ class Visualizer:
         sns.boxplot(x=x, y=y, hue=hue, data=self._dataset, palette=palette)
         plt.show()
 
-    def create_scatter_plot(self, x: str, y: str, hue: str, palette: Union[str, list]):
+    def create_scatter_plot(self, x: str, y: str, hue: str, palette: Union[str, list]) -> None:
         """
         Create a scatter plot and show it.
 
@@ -60,7 +60,7 @@ class Visualizer:
         sns.scatterplot(x=x, y=y, hue=hue, data=self._dataset, palette=palette)
         plt.show()
 
-    def create_pair_plot(self, hue: str, palette: Union[str, list], kind: str = 'scatter'):
+    def create_pair_plot(self, hue: str, palette: Union[str, list], kind: str = 'scatter') -> None:
         """
         Create a pair plot and show it.
 
@@ -75,7 +75,7 @@ class Visualizer:
         sns.pairplot(data=self._dataset, hue=hue, palette=palette, kind=kind)
         plt.show()
 
-    def create_bar_plot(self, x: str, y: str, hue: str, palette: Union[str, list]):
+    def create_bar_plot(self, x: str, y: str, hue: str, palette: Union[str, list]) -> None:
         """
         Create a bar plot and show it.
 
@@ -92,7 +92,7 @@ class Visualizer:
         sns.barplot(x=x, y=y, hue=hue, data=self._dataset, palette=palette)
         plt.show()
 
-    def create_line_plot(self, x: str, y: str, hue: str, palette: Union[str, list]):
+    def create_line_plot(self, x: str, y: str, hue: str, palette: Union[str, list]) -> None:
         """
         Create a line plot and show it.
 
