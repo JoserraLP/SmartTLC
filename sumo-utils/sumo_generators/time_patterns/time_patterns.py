@@ -1,9 +1,7 @@
 import math
 
 import pandas as pd
-from sumo_generators.static.constants import TIMESTEPS_PER_HALF_HOUR
-
-from tl_controller.static.constants import DEFAULT_TIME_PATTERN_FILE
+from sumo_generators.static.constants import TIMESTEPS_PER_HALF_HOUR, DEFAULT_TIME_PATTERN_FILE
 
 
 class TimePattern:
@@ -17,12 +15,20 @@ class TimePattern:
     def __init__(self, file_dir: str = DEFAULT_TIME_PATTERN_FILE) -> None:
         """
         TimePattern class initializer.
-
-                :param file_dir: directory where the time pattern is located. Default to month.csv
-        :type file_dir: str
-        :return None
         """
         self._pattern = pd.read_csv(file_dir)
+
+    def retrieve_traffic_type(self, time_pattern_id: int) -> int:
+        """
+        Retrieve the traffic type given a time_pattern_id.
+
+        :param time_pattern_id: current simulation time_pattern_id
+        :type time_pattern_id: int
+        :return: traffic type represented as an int
+        :rtype int
+        """
+        if time_pattern_id < len(self._pattern):
+            return self._pattern.loc[time_pattern_id]['traffic_type']
 
     def retrieve_turn_prob(self, simulation_timestep: int) -> pd.DataFrame:
         """

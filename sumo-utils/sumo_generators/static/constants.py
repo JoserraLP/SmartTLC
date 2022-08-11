@@ -31,6 +31,15 @@ DEFAULT_TLL_DIR = DEFAULT_DIR + "topology.tll.xml"
 DEFAULT_ROUTE_DIR = DEFAULT_DIR + "flows.rou.xml"
 DEFAULT_CONFIG_DIR = DEFAULT_DIR + "simulation.sumocfg"
 
+# Default date values
+DEFAULT_DAY = "monday"
+DEFAULT_DATE_DAY = "02"
+DEFAULT_DATE_MONTH = "02"  # February
+DEFAULT_DATE_YEAR = "2021"
+
+# Date pattern fields
+DATE_FIELDS = ['hour', 'day', 'date_day', 'date_month', 'date_year']
+
 # Info schemas
 EDGE_SCHEMA = '  <edge id="{id}" from="{from_node}" to="{to_node}" priority="{priority}" numLanes="{num_lanes}"/> \n'
 NODE_SCHEMA = '  <node id="{id}" x="{x}" y="{y}" type="{type}" tlType="{tl_type}" tlLayout="{tl_layout}"/> \n'
@@ -74,6 +83,11 @@ TRAFFIC_TYPE_RELATION = {
     10: ('high', 'med'),
     11: ('high', 'high'),
 }
+
+
+# Number of traffic types
+NUM_TRAFFIC_TYPES = len(TRAFFIC_TYPE_RELATION)
+
 
 TRAFFIC_TYPES = {
     'very_low': 0,
