@@ -9,7 +9,7 @@ JUNCTION_TYPE = "traffic_light"
 TL_TYPE = "static"
 TL_LAYOUT = "opposites"
 DEFAULT_TIME_PATTERN_FILE = '../time_patterns/generated_calendar.csv'
-ALLOW_ADD_LEFT_PHASES = False
+ALLOW_TURNS = False
 
 # Traffic proportions
 TRAFFIC_PROPORTIONS = [0.25, 0.50, 1, 2, 4]
@@ -88,7 +88,7 @@ TRAFFIC_TYPE_RELATION = {
 # Number of traffic types
 NUM_TRAFFIC_TYPES = len(TRAFFIC_TYPE_RELATION)
 
-
+# Available traffic types
 TRAFFIC_TYPES = {
     'very_low': 0,
     'low': 1,

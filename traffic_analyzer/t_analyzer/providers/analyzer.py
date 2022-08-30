@@ -43,7 +43,7 @@ class TrafficAnalyzer:
     :type mqtt_url: str
     :param mqtt_port: MQTT middleware broker port. Default to 1883.
     :type mqtt_port: int
-    :temporal_window: monitoring temporal window. Default to 5.
+    :param temporal_window: monitoring temporal window. Default to 5.
     :type temporal_window: float
     """
 

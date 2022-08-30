@@ -86,7 +86,8 @@ def generate_detector_file(network_path: str, detector_path: str, cols: int = MI
     tree.write(detector_path)
 
 
-def generate_tl_file(network_path: str, tl_path: str, interval: int = -1, proportion: bool = True):
+def generate_tl_file(network_path: str, tl_path: str, interval: int = -1, proportion: bool = True,
+                     allow_turns: bool = ALLOW_TURNS, lanes: int = MIN_LANES,):
     """
     Creates the traffic light file based on the network topology and its type
 
@@ -98,14 +99,21 @@ def generate_tl_file(network_path: str, tl_path: str, interval: int = -1, propor
     :type interval: int
     :param proportion: flag enabling proportion-based TL programs. Default to True.
     :type proportion: bool
+    :param allow_turns: flag to allow additional traffic lights turn phases
+    :type allow_turns: bool
+    :param lanes: number of lanes per edge
+    :type lanes: int
     :return: None
     """
-
     # Create root for tll
     tl_root = ET.Element("additional")
 
     # Define tl program id schema
     tl_program_schema = 'static_program_{}'
+
+    # Define no turn states
+    no_turn_states = ["G"*lanes+"r"*lanes+"G"*lanes+"r"*lanes, "y"*lanes+"r"*lanes+"y"*lanes+"r"*lanes,
+                      "r"*lanes+"G"*lanes+"r"*lanes+"G"*lanes, "r"*lanes+"y"*lanes+"r"*lanes+"y"*lanes]
 
     # Retrieve the XML content
     tree = ET.parse(network_path)
@@ -136,6 +144,9 @@ def generate_tl_file(network_path: str, tl_path: str, interval: int = -1, propor
             time_ew = MAXIMUM_TIME_PHASE / (TRAFFIC_PROPORTIONS[i] + 1)
 
             for index, tl_phase in enumerate(tl_phases):
+                # if turns are not allowed, change the traffic light schema
+                if not allow_turns:
+                    tl_phase['state'] = no_turn_states[index]
                 # Update the green phases
                 if index == 0:  # Green on NS
                     tl_phase['duration'] = str(LOWER_BOUND_TIME_PHASE + i * interval) if interval \
@@ -156,8 +167,7 @@ def generate_tl_file(network_path: str, tl_path: str, interval: int = -1, propor
 def generate_network_file(rows: int = MIN_ROWS, cols: int = MIN_COLS, lanes: int = MIN_LANES, distance: int = DISTANCE,
                           junction: str = JUNCTION_TYPE, tl_type: str = TL_TYPE,
                           tl_layout: str = TL_LAYOUT, nodes_path: str = DEFAULT_NODES_DIR,
-                          edges_path: str = DEFAULT_EDGES_DIR, network_path: str = DEFAULT_NET_DIR,
-                          allow_add_left_phases: bool = ALLOW_ADD_LEFT_PHASES):
+                          edges_path: str = DEFAULT_EDGES_DIR, network_path: str = DEFAULT_NET_DIR):
     """
     Creates the network generator and generates the output network file
 
@@ -181,9 +191,7 @@ def generate_network_file(rows: int = MIN_ROWS, cols: int = MIN_COLS, lanes: int
     :type edges_path: str
     :param network_path: directory where the network file will be generated
     :type network_path: str
-    :param allow_add_left_phases: flag to allow additional traffic lights left turn phases
-    :type allow_add_left_phases: bool
-    :return:
+    :return: None
     """
     # Define the network generator
     net_generator = NetGenerator(rows=rows, cols=cols, lanes=lanes, distance=distance, junction=junction,
@@ -194,9 +202,6 @@ def generate_network_file(rows: int = MIN_ROWS, cols: int = MIN_COLS, lanes: int
 
     params = ['netconvert', '-n', nodes_path, '-e', edges_path, '-o', network_path,
               '--tls.default-type', tl_type, '--no-turnarounds']
-    # Add additional params
-    if not allow_add_left_phases:
-        params.extend(['--tls.left-green.time', str(0)])
 
     # Create a subprocess in order to generate the network file using the previously generated files and the netconvert
     # command

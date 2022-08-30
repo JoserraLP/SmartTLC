@@ -101,10 +101,10 @@ def get_options():
                                             help="interval of seconds to be used in the traffic light generator")
     tl_program_generator_group.add_argument("-p", "--proportion", dest="proportion", action='store_true',
                                             default=True, help="flag to use proportions in the traffic light generator")
-    tl_program_generator_group.add_argument("--allow-add-turn-phases", dest="allow_add_turn_phase",
-                                            action='store_true', default=ALLOW_ADD_LEFT_PHASES,
-                                            help="flag to allow additional phases on left turns "
-                                                 "in the traffic light generator")
+    tl_program_generator_group.add_argument("--allow-turns", dest="allow_turns", action='store_true',
+                                            default=ALLOW_TURNS,
+                                            help="flag to allow additional phases on turns "
+                                                 f"in the traffic light generator. Default is {ALLOW_TURNS}")
 
     # Flows Generator
     flows_generator_group = arg_parser.add_argument_group("Flows generator",
@@ -131,8 +131,7 @@ if __name__ == '__main__':
                           distance=exec_options.distance, junction=exec_options.junction,
                           tl_type=exec_options.tl_type, tl_layout=exec_options.tl_layout,
                           nodes_path=exec_options.nodes_path, edges_path=exec_options.edges_path,
-                          network_path=exec_options.network_path,
-                          allow_add_left_phases=exec_options.allow_add_turn_phase)
+                          network_path=exec_options.network_path)
 
     # Generate the detector file
     generate_detector_file(network_path=exec_options.network_path, detector_path=exec_options.detector_path,
@@ -140,7 +139,8 @@ if __name__ == '__main__':
 
     # Generate the traffic light programs file
     generate_tl_file(network_path=exec_options.network_path, tl_path=exec_options.tl_program_path,
-                     proportion=exec_options.proportion, interval=exec_options.interval)
+                     proportion=exec_options.proportion, interval=exec_options.interval,
+                     allow_turns=exec_options.allow_turns, lanes=exec_options.lanes)
 
     # Generate the SUMO config file
     generate_sumo_config_file(sumo_config_path=exec_options.sumo_config_path, network_path=exec_options.network_path,

@@ -38,7 +38,7 @@ def get_options():
     train_group.add_argument("-f" "--folds", dest="folds", type=check_greater_zero, default=MODEL_NUM_FOLDS,
                              action="store",
                              help=f"k-fold number of folds. Default is {MODEL_NUM_FOLDS}")
-    train_group.add_argument("-c", "--clean", dest="clean", action="store_true", type=bool,
+    train_group.add_argument("-c", "--clean", dest="clean", action="store_true",
                              default=False, help="clean the model files.")
 
     # Predict value group
@@ -51,7 +51,7 @@ def get_options():
     component_group = arg_parser.add_argument_group("Component Options", "Parameters related to the Docker component")
     component_group.add_argument("--component", dest="component", action="store_true", default=True,
                                  help="deploy the full component")
-    component_group.add_argument("-n", "--num-models", dest="num_models", action="store",
+    component_group.add_argument("-n", "--num-models", dest="num_models", action="store", type=check_greater_zero,
                                  help=f"number of models used for the predictor. Default is {DEFAULT_NUM_MODELS}",
                                  default=DEFAULT_NUM_MODELS)
     component_group.add_argument("--middleware_host", dest="mqtt_url", action="store", type=str,
