@@ -1,10 +1,11 @@
-import optparse
+import argparse
 import os
 import sys
 
 import tl_controller.static.constants as cnt
 from sumolib import checkBinary
-from tl_controller.providers.traci_sim import TraCISimulator, DEFAULT_TURN_PATTERN_FILE
+from tl_controller.providers.traci_sim import TraCISimulator
+from tl_controller.static.argparse_types import check_file, check_valid_format
 
 
 def import_required_libs():
@@ -24,43 +25,39 @@ def import_required_libs():
 
 def get_options():
     """
-    Define options for the executable script.
+    Get options for the executable script.
 
-    :return: options
-    :rtype: object
+    :return: Arguments options
     """
-    optParser = optparse.OptionParser()
+    # Create the Argument Parser
+    arg_parser = argparse.ArgumentParser(description='Script to deploy the TLC component, which is the Transportation'
+                                                     'Digital Twin that will simulate the traffic experiment.')
 
-    # Dataset generation group
-    simulation_group = optparse.OptionGroup(optParser, "Simulation Options", "Simulation tools")
-    simulation_group.add_option("--nogui", action="store_true",
+    arg_parser.add_argument("--nogui", action="store_true",
                                 default=cnt.DEFAULT_GUI_FLAG, help="run the commandline version of sumo")
-    simulation_group.add_option("-c", "--config", dest="config", action='store',
-                                metavar="FILE", help="sumo configuration file location")
-    simulation_group.add_option("-t", "--time-pattern", dest="time_pattern", metavar='FILE', action="store",
+    arg_parser.add_argument("-c", "--config", dest="config_file", action='store', default=cnt.DEFAULT_CONFIG_FILE,
+                                type=check_file, help=f"sumo configuration file location. Default is "
+                                                     f"{cnt.DEFAULT_CONFIG_FILE}")
+    arg_parser.add_argument("-t", "--time-pattern", dest="time_pattern", metavar='FILE', action="store",
                                 help="time pattern input file. Do not use it with the dates parameter.")
-    simulation_group.add_option("-d", "--dates", dest="dates", action="store",
-                                help="calendar dates from start to end to simulate. Format is dd/mm/yyyy-dd/mm/yyyy."
-                                     "")
-    simulation_group.add_option("--turn-pattern", dest="turn_pattern", metavar='FILE', action="store",
+    arg_parser.add_argument("-d", "--dates", dest="dates", action="store", type=check_valid_format,
+                                help="calendar dates from start to end to simulate. Format is dd/mm/yyyy-dd/mm/yyyy.")
+    arg_parser.add_argument("--turn-pattern", dest="turn_pattern", action="store", type=check_file,
                                 help="turn pattern input file.")
-    simulation_group.add_option("-s", "--save-vehicles", action="store", dest="save_vehicles_dir",
+    arg_parser.add_argument("-s", "--save-vehicles", action="store", dest="save_vehicles_dir", type=check_file,
                                 help="directory where the vehicles info will be saved. Cannot be used with the "
                                      "--load-vehicles option.")
-    simulation_group.add_option("-l", "--load-vehicles", action="store", dest="load_vehicles_dir",
+    arg_parser.add_argument("-l", "--load-vehicles", action="store", default=False, dest="load_vehicles_dir",
+                            type=check_file,
                                 help="directory from where the vehicles info will be load. Cannot be used with the "
-                                     "--save-vehicles option.")
+                                     "--save-vehicles option. Default to False.")
 
-    optParser.add_option_group(simulation_group)
-
-    options, args = optParser.parse_args()
-    return options
+    # Retrieve the arguments parsed
+    args = arg_parser.parse_args()
+    return args
 
 
 if __name__ == "__main__":
-
-    # Wait 120 seconds until the other components are deployed
-    # time.sleep(120)
 
     # Import required libraries
     import_required_libs()
@@ -80,15 +77,9 @@ if __name__ == "__main__":
     else:
         sumo_binary = checkBinary('sumo-gui')
 
-    # Retrieve configuration file by parameters or by default
-    if exec_options.config:
-        config_file = exec_options.config
-    else:
-        config_file = cnt.DEFAULT_CONFIG_FILE
-
     # Create a dict with the simulation arguments
     sim_args = {
-        'config_file': config_file,
+        'config_file': exec_options.config_file,
         'sumo_binary': sumo_binary
     }
 

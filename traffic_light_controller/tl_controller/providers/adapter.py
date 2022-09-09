@@ -1,112 +1,12 @@
 import ast
-import math
 
 import paho.mqtt.client as mqtt
+from sumo_generators.network.net_graph import NetGraph
+from sumo_generators.static.constants import NUM_TRAFFIC_TYPES, TRAFFIC_TYPE_RELATION
+from tl_controller.providers.utils import get_adjacent_junctions_probs, get_new_traffic_type_by_direction, \
+    retrieve_turns_edges, update_edge_turns_with_probs
 from tl_controller.static.constants import TRAFFIC_TYPE_TL_ALGORITHMS, ERROR_THRESHOLD, MQTT_URL, MQTT_PORT, \
-    TRAFFIC_PREDICTION_TOPIC, TURN_PREDICTION_TOPIC, ANALYSIS_TOPIC, NUM_TRAFFIC_TYPES
-
-
-def retrieve_junction_turns_ids(roads, rows, cols):
-    junction_turns = {}
-
-    for road in roads:
-        # Retrieve source and destination nodes and its ids
-        source, destination = road.split('_')
-        source_id, destination_id = int(source[1:]), int(destination[1:])
-
-        next_forward_junction, next_right_junction, next_left_junction, orientation = '', '', '', ''
-
-        if 'n' in source:
-            orientation = 'ns'
-            next_forward_junction = f'c{destination_id + cols}'
-            if destination_id % cols == 1:  # Left nodes
-                next_left_junction = f'c{destination_id + 1}'
-            elif destination_id % cols == 0:  # Right nodes
-                next_right_junction = f'c{destination_id - 1}'
-            else:  # Center nodes
-                next_right_junction = f'c{destination_id - 1}'
-                next_left_junction = f'c{destination_id + 1}'
-        elif 's' in source:
-            orientation = 'ns'
-            next_forward_junction = f'c{destination_id - cols}'
-            if destination_id % cols == 1:  # Left nodes
-                next_right_junction = f'c{destination_id + 1}'
-            elif destination_id % cols == 0:  # Right nodes
-                next_left_junction = f'c{destination_id - 1}'
-            else:  # Center nodes
-                next_left_junction = f'c{destination_id - 1}'
-                next_right_junction = f'c{destination_id + 1}'
-        elif 'e' in source:
-            orientation = 'ew'
-            next_forward_junction = f'c{destination_id - 1}'
-            if math.ceil(destination_id / cols) == 1:  # Lower nodes
-                next_left_junction = f'c{destination_id + cols}'
-            elif math.ceil(destination_id / cols) == rows:  # Upper nodes
-                next_right_junction = f'c{destination_id - cols}'
-            else:  # Center nodes
-                next_right_junction = f'c{destination_id - cols}'
-                next_left_junction = f'c{destination_id + cols}'
-        elif 'w' in source:
-            orientation = 'ew'
-            next_forward_junction = f'c{destination_id + 1}'
-            if math.ceil(destination_id / cols) == 1:  # Lower nodes
-                next_right_junction = f'c{destination_id + cols}'
-            elif math.ceil(destination_id / cols) == rows:  # Upper nodes
-                next_left_junction = f'c{destination_id - cols}'
-            else:  # Center nodes
-                next_right_junction = f'c{destination_id + cols}'
-                next_left_junction = f'c{destination_id - cols}'
-        else:  # center nodes
-            if source_id == destination_id - cols:  # Going down
-                orientation = 'ns'
-                if destination_id % cols == 1:  # Left nodes
-                    next_left_junction = f'c{destination_id + 1}'
-                elif destination_id % cols == 0:  # Right nodes
-                    next_right_junction = f'c{destination_id - 1}'
-                else:  # Center nodes
-                    next_right_junction = f'c{destination_id - 1}'
-                    next_left_junction = f'c{destination_id + 1}'
-                if math.ceil(destination_id / cols) != rows:  # Upper nodes
-                    next_forward_junction = f'c{destination_id + cols}'
-            elif source_id == destination_id + cols:  # Going up
-                orientation = 'ns'
-                if destination_id % cols == 1:  # Left nodes
-                    next_right_junction = f'c{destination_id + 1}'
-                elif destination_id % cols == 0:  # Right nodes
-                    next_left_junction = f'c{destination_id - 1}'
-                else:  # Center nodes
-                    next_left_junction = f'c{destination_id - 1}'
-                    next_right_junction = f'c{destination_id + 1}'
-                if math.ceil(destination_id / cols) != 1:  # Not lower nodes
-                    next_forward_junction = f'c{destination_id - cols}'
-            elif source_id == destination_id + 1:  # Going right
-                orientation = 'ew'
-                if math.ceil(destination_id / cols) == 1:  # Lower nodes
-                    next_left_junction = f'c{destination_id + cols}'
-                elif math.ceil(destination_id / cols) == rows:  # Upper nodes
-                    next_right_junction = f'c{destination_id - cols}'
-                else:  # Center nodes
-                    next_right_junction = f'c{destination_id - cols}'
-                    next_left_junction = f'c{destination_id + cols}'
-                if destination_id % cols != 1:  # Not left nodes
-                    next_forward_junction = f'c{destination_id - 1}'
-            elif source_id == destination_id - 1:  # Going left
-                orientation = 'ew'
-                if math.ceil(destination_id / cols) == 1:  # Lower nodes
-                    next_right_junction = f'c{destination_id + cols}'
-                elif math.ceil(destination_id / cols) == rows:  # Upper nodes
-                    next_left_junction = f'c{destination_id - cols}'
-                else:  # Center nodes
-                    next_right_junction = f'c{destination_id + cols}'
-                    next_left_junction = f'c{destination_id - cols}'
-                if destination_id % cols != 0:  # Not right nodes
-                    next_forward_junction = f'c{destination_id + 1}'
-
-        junction_turns[road] = {'right': {'junction': next_right_junction, 'prob': 0.0},
-                                'left': {'junction': next_left_junction, 'prob': 0.0},
-                                'forward': {'junction': next_forward_junction, 'prob': 0.0},
-                                'orientation': orientation}
-    return junction_turns
+    TRAFFIC_PREDICTION_TOPIC, TURN_PREDICTION_TOPIC, ANALYSIS_TOPIC
 
 
 class TrafficLightAdapter:
@@ -114,26 +14,23 @@ class TrafficLightAdapter:
     Traffic Light Adapter class
     """
 
-    def __init__(self, traffic_prediction=None, traffic_analysis=None, turn_prediction=None, roads=None,
-                 mqtt_url: str = MQTT_URL,
-                 mqtt_port: int = MQTT_PORT, rows: int = -1, cols: int = -1, num_adapt_items: int = 0):
+    def __init__(self, net_graph: NetGraph, traffic_prediction=None, traffic_analysis=None, turn_prediction=None,
+                 mqtt_url: str = MQTT_URL, mqtt_port: int = MQTT_PORT, rows: int = -1, cols: int = -1):
         """
         TraCISimulator initializer.
 
+        :param net_graph: network topology graph
+        :type net_graph: NetGraph
         :param traffic_prediction: traffic prediction dict. Default is None.
         :type traffic_prediction: dict
         :param traffic_analysis: traffic analysis dict. Default is None.
         :type traffic_analysis: dict
         :param turn_prediction: turn prediction dict. Default is None.
         :type turn_prediction: dict
-        :param roads: Roads list. Default is None.
-        :type roads: list
         :param mqtt_url: MQTT middleware broker url. Default to '172.20.0.2'.
         :type mqtt_url: str
         :param mqtt_port: MQTT middleware broker port. Default to 1883.
         :type mqtt_port: int
-        :param num_adapt_items: number of items for real-time/historic information relevance adaptation. Default to 0.
-        :type num_adapt_items: int
         :param rows: topology rows. Default to -1.
         :type rows: int
         :param cols: topology cols. Default to -1.
@@ -149,7 +46,7 @@ class TrafficLightAdapter:
         self._cols = cols
 
         # Define junction connections
-        self._junctions_per_road = retrieve_junction_turns_ids(roads, rows, cols)
+        self._turns_per_road = retrieve_turns_edges(net_graph=net_graph, cols=cols)
 
         # Create the MQTT client, its callbacks and its connection to the broker
         self._mqtt_client = mqtt.Client()
@@ -193,10 +90,11 @@ class TrafficLightAdapter:
             # Retrieve analyzed traffic type
             self._traffic_analysis = traffic_info
         if msg.topic == TURN_PREDICTION_TOPIC:
-            # Retrieve turn prediction
             self._turn_prediction = traffic_info
+            # Retrieve turn prediction -> Update junction connections
+            update_edge_turns_with_probs(self._turns_per_road, traffic_info)
 
-    def get_new_tl_program(self):
+    def get_new_tl_program(self) -> dict:
         """
         Retrieve the new traffic light program based on the analyzer, predictor or both.
 
@@ -205,19 +103,40 @@ class TrafficLightAdapter:
         """
         current_traffic_type = None
 
-        # Store the turns probabilities per road
-        if self._turn_prediction:
-            for road, turns in self._turn_prediction.items():
-                # Store the turn probabilities
-                self._junctions_per_road[road]['right']['prob'] = turns[0]
-                self._junctions_per_road[road]['left']['prob'] = turns[1]
-                self._junctions_per_road[road]['forward']['prob'] = turns[2]
+        if self._traffic_analysis and self._turn_prediction:
+            current_traffic_type = {}
+            current_traffic_analysis = {}
+            # TODO process the information to propagate the neighbor information
+            for junction, traffic_type in self._traffic_analysis.items():
+                adjacent_junction_ns, adjacent_junction_ew = get_adjacent_junctions_probs(
+                    turns_per_road=self._turns_per_road,
+                    junction=junction)
 
-                print(f"Road {road} (with orientation {self._junctions_per_road[road]['orientation']}) "
-                      f"has the following turn probabilities:"
-                      f"\n Right {turns[0]} to junction {self._junctions_per_road[road]['right']['junction']}"
-                      f"\n Left {turns[1]} to junction {self._junctions_per_road[road]['left']['junction']}"
-                      f"\n Forward {turns[2]} to junction {self._junctions_per_road[road]['forward']['junction']}")
+                # NS
+                new_traffic_type_ns = get_new_traffic_type_by_direction(adjacent_junction_probs=adjacent_junction_ns,
+                                                                        traffic_analysis=self._traffic_analysis,
+                                                                        direction='ns')
+
+                # EW
+                new_traffic_type_ew = get_new_traffic_type_by_direction(adjacent_junction_probs=adjacent_junction_ew,
+                                                                        traffic_analysis=self._traffic_analysis,
+                                                                        direction='ew')
+                current_traffic_type[junction] = (new_traffic_type_ns, new_traffic_type_ew)
+
+
+                found = False
+                for k, v in TRAFFIC_TYPE_RELATION.items():
+                    if v == (new_traffic_type_ns, new_traffic_type_ew):
+                        found = True
+                        break
+
+                # TODO there are cases where the traffic is "Very Low" y "Medium", and as they are not represented yet,
+                # it fails, in order to fix it. Define more traffic types
+                if found:
+                    current_traffic_type[junction] = [k for k, v in TRAFFIC_TYPE_RELATION.items()
+                                                      if v == (new_traffic_type_ns, new_traffic_type_ew)][0]
+
+                current_traffic_analysis[junction] = TRAFFIC_TYPE_RELATION[traffic_type]
 
         # If only analyzer is deployed
         if self._traffic_analysis and not self._traffic_prediction:
@@ -254,12 +173,6 @@ class TrafficLightAdapter:
 
         return adapter_tl_programs
 
-    def close_connection(self):
-        """
-        Close MQTT client connection
-        """
-        self._mqtt_client.loop_stop()
-
     def calculate_actual_traffic_type(self, current_traffic_type, traffic_light):
         # Calculate the difference between the traffic types
         error_distance = self._traffic_analysis[traffic_light] \
@@ -277,53 +190,8 @@ class TrafficLightAdapter:
                 # If calculated value is valid, store it
                 current_traffic_type[traffic_light] = new_traffic_type
 
-    '''
-    def calculate_weighted_traffic_type(self, tl_id):
-        # Retrieve traffic type from analyzer and predictor
-        analysis_traffic_type = self._traffic_analysis[tl_id]
-        predicted_traffic_type = self._traffic_prediction[tl_id]
-
-        print("--------------------------------")
-        print(f"Predicted traffic type: {int(predicted_traffic_type)}")
-        print(f"Analysis traffic type: {analysis_traffic_type}")
-
-        # Retrieve current traffic type values
-        analysis_traffic_type_ns, analysis_traffic_type_ew = TRAFFIC_TYPE_RELATION[analysis_traffic_type]
-        predicted_traffic_type_ns, predicted_traffic_type_ew = TRAFFIC_TYPE_RELATION[predicted_traffic_type]
-
-        # Retrieve current traffic type values
-        analysis_num_veh_ns, analysis_num_veh_ew = FLOWS_VALUES[analysis_traffic_type_ns]['vehsPerHour'], \
-                                                   FLOWS_VALUES[analysis_traffic_type_ew]['vehsPerHour']
-
-        predicted_num_veh_ns, predicted_num_veh_ew = FLOWS_VALUES[predicted_traffic_type_ns]['vehsPerHour'], \
-                                                   FLOWS_VALUES[predicted_traffic_type_ew]['vehsPerHour']
-
-        # Calculate weight per direction
-        weight_ns = abs(predicted_num_veh_ns - analysis_num_veh_ns)/self._max_error_value
-        weight_ew = abs(predicted_num_veh_ew - analysis_num_veh_ew)/self._max_error_value
-
-        print(f"Weight NS: {weight_ns}")
-        print(f"Weight EW: {weight_ew}")
-
-        # Retrieve the actual traffic type
-        traffic_type_ns = round((1 - weight_ns) * TRAFFIC_TYPES[predicted_traffic_type_ns] +
-                                 weight_ns * TRAFFIC_TYPES[analysis_traffic_type_ns])
-
-        traffic_type_ew = round((1 - weight_ew) * TRAFFIC_TYPES[predicted_traffic_type_ew] +
-                                 weight_ew * TRAFFIC_TYPES[analysis_traffic_type_ew])
-
-        print(f"Traffic type NS: {traffic_type_ns}")
-        print(f"Traffic type EW: {traffic_type_ew}")
-
-        # Get traffic type name by id
-        ns_traffic_type_name = [k for k, v in TRAFFIC_TYPES.items() if v == traffic_type_ns][0]
-        ew_traffic_type_name = [k for k, v in TRAFFIC_TYPES.items() if v == traffic_type_ew][0]
-
-        actual_traffic_name = (ns_traffic_type_name, ew_traffic_type_name)
-
-        actual_traffic_type = [k for k, v in TRAFFIC_TYPE_RELATION.items() if v == actual_traffic_name][0]
-
-        print(f"Actual Traffic type: {actual_traffic_type}")
-
-        return actual_traffic_type
-    '''
+    def close_connection(self):
+        """
+        Close MQTT client connection
+        """
+        self._mqtt_client.loop_stop()

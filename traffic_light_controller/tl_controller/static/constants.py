@@ -9,22 +9,11 @@ LOWER_BOUND_TIME_PHASE = 20
 UPPER_BOUND_TIME_PHASE = 70
 MAXIMUM_TIME_PHASE = 80
 MAXIMUM_TIME_BOUND_PHASE = UPPER_BOUND_TIME_PHASE - LOWER_BOUND_TIME_PHASE
-
 MAXIMUM_TIME_PHASE_TURN = MAXIMUM_TIME_PHASE - 20
-
-# Default date values
-DEFAULT_DAY = "monday"
-DEFAULT_DATE_DAY = "02"
-DEFAULT_DATE_MONTH = "02"  # February
-DEFAULT_DATE_YEAR = "2021"
 
 # Timestep range for storing info into the dataset
 TIMESTEPS_TO_STORE_INFO = 300  # 5 Cycles = 300 seconds
 TIMESTEPS_PER_HALF_HOUR = 1800  # Half hour is 1800 seconds
-TIMESTEPS_PER_MINUTE = 60
-
-# Number of traffic types
-NUM_TRAFFIC_TYPES = 11
 
 # Options default values
 DEFAULT_GUI_FLAG = False
@@ -33,8 +22,7 @@ DEFAULT_NUMBER_OF_SIMULATIONS = 0
 DEFAULT_CLI_VISUALIZE_FLAG = False
 DEFAULT_CONFIG_FILE = '../../sumo-utils/output/simulation.sumocfg'
 
-# Output directory where the flows will be stored
-# FLOWS_OUTPUT_DIR = '../net-files/flows/flows.rou.xml'
+# Default flows file
 FLOWS_OUTPUT_DIR = '../../sumo-utils/output/flows.rou.xml'
 
 # Default time pattern file
@@ -54,24 +42,7 @@ ANALYSIS_TOPIC = 'traffic_analysis'
 # Threshold for analyzer and prediction error
 ERROR_THRESHOLD = 3
 
-# Traffic Type VS TL Algorithm
-# Based on TL interval study
-'''
-TRAFFIC_TYPE_TL_ALGORITHMS = {
-    '0': 'static_program_7',
-    '1': 'static_program_1',
-    '2': 'static_program_10',
-    '3': 'static_program_8',
-    '4': 'static_program_2',
-    '5': 'static_program_1',
-    '6': 'static_program_12',
-    '7': 'static_program_5',
-    '8': 'static_program_2',
-    '9': 'static_program_13',
-    '10': 'static_program_12',
-    '11': 'static_program_5',
-}
-'''
+# Best TL algorithm per traffic type (from Traffic Light Study)
 
 # Based on TL proportion study
 TRAFFIC_TYPE_TL_ALGORITHMS = {
@@ -89,4 +60,5 @@ TRAFFIC_TYPE_TL_ALGORITHMS = {
     '11': 'static_program_3',
 }
 
-DEFAULT_TURN_DICT = {'turn_prob_right': 20.0, 'turn_prob_left': 20.0, 'turn_prob_forward': 60.0}
+DEFAULT_TURN_DICT = {'turn_prob_right': 0.20, 'turn_prob_left': 0.20, 'turn_prob_forward': 0.60}
+

@@ -28,8 +28,6 @@ Where the parameters are:
   
 Note that the time pattern and dates are indicated in the deployment scripts with the characters ":" and "#".
 
-Besides, the configuration scripts explained on the "Traffic Light Study" components are used in this component too.
-
 ## Data model
 The followed schema to publish the analyzed information into the middleware is:
 - **tl_id**: junction identifier that in this case, as there is only one junction, will have always the same value “c1”. 
