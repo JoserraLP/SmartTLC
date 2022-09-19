@@ -71,12 +71,3 @@ MODEL_PERFORMANCE_FILE_DATE = '../classifier_models_date/ml_performance.json'
 MODEL_PARSED_VALUES_FILE = '../output/parsed_values_dict.json'
 DEFAULT_NUM_MODELS = 1
 MODEL_NUM_FOLDS = 2
-
-# MQTT constants
-MQTT_URL = '172.20.0.2'
-MQTT_PORT = 1883
-TRAFFIC_INFO_TOPIC = 'traffic_info'
-PREDICTION_TOPIC = 'traffic_prediction'
-
-# Monitoring temporal window
-DEFAULT_TEMPORAL_WINDOW = 5

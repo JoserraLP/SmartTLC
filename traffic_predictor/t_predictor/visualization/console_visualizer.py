@@ -1,6 +1,7 @@
 from t_predictor.visualization.visualizer import Visualizer
 from t_predictor.visualization.utils import generate_random_palette
-from t_predictor.static.constants import DEFAULT_OUTPUT_FILE, NUM_TRAFFIC_TYPES
+from t_predictor.static.constants import DEFAULT_OUTPUT_FILE
+from sumo_generators.static.constants import NUM_TRAFFIC_TYPES
 import pandas as pd
 
 

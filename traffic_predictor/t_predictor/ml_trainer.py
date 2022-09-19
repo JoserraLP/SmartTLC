@@ -10,8 +10,9 @@ from t_predictor.ml.model_trainer import ModelTrainer
 from t_predictor.providers.predictor import Predictor
 from t_predictor.static.argparse_types import check_greater_zero, check_valid_prediction_info
 from t_predictor.static.constants import MODEL_BASE_DIR_DATE, MODEL_BASE_DIR_CONTEXT, \
-    MODEL_PARSED_VALUES_FILE, MQTT_URL, MQTT_PORT, MODEL_PERFORMANCE_FILE_DATE, MODEL_PERFORMANCE_FILE_CONTEXT, \
+    MODEL_PARSED_VALUES_FILE, MODEL_PERFORMANCE_FILE_DATE, MODEL_PERFORMANCE_FILE_CONTEXT, \
     MODEL_NUM_FOLDS, DEFAULT_NUM_MODELS
+from sumo_generators.static.constants import MQTT_URL, MQTT_PORT
 
 
 def get_options():
@@ -27,7 +28,7 @@ def get_options():
     # Define generator groups
 
     # General option
-    arg_parser.add_argument("-d", "--date", dest="date", action="store_true", default=False, type=bool,
+    arg_parser.add_argument("-d", "--date", dest="date", action="store_true", default=False,
                             help="Train models based on date. "
                                  "If not specified, train models based on context and date (default).")
 

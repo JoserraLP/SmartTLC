@@ -2,10 +2,11 @@ import ast
 
 import paho.mqtt.client as mqtt
 import pandas as pd
-
-from t_predictor.ml.model_predictor import ModelPredictor
-from t_predictor.static.constants import MQTT_URL, MQTT_PORT, DEFAULT_NUM_MODELS, PREDICTION_TOPIC, TRAFFIC_INFO_TOPIC, \
+from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, TRAFFIC_PREDICTION_TOPIC, TRAFFIC_INFO_TOPIC, \
     DEFAULT_TEMPORAL_WINDOW
+from sumo_generators.utils.utils import parse_str_to_valid_schema
+from t_predictor.ml.model_predictor import ModelPredictor
+from t_predictor.static.constants import DEFAULT_NUM_MODELS
 
 
 def calculate_proportion_value(temporal_window: float) -> float:
@@ -22,18 +23,6 @@ def calculate_proportion_value(temporal_window: float) -> float:
     # and the value that better fits
     # Trained with a temporal window of 30 minutes
     return (30 / temporal_window) - 1 if temporal_window != 30 else 1
-
-
-def parse_str_to_valid_schema(input_info: str) -> str:
-    """
-    Parse the input string to a valid middleware schema by replacing special characters
-
-    :param input_info: input string
-    :type input_info: str
-    :return: input string in valid format
-    :rtype: str
-    """
-    return str(input_info).replace('\'', '\"').replace(" ", "")
 
 
 class Predictor:
@@ -90,8 +79,8 @@ class Predictor:
         """
         # If connected successfully
         if rc == 0:
-            # Subscribe to the traffic info topic
-            self._mqtt_client.subscribe(TRAFFIC_INFO_TOPIC)
+            # Subscribe to the traffic info topic from all traffic lights -> Append #
+            self._mqtt_client.subscribe(TRAFFIC_INFO_TOPIC + '/#')
 
             # Load all the models when connecting to the middleware
             self._model_predictor.load_best_models(num_models=self._num_models)
@@ -107,36 +96,30 @@ class Predictor:
         # Parse to message input dict
         traffic_info = ast.literal_eval(msg.payload.decode('utf-8'))
 
-        # Define predictor variable
-        traffic_predictions = dict()
+        # Retrieve junction id
+        junction_id = str(msg.topic).split('/')[1] if '/' in msg.topic else ''
 
-        # Iterate over the traffic lights
-        for traffic_light_info in traffic_info:
-            traffic_light_id = traffic_light_info['tl_id']
+        # Check valid value
+        if junction_id != '':
+            # Convert the traffic information to dataframe
+            traffic_data = pd.DataFrame([list(traffic_info.values())], columns=list(traffic_info.keys()))
 
-            # Exclude summary information
-            if traffic_light_info['tl_id'] != 'summary':
-                traffic_light_info.pop("tl_id", None)
-                # Convert the traffic information to dataframe
-                traffic_data = pd.DataFrame([list(traffic_light_info.values())],
-                                            columns=list(traffic_light_info.keys()))
+            # Remove unused model features
+            traffic_data = traffic_data.drop(
+                labels=['actual_program', 'waiting_time_veh_e_w', 'waiting_time_veh_n_s', 'turning_vehicles', 'roads'],
+                axis=1)
 
-                # Remove unused model features
-                traffic_data = traffic_data.drop(
-                    labels=['tl_program', 'waiting_time_veh_e_w', 'waiting_time_veh_n_s', 'turning_vehicles', 'roads'],
-                    axis=1)
+            # Remove the number of vehicles passing features
+            if self._date:
+                traffic_data = traffic_data.drop(labels=['passing_veh_e_w', 'passing_veh_n_s'], axis=1)
+            else:
+                # Otherwise multiply by proportion value as there are number of vehicles used to predict
+                traffic_data['passing_veh_e_w'] = traffic_data['passing_veh_e_w'] * self._window_proportion
+                traffic_data['passing_veh_n_s'] = traffic_data['passing_veh_n_s'] * self._window_proportion
 
-                # Remove the number of vehicles passing features
-                if self._date:
-                    traffic_data = traffic_data.drop(labels=['passing_veh_e_w', 'passing_veh_n_s'], axis=1)
-                else:
-                    # Otherwise multiply by proportion value as there are number of vehicles used to predict
-                    traffic_data['passing_veh_e_w'] = traffic_data['passing_veh_e_w'] * self._window_proportion
-                    traffic_data['passing_veh_n_s'] = traffic_data['passing_veh_n_s'] * self._window_proportion
+            # Set the prediction into the published message
+            predicted_type = self._model_predictor.predict(traffic_data, num_models=self._num_models)[0]
 
-                # Set the prediction into the published message
-                traffic_predictions[traffic_light_id] = self._model_predictor.predict(traffic_data,
-                                                                                      num_models=self._num_models)[0]
-
-        # Publish the message
-        self._mqtt_client.publish(topic=PREDICTION_TOPIC, payload=parse_str_to_valid_schema(traffic_predictions))
+            # Publish the message
+            self._mqtt_client.publish(topic=TRAFFIC_PREDICTION_TOPIC + '/' + junction_id,
+                                      payload=parse_str_to_valid_schema(predicted_type))
