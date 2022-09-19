@@ -1,8 +1,9 @@
-from t_analyzer.static.constants import TRAFFIC_INFO_TOPIC, MQTT_PORT, MQTT_URL, ANALYZER_TOPIC, \
-    DEFAULT_TEMPORAL_WINDOW
-from sumo_generators.static.constants import FLOWS_VALUES
-import paho.mqtt.client as mqtt
 import ast
+
+import paho.mqtt.client as mqtt
+from sumo_generators.static.constants import TRAFFIC_INFO_TOPIC, MQTT_PORT, MQTT_URL, TRAFFIC_ANALYSIS_TOPIC, \
+    DEFAULT_TEMPORAL_WINDOW, FLOWS_VALUES
+from sumo_generators.utils.utils import parse_str_to_valid_schema
 
 
 def calculate_proportion_value(temporal_window: float) -> float:
@@ -21,18 +22,6 @@ def calculate_proportion_value(temporal_window: float) -> float:
     # and the value that better fits
     # 15 is retrieved from 60/4, where the four value is selected by hand.
     return 15 / temporal_window
-
-
-def parse_str_to_valid_schema(input_info: str) -> str:
-    """
-    Parse the input string to a valid middleware schema by replacing special characters
-
-    :param input_info: input string
-    :type input_info: str
-    :return: input string in valid format
-    :rtype: str
-    """
-    return str(input_info).replace('\'', '\"').replace(" ", "")
 
 
 class TrafficAnalyzer:
@@ -93,8 +82,8 @@ class TrafficAnalyzer:
         :return: None
         """
         if rc == 0:  # Connection established
-            # Subscribe to the traffic info topic
-            self._mqtt_client.subscribe(TRAFFIC_INFO_TOPIC)
+            # Subscribe to the traffic info topic from all traffic lights -> Append #
+            self._mqtt_client.subscribe(TRAFFIC_INFO_TOPIC + '/#')
 
     def on_message(self, client, userdata, msg):
         """
@@ -108,25 +97,19 @@ class TrafficAnalyzer:
         # Parse message to dict
         traffic_info = ast.literal_eval(msg.payload.decode('utf-8'))
 
-        # Define analysis variable
-        traffic_analysis = dict()
+        # Retrieve junction id
+        junction_id = str(msg.topic).split('/')[1] if '/' in msg.topic else ''
 
-        # Iterate over the traffic lights
-        for traffic_light_info in traffic_info:
-            traffic_light_id = traffic_light_info['tl_id']
+        # Check valid value
+        if junction_id != '':
+            # Analyze the current traffic and get the traffic type
+            analyzed_type = self.analyze_current_traffic_flow(
+                passing_veh_n_s=int(traffic_info['passing_veh_n_s']),
+                passing_veh_e_w=int(traffic_info['passing_veh_e_w']))
 
-            # Remove summary information
-            if traffic_light_info['tl_id'] != 'summary':
-                # Analyze the current traffic and get the traffic type
-                analyzed_type = self.analyze_current_traffic_flow(
-                    passing_veh_n_s=int(traffic_light_info['passing_veh_n_s']),
-                    passing_veh_e_w=int(traffic_light_info['passing_veh_e_w']))
-
-                # Set the analysis into the published message
-                traffic_analysis[traffic_light_id] = analyzed_type
-
-        # Publish the message
-        self._mqtt_client.publish(topic=ANALYZER_TOPIC, payload=parse_str_to_valid_schema(traffic_analysis))
+            # Publish the message
+            self._mqtt_client.publish(topic=TRAFFIC_ANALYSIS_TOPIC + '/' + junction_id,
+                                      payload=parse_str_to_valid_schema(analyzed_type))
 
     def analyze_current_traffic_flow(self, passing_veh_n_s: int, passing_veh_e_w: int) -> int:
         """

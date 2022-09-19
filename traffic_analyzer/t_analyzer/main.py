@@ -1,5 +1,5 @@
 from t_analyzer.providers.analyzer import TrafficAnalyzer
-from t_analyzer.static.constants import DEFAULT_TEMPORAL_WINDOW, MQTT_URL, MQTT_PORT
+from sumo_generators.static.constants import DEFAULT_TEMPORAL_WINDOW, MQTT_URL, MQTT_PORT
 import argparse
 
 
