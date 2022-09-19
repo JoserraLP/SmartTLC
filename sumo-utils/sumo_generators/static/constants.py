@@ -95,3 +95,25 @@ TRAFFIC_TYPES = {
     'med': 2,
     'high': 3
 }
+
+
+# Grid network 1x1 parser
+GRID_1x1_DICT = {
+    'c1_c0': [('n1', 'right', 'c1_w1'), ('s1', 'left', 'c1_w1'), ('s1', 'forward', 'c1_n1'), ('e1', 'forward', 'c1_w1')],
+    'c1_c2': [('n1', 'forward', 'c1_s1'), ('w1', 'right', 'c1_s1'), ('w1', 'forward', 'c1_e1'), ('e1', 'left', 'c1_s1')],
+}
+
+# MQTT constants
+MQTT_URL = '172.20.0.2'
+MQTT_PORT = 1883
+TRAFFIC_INFO_TOPIC = 'traffic_info'
+TRAFFIC_PREDICTION_TOPIC = 'traffic_prediction'
+TURN_PREDICTION_TOPIC = 'turn_prediction'
+TRAFFIC_ANALYSIS_TOPIC = 'traffic_analysis'
+DEFAULT_QOS = 0
+
+# Monitoring temporal window in minutes
+DEFAULT_TEMPORAL_WINDOW = 5
+
+# Simulation steps monitoring temporal windows in seconds
+TIMESTEPS_TO_STORE_INFO = 300  # 5 Cycles = 300 seconds
