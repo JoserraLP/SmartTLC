@@ -11,10 +11,6 @@ MAXIMUM_TIME_PHASE = 80
 MAXIMUM_TIME_BOUND_PHASE = UPPER_BOUND_TIME_PHASE - LOWER_BOUND_TIME_PHASE
 MAXIMUM_TIME_PHASE_TURN = MAXIMUM_TIME_PHASE - 20
 
-# Timestep range for storing info into the dataset
-TIMESTEPS_TO_STORE_INFO = 300  # 5 Cycles = 300 seconds
-TIMESTEPS_PER_HALF_HOUR = 1800  # Half hour is 1800 seconds
-
 # Options default values
 DEFAULT_GUI_FLAG = False
 DEFAULT_TURNS_FLAG = False
@@ -30,14 +26,6 @@ DEFAULT_TIME_PATTERN_FILE = '../../sumo-utils/time_patterns/generated_calendar.c
 
 # Default turn pattern
 DEFAULT_TURN_PATTERN_FILE = '../../sumo-utils/time_patterns/base_patterns/turn_prob_patterns.csv'
-
-# MQTT constants
-MQTT_URL = '172.20.0.2'
-MQTT_PORT = 1883
-TRAFFIC_INFO_TOPIC = 'traffic_info'
-TRAFFIC_PREDICTION_TOPIC = 'traffic_prediction'
-TURN_PREDICTION_TOPIC = 'turn_prediction'
-ANALYSIS_TOPIC = 'traffic_analysis'
 
 # Threshold for analyzer and prediction error
 ERROR_THRESHOLD = 3

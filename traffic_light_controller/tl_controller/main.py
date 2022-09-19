@@ -44,7 +44,7 @@ def get_options():
                                 help="calendar dates from start to end to simulate. Format is dd/mm/yyyy-dd/mm/yyyy.")
     arg_parser.add_argument("--turn-pattern", dest="turn_pattern", action="store", type=check_file,
                                 help="turn pattern input file.")
-    arg_parser.add_argument("-s", "--save-vehicles", action="store", dest="save_vehicles_dir", type=check_file,
+    arg_parser.add_argument("-s", "--save-vehicles", action="store", dest="save_vehicles_dir", type=str,
                                 help="directory where the vehicles info will be saved. Cannot be used with the "
                                      "--load-vehicles option.")
     arg_parser.add_argument("-l", "--load-vehicles", action="store", default=False, dest="load_vehicles_dir",
