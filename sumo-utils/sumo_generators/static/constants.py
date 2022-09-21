@@ -117,3 +117,6 @@ DEFAULT_TEMPORAL_WINDOW = 5
 
 # Simulation steps monitoring temporal windows in seconds
 TIMESTEPS_TO_STORE_INFO = 300  # 5 Cycles = 300 seconds
+
+# Default turn dictionary
+DEFAULT_TURN_DICT = {'turn_prob_right': 0.20, 'turn_prob_left': 0.20, 'turn_prob_forward': 0.60}

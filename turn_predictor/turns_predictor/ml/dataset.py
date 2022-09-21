@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn.model_selection import KFold, train_test_split
 from turns_predictor.ml.utils import drop_nan_values, parse_str_features
 from turns_predictor.net_gen.network_generator import generate_roads_list
-from turns_predictor.static.constants import DEFAULT_TURN_DICT
+from sumo_generators.static.constants import DEFAULT_TURN_DICT
 
 
 class TurnDataset:

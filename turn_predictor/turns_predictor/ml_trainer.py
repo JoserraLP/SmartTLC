@@ -11,8 +11,10 @@ from turns_predictor.ml.model_trainer import ModelTrainer
 from turns_predictor.providers.predictor import Predictor
 from turns_predictor.static.argparse_types import check_file, check_dimension, check_valid_prediction_info, \
     check_greater_zero
-from turns_predictor.static.constants import MODEL_BASE_DIR, MODEL_PARSED_VALUES_FILE, MQTT_URL, MQTT_PORT, \
+from turns_predictor.static.constants import MODEL_BASE_DIR, MODEL_PARSED_VALUES_FILE, \
     MODEL_PERFORMANCE_FILE, DEFAULT_NUM_MODELS, MODEL_NUM_FOLDS
+
+from sumo_generators.static.constants import MQTT_URL, MQTT_PORT
 
 
 def get_options():
