@@ -15,7 +15,6 @@ class TrafficLightProgramGenerator(BaseGenerator):
         # Define root element
         super().__init__(tag='additional')
 
-        # TODO generalize the TL id
         # Currently the id is unique as there is only one TL
         self._cur_id = 'c1'
 

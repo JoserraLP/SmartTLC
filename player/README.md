@@ -13,8 +13,8 @@ python main.py --broker-url <broker-url> --broker-port <broker-port> --topics tr
 ```
 
 Where the parameters are:
-- **--input-file** or **-i**: indicates the input file from where it is retrieved the experiment data.
-- **--topics** or **-t**: indicates the topics that will be subscribed to, in order to store all its information from the 
-  middleware. By default, it records all the topics ("#").
-- **-–broker-url** or **-b**: indicates the middleware broker url. By default, it is "172.20.0.2". 
-- **--broker-port** or **-p**: indicates the middleware broker port. By default, it is "1883".
+- **-i INPUT_FILE, --input-file INPUT_FILE**: indicates the input file from where it is retrieved the experiment data.
+- **-t TOPICS, --topics TOPICS**: indicates the topics that will be subscribed to, in order to store all its information 
+  from the middleware. By default, it records all the topics, *#*.
+- **-b BROKER_URL, -–broker-url BROKER_URL**: indicates the middleware broker url. By default, it is *172.20.0.2*. 
+- **-p BROKER_PORT, --broker-port BROKER_PORT**: indicates the middleware broker port. By default, it is *1883*.

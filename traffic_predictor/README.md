@@ -1,6 +1,8 @@
 #  Traffic Predictor
 This component is based on several *Machine Learning* algorithms that will learn to identify the different traffic types
-based on information about predefined time patterns.
+based on information about predefined time patterns. It is important to mention that it analyzes the traffic of single 
+traffic light individually.
+
 
 These algorithms are: (1) Naive Gaussian Bayes; (2) Support Vector Machines both linear and polynomial; (3) K-Nearest 
 Neighbors; (4) Decision Trees; and (5) Random Forest.
@@ -70,7 +72,7 @@ the specified location.
 - **-f FLOWS_CONFIG_FILE, --flows-config-file FLOWS_CONFIG_FILE**: generates a default vehicle flows file on 
 the specified location.
 - **-c CALENDAR_FILE, --calendar CALENDAR_FILE**: indicates the input calendar file. The output simulation 
-calendar is stored by default in "../time_patterns/generated_calendar.csv".
+calendar is stored by default in *"../time_patterns/generated_calendar.csv"*.
 
 Once the calendar have been generated, it is generated the dataset related to it, with the script "dataset_generator.py",
 where it is possible to use two approaches: with a number of simulations per traffic algorithm and with a given time 
@@ -89,18 +91,18 @@ python dataset_generator.py --cli-visualize
 ```
 
 Where the parameters are:
-- **--nogui**: flag to use either the SUMO GUI or not in the simulation process. By default, is set to True, which means 
-  that the GUI is not used.
+- **--nogui**: flag to use either the SUMO GUI or not in the simulation process. By default, is set to *True*, which 
+  means that the GUI is not used.
 - **-c CONFIG, -–config CONFIG**: indicates the location of the SUMO configuration file. By default, is 
-  “../net-files/config/simulation.sumocfg”.
+  *“../net-files/config/simulation.sumocfg”*.
 - **-n NUM_SIM, --num-sim NUM_SIM**: indicates the number of simulations that will be performed to generate the dataset. 
-  By default, is 0. This parameter can not be used with the next one.
+  By default, is *0*. This parameter can not be used with the next one.
 - **-t TIME_PATTERN, --time-pattern TIME_PATTERN**: indicates the directory where the time pattern, that will be used to 
   generate the dataset, is stored.
 - **-o OUTPUT_FILE, --output-file OUTPUT_FILE**: indicates the directory where the generated dataset will be stored. 
-  By default, is “../output/simulation calendar.csv”.
+  By default, is *“../output/simulation calendar.csv”*.
 - **--cli-visualize**: enables the command line interface visualization developed to create plots about the generated 
-  dataset. By default, is disabled.
+  dataset. By default, is *False*, meaning it is disabled.
 
 ### Machine Learning processes
 Both training and prediction processes are executed with the script "ml_trainer.py".
@@ -110,10 +112,11 @@ disabled, which means that the TLP will use context-based predictors by default.
 
 #### Training
 It performs the training process of each ML model. Its parameters are: 
-- **-t FILE, --train FILE**: starts the training process and  indicates the input dataset file used to train the 
-  models. 
-- **-f FOLDS, --folds FOLDS**: k-fold split dataset process number of folds. Default is 2.
-- **-c, --clean**: it deletes the models stored previously if enabled. By default, is disabled.
+- **-t INPUT_FILE, --train INPUT_FILE**: starts the training process and  indicates the input dataset file used to train
+  the models. 
+- **-f FOLDS, --folds FOLDS**: k-fold split dataset process number of folds. Default is *2*.
+- **-c, --clean**: it deletes the models stored previously if enabled. By default, By default, is *False*, meaning it 
+  is disabled.
 
 ```sh 
 python ml_trainer.py --train ../output/simulation_calendar.csv -c
@@ -130,11 +133,12 @@ python ml_trainer.py --predict 10,10,10:30,Monday,01,02,2021
 
 ### Full component
 Even the deployment of the full component is executed with the "ml_trainer.py" script. Its parameters are: 
-- **--component**: flag to deploy the full component with the trained models. By default, is enabled. 
-- **--num-models** or **-n**: number of models used to make the traffic type prediction, now only works with one predictor. 
-  By default, is 1. 
-- **--middleware_host**: indicates the middleware broker url. By default, is 172.20.0.2 
-- **--middleware_port**: indicates the middleware broker port. By default, it is 1883.
+- **--component**: flag to deploy the full component with the trained models. By default, is *True*, meaning that is 
+  enabled. 
+- **-n NUM_MODELS, --num-models NUM_MODELS**: number of models used to make the traffic type prediction, now only works 
+  with one predictor. By default, is *1*. 
+- **--middleware_host MQTT_URL**: indicates the middleware broker URL. By default, is *172.20.0.2* 
+- **--middleware_port MQTT_PORT**: indicates the middleware broker port. By default, it is *1883*.
 
 ```sh 
 python ml_trainer.py --component -n 1
@@ -142,11 +146,9 @@ python ml_trainer.py --component -n 1
 
 ## Data model
 The followed schema to publish the analyzed information into the middleware is:
-- **tl_id**: traffic light identifier.
 - **traffic_prediction**: traffic flow type prediction. It represents only one type of traffic flow type. 
   The possible values are from 0 to 11.
-  
-Besides, the topic used to publish this information is "traffic_prediction". 
 
-
+Besides, the topic used to publish this information is "traffic_prediction/<traffic_light_id>", where the 
+*<traffic_light_id>* is the traffic light identifier. 
 
