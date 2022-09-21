@@ -48,5 +48,3 @@ TRAFFIC_TYPE_TL_ALGORITHMS = {
     '11': 'static_program_3',
 }
 
-DEFAULT_TURN_DICT = {'turn_prob_right': 0.20, 'turn_prob_left': 0.20, 'turn_prob_forward': 0.60}
-

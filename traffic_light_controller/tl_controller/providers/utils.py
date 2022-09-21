@@ -1,17 +1,29 @@
 # UTILS
-
+import copy
 import math
 import random
 
 import pandas as pd
 from sumo_generators.network.net_graph import NetGraph
-from sumo_generators.static.constants import FLOWS_VALUES, TRAFFIC_TYPES, TRAFFIC_TYPE_RELATION, DEFAULT_DATE_MONTH, \
-    DEFAULT_DATE_YEAR, DEFAULT_DATE_DAY, DEFAULT_DAY, DATE_FIELDS
-from tl_controller.static.constants import *
+from sumo_generators.static.constants import DEFAULT_DATE_MONTH, DEFAULT_DATE_YEAR, DEFAULT_DATE_DAY, DEFAULT_DAY, \
+    DATE_FIELDS, TIMESTEPS_PER_HALF_HOUR, DEFAULT_TURN_DICT
 
 
-def parse_str_to_valid_schema(input_info):
-    return str(input_info).replace('\'', '\"').replace(" ", "")
+def is_dict_full(dict_info: dict) -> bool:
+    """
+    Return if a dict has all its values filled
+    
+    :param dict_info: dictionary info
+    :type dict_info: dict
+    :return: True if is full, False otherwise
+    :rtype: bool
+    """
+    full = True
+    if dict_info:
+        for k, v in dict_info.items():
+            if v == '':
+                full = False
+    return full
 
 
 def get_topology_dim(traci):
@@ -34,198 +46,6 @@ def get_topology_dim(traci):
     return int(rows), int(cols)
 
 
-def get_all_controlled_lanes(traci):
-    """
-    Retrieve all the controlled lanes by the different traffic lights.
-
-    :param traci: TraCI instance
-    :return dict with TL ids and its controlled lanes
-    :rtype dict
-    """
-    return {tl_id: list(dict.fromkeys(traci.trafficlight.getControlledLanes(tl_id)))
-            for tl_id in traci.trafficlight.getIDList()}
-
-
-def get_all_detectors(traci):
-    """
-    Retrieve all the detectors.
-
-    :param traci: TraCI instance
-    :return list with the detectors
-    :rtype list
-    """
-    return traci.inductionloop.getIDList()
-
-
-def get_traffic_light_number(traci):
-    """
-    Retrieve the number of traffic lights in the simulation.
-
-    :param traci: TraCI instance
-    :return: number of traffic lights
-    :rtype: int
-    """
-    return len(traci.trafficlight.getIDList())
-
-
-def get_total_waiting_time_per_lane(traci):
-    """
-    Retrieve the waiting time of each lane related to each traffic lights.
-
-    :param traci: TraCI instance
-    :return: dict with the TL id and the waiting time per each controlled lane
-    :rtype: dict
-    """
-    # Retrieve lanes
-    lanes = get_all_controlled_lanes(traci)
-
-    # Initialize the dict
-    lanes_waiting_time = {}
-
-    # Iterate over the different lanes
-    for tl_id, tl_lanes in lanes.items():
-        # Create the dict per each traffic light
-        lanes_waiting_time[tl_id] = {}
-
-        # Calculate and store the waiting time per lane
-        for lane in tl_lanes:
-            lanes_waiting_time[tl_id][lane] = traci.lane.getWaitingTime(lane)
-
-    return lanes_waiting_time
-
-
-def update_passing_vehicles(traci, traffic_info: dict) -> None:
-    """
-    Update the number of vehicles passing per each possible direction "NS" and "EW" of the "traffic_info" variable.
-    
-    :param traci: TraCI instance
-    :param traffic_info: traffic information per junction
-    :type traffic_info: dict
-    :return: None
-    """
-    # Get number of vehicles passing per detector
-    # Retrieve detectors
-    detectors = get_all_detectors(traci)
-
-    # Create a dict with the accumulate of vehicles per direction
-    num_passing_vehicles_detectors = {traffic_light: {'north': 0, 'east': 0, 'south': 0, 'west': 0} for traffic_light
-                                      in traci.trafficlight.getIDList()}
-
-    # Iterate over the detectors
-    for detector in detectors:
-
-        # Get traffic light name = lane name
-        detector_tl = traci.inductionloop.getLaneID(detector).split('_')[1]
-
-        # Get detector direction
-        detector_direction = detector.split('_')[0]
-
-        # Get the current passing vehicles
-        cur_veh = set(traci.inductionloop.getLastStepVehicleIDs(detector))
-
-        # Calculate the difference between the sets
-        not_counted_veh = cur_veh - traffic_info[detector_tl]['veh_passed']
-
-        # If there are no counted vehicles
-        if not_counted_veh:
-            # Append the not counted vehicles
-            traffic_info[detector_tl]['veh_passed'].update(not_counted_veh)
-
-            # Add the number of not counted vehicles 
-            num_passing_vehicles_detectors[detector_tl][detector_direction] += len(not_counted_veh)
-
-    # Update number of vehicles passing
-    for traffic_light, info in num_passing_vehicles_detectors.items():
-        # Increase the direction counters
-        traffic_info[traffic_light]['passing_veh_n_s'] += info['north'] + info['south']
-        traffic_info[traffic_light]['passing_veh_e_w'] += info['east'] + info['west']
-
-
-def update_traffic_waiting_time_info(traci, waiting_time_per_lane: dict, traffic_info: dict, cols: int) -> dict:
-    """
-    Update the waiting time per lane on each junction of the "traffic_info" variable.
-    
-    :param traci: TraCI simulation instance
-    :param waiting_time_per_lane: previous waiting time per lane, used to compare if the vehicle has passed the junction
-    :type waiting_time_per_lane: dict
-    :param traffic_info: traffic-related information per junction
-    :type traffic_info: dict
-    :param cols: topology number of columns
-    :type cols: int
-    :return: current waiting time per lane
-    :rtype: dict
-    """
-    # Retrieve total waiting time at a given instant
-    current_total_waiting_time = get_total_waiting_time_per_lane(traci)
-
-    # Iterate over the current time on lanes
-    for junction, lanes in current_total_waiting_time.items():
-        for lane, waiting_time in lanes.items():
-            # Store when the waiting time is calculated (Next value is 0, meaning it has passed)
-            if waiting_time_per_lane[junction][lane] > waiting_time:
-
-                # Retrieve the origin and destination junctions
-                origin, destination, _ = lane.split('_')
-
-                if ('n' in destination or ('s' in origin and 'c' in destination)) or \
-                        ('s' in destination or ('n' in origin and 'c' in destination)):
-                    traffic_info[junction]['waiting_time_veh_n_s'] += waiting_time_per_lane[junction][lane]
-                if ('e' in destination or ('w' in origin and 'c' in destination)) or \
-                        ('w' in destination or ('e' in origin and 'c' in destination)):
-                    traffic_info[junction]['waiting_time_veh_e_w'] += waiting_time_per_lane[junction][lane]
-                if 'c' in origin and 'c' in destination:
-                    # Get the junction identifiers
-                    prev_tl_id = int(origin[1:])
-                    next_tl_id = int(destination[1:])
-
-                    # North-South
-                    if prev_tl_id + cols == next_tl_id or prev_tl_id - cols == next_tl_id:
-                        traffic_info[junction]['waiting_time_veh_n_s'] += waiting_time_per_lane[junction][lane]
-                    # East-West
-                    elif prev_tl_id + 1 == next_tl_id or prev_tl_id - 1 == next_tl_id:
-                        traffic_info[junction]['waiting_time_veh_e_w'] += waiting_time_per_lane[junction][lane]
-
-    return current_total_waiting_time
-
-
-def get_vehicles_per_direction(traci):
-    """
-    Retrieve the new vehicles on the detectors
-
-    :param traci: TraCI instance
-    :return: dict with the direction and the number of vehicle passing per each controlled lane
-    :rtype: dict
-    """
-    # Retrieve detectors
-    detectors = get_all_detectors(traci)
-
-    # Dict with vehicles per direction
-    vehicles_per_direction = {'north': [], 'east': [], 'south': [], 'west': []}
-
-    # Iterate over the detectors
-    for detector in detectors:
-
-        # Get the current passing vehicles
-        cur_veh = set(traci.inductionloop.getLastStepVehicleIDs(detector))
-
-        if cur_veh:
-
-            # North
-            if 'north' in detector:
-                vehicles_per_direction['north'] += list(cur_veh)
-            # East
-            elif 'east' in detector:
-                vehicles_per_direction['east'] += list(cur_veh)
-            # South
-            elif 'south' in detector:
-                vehicles_per_direction['south'] += list(cur_veh)
-            # West
-            elif 'west' in detector:
-                vehicles_per_direction['west'] += list(cur_veh)
-
-    return vehicles_per_direction
-
-
 # ROUTES UTILS
 def retrieve_turn_prob_by_edge(traci, turn_prob: pd.DataFrame) -> dict:
     """
@@ -235,6 +55,7 @@ def retrieve_turn_prob_by_edge(traci, turn_prob: pd.DataFrame) -> dict:
     :param turn_prob: raw turn probabilities information
     :type turn_prob: pandas DataFrame
     :return: turn probabilities by edge
+    :rtype: dict
     """
     # Retrieve probabilities
     turn_prob_right, turn_prob_left, turn_prob_forward, edges_id = turn_prob.values.T.tolist()
@@ -277,16 +98,16 @@ def retrieve_turn_prob_by_edge(traci, turn_prob: pd.DataFrame) -> dict:
     return prob_by_edges
 
 
-def update_route_with_turns(traci, traffic_info: dict, net_graph: NetGraph, turn_prob_by_edges: dict) -> None:
+def update_route_with_turns(traci, net_graph: NetGraph, traffic_lights: dict, turn_prob_by_edges: dict) -> None:
     """
-    Update the route of the vehicles that have passed the detectors in order to perform turns
+    Update the vehicles routes based on the turn probabilities and count them
 
     :param traci: TraCI instance
-    :param traffic_info: dict with the number of vehicles directions per traffic light
-    :type traffic_info: dict
-    :param net_graph: network graph with the edges and junctions
+    :param net_graph: network graph
     :type net_graph: NetGraph
-    :param turn_prob_by_edges: probabilities of turning per edge
+    :param traffic_lights: dictionary with the traffic lights of the simulation
+    :type traffic_lights: dict
+    :param turn_prob_by_edges: dictionary with the probabilities of turning per edge
     :type turn_prob_by_edges: dict
     :return: None
     """
@@ -295,7 +116,6 @@ def update_route_with_turns(traci, traffic_info: dict, net_graph: NetGraph, turn
 
     # Iterate over the vehicles
     for vehicle in vehicles:
-
         # Get current vehicle road, origin and destination
         vehicle_road = traci.vehicle.getRoadID(vehicle)
         # Exclude inner edges
@@ -303,110 +123,117 @@ def update_route_with_turns(traci, traffic_info: dict, net_graph: NetGraph, turn
             # Retrieve origin and destination junctions
             source, destination = vehicle_road.split('_')
 
-            current_junction_node = net_graph.graph.get(source)
+            # Initialize variable to store the destination info
             graph_destination_info = None
-            for possible_destination in current_junction_node:
+            # Iterate over the possible destinations of the current junction
+            for possible_destination in net_graph.graph.get(source):
+                # Retrieve the information if its available
                 if possible_destination['to'] == destination:
                     graph_destination_info = possible_destination['out_edge']
                     break
 
             # Retrieve next traffic light
-            next_traffic_light = destination if 'c' in destination else ''
+            next_junction = destination if 'c' in destination else ''
 
-            if next_traffic_light != '':
-                target_edge = ''
-                # Vehicle is not updated yet
-                if vehicle not in traffic_info[next_traffic_light]['turning_vehicles']['veh_passed']:
-                    # Retrieve turn type [0.0, 1.0)
-                    turn_type = random.random()
+            # Target edge and turn
+            target_edge, turn = '', ''
+            # Check if there is next traffic light, if the vehicle is not counted and the next junction info is
+            # available
+            if next_junction != '' and not \
+                    traffic_lights[next_junction].is_vehicle_turning_counted(vehicle_id=vehicle) and \
+                    graph_destination_info:
+                # Retrieve turn type [0.0, 1.0)
+                turn_type = random.random()
 
-                    # Retrieve turn probabilities for each direction
-                    turn_right, turn_left, turn_forward = list(turn_prob_by_edges[vehicle_road].values())
+                # Retrieve turn probabilities for each direction
+                turn_right, turn_left, turn_forward = list(turn_prob_by_edges[vehicle_road].values())
 
-                    if turn_type < turn_forward:  # straight
-                        # Increase the TL straight counter
-                        traffic_info[next_traffic_light]['turning_vehicles']['forward'] += 1
-                    elif turn_type < turn_right:  # right
-                        if graph_destination_info:
-                            target_edge = graph_destination_info[f'{source}_{destination}']['right']
-                    elif turn_type < turn_left:  # left
-                        if graph_destination_info:
-                            target_edge = graph_destination_info[f'{source}_{destination}']['left']
+                if turn_type < turn_forward:  # forward
+                    turn = 'forward'
+                elif turn_type < turn_right:  # right
+                    turn = 'right'
+                elif turn_type < turn_left:  # left
+                    turn = 'left'
 
-                    # Calculate if the target edge is valid
-                    if target_edge != '':
-                        # Retrieve vehicle type to find new route
-                        cur_vehicle_type = traci.vehicle.getTypeID(vehicle)
-                        # Find new route
-                        new_route = traci.simulation.findRoute(fromEdge=vehicle_road, toEdge=target_edge,
-                                                               vType=cur_vehicle_type).edges
+                # Calculate the new target edge
+                target_edge = graph_destination_info[f'{source}_{destination}'][turn]
 
-                        # Check if there are routes available (from and to) based on the current vehicle type
-                        if new_route:
-                            # Set new route
-                            traci.vehicle.setRoute(vehicle, new_route)
-                            if turn_type < turn_right:  # right
-                                # Increase the TL right counter
-                                traffic_info[next_traffic_light]['turning_vehicles']['right'] += 1
-                            elif turn_type < turn_left:  # left
-                                # Increase the TL left counter
-                                traffic_info[next_traffic_light]['turning_vehicles']['left'] += 1
+                # Calculate if the target edge is valid
+                if target_edge != '':
+                    # Retrieve vehicle type to find new route
+                    cur_vehicle_type = traci.vehicle.getTypeID(vehicle)
+                    # Find new route
+                    new_route = traci.simulation.findRoute(fromEdge=vehicle_road, toEdge=target_edge,
+                                                           vType=cur_vehicle_type).edges
 
-                            # TODO check the addition of the vehicle, in order to count if it is new on the road again for a given time
-                            # Add new vehicle
-                            traffic_info[next_traffic_light]['turning_vehicles']['veh_passed'].add(vehicle)
+                    # Check if there are routes available (from and to) based on the current vehicle type
+                    if new_route:
+                        # Set new route
+                        traci.vehicle.setRoute(vehicle, new_route)
+
+                        # Increase the TL turn counter
+                        traffic_lights[next_junction].increase_turning_vehicles(turn)
+
+                        # Add new vehicle
+                        traffic_lights[next_junction].append_turning_vehicle(vehicle_id=vehicle)
 
 
-def calculate_turning_vehicles(traci, traffic_info: dict, net_graph: NetGraph, rows: int, cols: int) -> None:
+def calculate_turning_vehicles(traci, net_graph: NetGraph, traffic_lights: dict) -> None:
     """
     Calculate the turning vehicles based on its route
 
     :param traci: TraCI instance
-    :param traffic_info: dict with the number of vehicles directions per traffic light
-    :type traffic_info: dict
-    :param net_graph: network topology graph
+    :param net_graph: network graph
     :type net_graph: NetGraph
-    :param rows: number of topology rows
-    :type rows: int
-    :param cols: number of topology cols
-    :type cols: int
+    :param traffic_lights: dictionary with the traffic lights of the simulation
+    :type traffic_lights: dict
     :return: None
     """
-    # TODO Check if this counts the vehicles fine
 
-    # Retrieve current vehicles
-    cur_vehicles = get_vehicles_per_direction(traci)
+    # Get all vehicles from simulation
+    vehicles = traci.vehicle.getIDList()
+
     # Iterate over the vehicles
-    for direction, vehicles in cur_vehicles.items():
-        for vehicle in vehicles:
+    for vehicle in vehicles:
+        # Get next junction
+        next_junction = traci.vehicle.getNextTLS(vehicle)
+        # Get current vehicle road, origin and destination
+        vehicle_road = traci.vehicle.getRoadID(vehicle)
+        # Exclude inner edges and check if it has edges
+        if ':' not in vehicle_road and next_junction:
             # Get closest junction
-            next_junction = traci.vehicle.getNextTLS(vehicle)[0][0]
-            if vehicle not in traffic_info[next_junction]['turning_vehicles']['veh_passed']:
+            next_junction = next_junction[0][0]
+            # Check if vehicle is not counted
+            if next_junction and not traffic_lights[next_junction].is_vehicle_turning_counted(vehicle):
                 # Retrieve vehicle route and current edge
                 veh_route = traci.vehicle.getRoute(vehicle)
                 cur_edge_index = traci.vehicle.getRouteIndex(vehicle)
+                # It is not at the end of the simulation
                 if cur_edge_index != len(veh_route):
-                    # Get the next edge
+                    # Get the current edge and junction
+                    current_edge = veh_route[cur_edge_index]
+                    current_junction = current_edge.split('_')[0]
+                    # Retrieve next edge
                     next_edge = veh_route[cur_edge_index + 1]
-                    # If the vehicle has a next TLS
-                    if next_junction:
-                        possible_destinations = net_graph.graph[next_junction]
-                        turn_direction = []
-                        for possible_destination in possible_destinations:
 
-                            turn_direction = [turn for k, v in possible_destination['out_edge'].items()
-                                              for turn, dest_road in v.items() if dest_road == next_edge]
-                            turn_direction += [turn for k, v in possible_destination['in_edge'].items()
-                                              for turn, dest_road in v.items() if dest_road == next_edge]
-                            if turn_direction:
-                                break
+                    # Retrieve possible turns from the source and next junctions
+                    possible_turns = [destination['out_edge'] for destination in net_graph.graph[current_junction]
+                                           if destination['to'] == next_junction][0]
+                    # Initialize turn direction
+                    turn = ''
+                    # Iterate over the possible turns in order to find the actual turn
+                    for edge, turns in possible_turns.items():
+                        for k, v in turns.items():
+                            # If the next edge is on the possible turns, retrieve the turn
+                            if v == next_edge:
+                                turn = k
 
-                        if turn_direction:
-                            # Increase the counter
-                            traffic_info[next_junction]['turning_vehicles'][turn_direction[0]] += 1
+                    # Increase the number of turning vehicles on the given direction
+                    if turn:
+                        traffic_lights[next_junction].increase_turning_vehicles(turn)
 
-                    # Count new vehicle
-                    traffic_info[next_junction]['turning_vehicles']['veh_passed'].add(vehicle)
+                # Count new vehicle
+                traffic_lights[next_junction].append_turning_vehicle(vehicle_id=vehicle)
 
 
 # Simulation related utils
@@ -421,19 +248,15 @@ def process_payload(traffic_info: dict, date_info: dict) -> list:
     :return: Telegraf valid schema parsed information in a list
     :rtype: list
     """
-    # Create a list for the information
-    traffic_info_payload = list()
-    # Iterate over the traffic information
-    for traffic_light_id, tl_info in traffic_info.items():
-        # Remove vehicles passed if the information is not summary, as it does not have these keys
-        if traffic_light_id != 'summary':
-            # Remove "veh_passed" key from traffic_info dict
-            tl_info.pop("veh_passed", None)
-            # Remove also the "veh_passed" key from the turning vehicles
-            tl_info['turning_vehicles'].pop("veh_passed", None)
+    parsed_traffic_info = copy.deepcopy(traffic_info)
 
-        # Store the concatenation of both traffic and date info dicts along with the traffic light id
-        traffic_info_payload.append(dict({'tl_id': traffic_light_id}, **dict(tl_info), **dict(date_info)))
+    if 'vehicles_passed' in parsed_traffic_info and 'turning_vehicles' in parsed_traffic_info:
+        # Remove "vehicles_passed" key from traffic_info dict
+        parsed_traffic_info.pop("vehicles_passed", None)
+        # Remove also the "vehicles_passed" key from the turning vehicles
+        parsed_traffic_info['turning_vehicles'].pop("vehicles_passed", None)
+
+    traffic_info_payload = dict(**dict(parsed_traffic_info), **dict(date_info))
 
     return traffic_info_payload
 
@@ -474,123 +297,7 @@ def retrieve_date_info(timestep: int, time_pattern: pd.DataFrame) -> dict:
     return simulation_date_info
 
 
-def retrieve_traffic_type_by_direction(traffic_type: int):
-    """
-    Retrieve traffic type per direction (NS and EW)
-    
-    :param traffic_type: general traffic type
-    :type traffic_type: int
-    :return: traffic type related to each direction (NS and EW)
-    """
-    # Retrieve traffic type index per direction
-    traffic_type_ns, traffic_type_ew = TRAFFIC_TYPE_RELATION[traffic_type]
-    return TRAFFIC_TYPES[traffic_type_ns], TRAFFIC_TYPES[traffic_type_ew]
-
-
-def get_traffic_type_bounds():
-    """
-    Get the traffic type bounds values such as the number of vehicles per hour and its variability range
-
-    :return: traffic bounds and ranges (high, medium and low)
-    """
-
-    # Retrieve all traffic bounds
-    # High values
-    high_vehs_per_hour = FLOWS_VALUES['high']['vehsPerHour']
-    high_vehs_range = FLOWS_VALUES['high']['vehs_range']
-    # Medium values
-    med_vehs_per_hour = FLOWS_VALUES['med']['vehsPerHour']
-    med_vehs_range = FLOWS_VALUES['med']['vehs_range']
-    # Low values
-    low_vehs_per_hour = FLOWS_VALUES['low']['vehsPerHour']
-    low_vehs_range = FLOWS_VALUES['low']['vehs_range']
-
-    return high_vehs_per_hour, high_vehs_range, med_vehs_per_hour, med_vehs_range, low_vehs_per_hour, low_vehs_range
-
-
-def get_new_traffic_type_by_direction(adjacent_junction_probs: dict, traffic_analysis: dict, direction: str) -> int:
-    """
-    Get traffic type of a junction based on its traffic type and the turn probability
-
-    :param adjacent_junction_probs: probabilities of the adjacent junctions
-    :type adjacent_junction_probs: dict
-    :param traffic_analysis: real time traffic type analysis per junction
-    :type traffic_analysis: dict
-    :param direction: direction of the flows. Can be "ns" or "ew"
-    :type direction: str
-    :ret
-    """
-    # Retrieve traffic type bounds
-    high_vehs_per_hour, high_vehs_range, med_vehs_per_hour, med_vehs_range, low_vehs_per_hour, low_vehs_range = \
-        get_traffic_type_bounds()
-
-    # Initialize arriving number of vehicles to 0
-    arriving_num_veh = 0
-
-    # Iterate over the roads and junction information
-    for road, junction_info in adjacent_junction_probs.items():
-        # Retrieve source junction and traffic type
-        source_junction = road.split('_')[1]
-        source_traffic_type = traffic_analysis[source_junction]
-
-        # Retrieve traffic type per direction
-        traffic_type_ns, traffic_type_ew = TRAFFIC_TYPE_RELATION[source_traffic_type]
-
-        # Retrieve the source traffic type name by direction
-        source_traffic_type_name = traffic_type_ns if direction == 'ns' \
-            else traffic_type_ew if direction == 'ew' else ''
-
-        # Get range values for the traffic type
-        traffic_type_num_veh = FLOWS_VALUES[source_traffic_type_name]['vehsPerHour']
-
-        # Calculate number of estimated vehicles by multiplying the traffic type number with the proportion
-        arriving_num_veh += traffic_type_num_veh * junction_info['prob']
-
-    # Calculate new traffic type
-    new_traffic_type = -1
-    if arriving_num_veh < low_vehs_per_hour - low_vehs_range:
-        new_traffic_type = 0  # Very Low
-    elif arriving_num_veh < med_vehs_per_hour - med_vehs_range:
-        new_traffic_type = 1  # Low
-    elif arriving_num_veh < high_vehs_per_hour - high_vehs_range:
-        new_traffic_type = 2  # Medium
-    elif arriving_num_veh > high_vehs_per_hour - high_vehs_range:
-        new_traffic_type = 3  # High
-
-    # Get new traffic type name
-    new_traffic_type_name = [k for k, v in TRAFFIC_TYPES.items() if v == new_traffic_type][0]
-
-    return new_traffic_type_name
-
-
 # Network graph related utils
-def get_adjacent_junctions_probs(turns_per_road: dict, junction: str):
-    """
-    Get the adjacent junctions probabilities of turning per each connected road
-
-    :param turns_per_road: turn probabilities per road with the adjacent junction
-    :type turns_per_road: dict
-    :param junction: current junction name
-    :type junction: str
-    :return: turning probabilities for the junction and both directions (NS and EW)
-    """
-
-    # Retrieve all roads connected to the current junction
-    adjacent_junctions_probs = {k: edge_turns for k, v in turns_per_road.items()
-                                for turn_type, edge_turns in v.items()
-                                if edge_turns['junction'] == junction}
-
-    # Group by direction
-    adjacent_junctions_probs_ns = {k: v for k, v in adjacent_junctions_probs.items()
-                                   if v['direction'] == 'ns'}
-
-    adjacent_junctions_probs_ew = {k: v for k, v in adjacent_junctions_probs.items()
-                                   if v['direction'] == 'ew'}
-
-    # Return both direction junction turning probabilities
-    return adjacent_junctions_probs_ns, adjacent_junctions_probs_ew
-
-
 def retrieve_turns_edges(net_graph: NetGraph, cols: int) -> dict:
     """
     Retrieve the turn edges for all the edges of the network topology
@@ -688,17 +395,3 @@ def update_edge_turns_with_probs(edge_turns: dict, traffic_info: dict) -> dict:
         edge_turns[road]['forward']['prob'] = probs[2]
 
     return edge_turns
-
-
-def get_adjacent_junctions(net_graph: NetGraph) -> dict:
-    """
-    Get the adjacent junctions for all the junctions
-
-    :param net_graph: network topology graph
-    :type net_graph: NetGraph
-    :return
-    """
-    adjacent_junctions = {}
-    for source, destinations in net_graph.graph.items():
-        adjacent_junctions[source] = [destination['to'] for destination in destinations]
-    return adjacent_junctions

@@ -2,11 +2,11 @@ import ast
 
 import paho.mqtt.client as mqtt
 from sumo_generators.network.net_graph import NetGraph
-from sumo_generators.static.constants import NUM_TRAFFIC_TYPES, TRAFFIC_TYPE_RELATION
-from tl_controller.providers.utils import get_adjacent_junctions_probs, get_new_traffic_type_by_direction, \
-    retrieve_turns_edges, update_edge_turns_with_probs
-from tl_controller.static.constants import TRAFFIC_TYPE_TL_ALGORITHMS, ERROR_THRESHOLD, MQTT_URL, MQTT_PORT, \
-    TRAFFIC_PREDICTION_TOPIC, TURN_PREDICTION_TOPIC, ANALYSIS_TOPIC
+from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, TRAFFIC_PREDICTION_TOPIC, TURN_PREDICTION_TOPIC, \
+    TRAFFIC_ANALYSIS_TOPIC, DEFAULT_QOS
+from sumo_generators.static.constants import NUM_TRAFFIC_TYPES
+from tl_controller.providers.utils import retrieve_turns_edges, update_edge_turns_with_probs, is_dict_full
+from tl_controller.static.constants import TRAFFIC_TYPE_TL_ALGORITHMS, ERROR_THRESHOLD
 
 
 class TrafficLightAdapter:
@@ -14,19 +14,15 @@ class TrafficLightAdapter:
     Traffic Light Adapter class
     """
 
-    def __init__(self, net_graph: NetGraph, traffic_prediction=None, traffic_analysis=None, turn_prediction=None,
-                 mqtt_url: str = MQTT_URL, mqtt_port: int = MQTT_PORT, rows: int = -1, cols: int = -1):
+    def __init__(self, net_graph: NetGraph, id: str, mqtt_url: str = MQTT_URL, mqtt_port: int = MQTT_PORT,
+                 rows: int = -1, cols: int = -1):
         """
-        TraCISimulator initializer.
+        Traffic Light Adapter initializer.
 
         :param net_graph: network topology graph
         :type net_graph: NetGraph
-        :param traffic_prediction: traffic prediction dict. Default is None.
-        :type traffic_prediction: dict
-        :param traffic_analysis: traffic analysis dict. Default is None.
-        :type traffic_analysis: dict
-        :param turn_prediction: turn prediction dict. Default is None.
-        :type turn_prediction: dict
+        :param id: traffic light junction identifier
+        :type id: str
         :param mqtt_url: MQTT middleware broker url. Default to '172.20.0.2'.
         :type mqtt_url: str
         :param mqtt_port: MQTT middleware broker port. Default to 1883.
@@ -37,9 +33,7 @@ class TrafficLightAdapter:
         :type cols: int
         """
         # Store traffic prediction, traffic analysis and turn prediction
-        self._traffic_prediction = traffic_prediction
-        self._traffic_analysis = traffic_analysis
-        self._turn_prediction = turn_prediction
+        self._traffic_prediction, self._traffic_analysis, self._turn_prediction = None, None, None
 
         # Define topology rows and cols
         self._rows = rows
@@ -48,12 +42,37 @@ class TrafficLightAdapter:
         # Define junction connections
         self._turns_per_road = retrieve_turns_edges(net_graph=net_graph, cols=cols)
 
+        # Define identifiers
+        self._id = id
+        self._adjacent_ids = net_graph.get_adjacent_nodes_by_node(id)
+        # Retrieve those ids that are relevant to the adapter (central ones)
+        self._all_ids = [junction_id for junction_id in self._adjacent_ids if 'c' in junction_id]
+        self._all_ids.append(self._id)
+
+        # Define topics to subscribe to
+        self._all_traffic_prediction_topics = [(str(TRAFFIC_PREDICTION_TOPIC + '/' + junction_id), DEFAULT_QOS)
+                                               for junction_id in self._all_ids]
+
+        self._all_traffic_analysis_topics = [(str(TRAFFIC_ANALYSIS_TOPIC + '/' + junction_id), DEFAULT_QOS)
+                                             for junction_id in self._all_ids]
+
+        # Reset counters
+        self.reset_traffic_counters()
+
         # Create the MQTT client, its callbacks and its connection to the broker
         self._mqtt_client = mqtt.Client()
+        self._mqtt_client.message_callback_add(TRAFFIC_PREDICTION_TOPIC + '/#', self.on_message_traffic_prediction)
+        self._mqtt_client.message_callback_add(TRAFFIC_ANALYSIS_TOPIC + '/#', self.on_message_traffic_analysis)
+        self._mqtt_client.message_callback_add(TURN_PREDICTION_TOPIC + '/' + id, self.on_message_turn_prediction)
         self._mqtt_client.on_connect = self.on_connect
         self._mqtt_client.on_message = self.on_message
         self._mqtt_client.connect(mqtt_url, mqtt_port)
         self._mqtt_client.loop_start()
+
+    def reset_traffic_counters(self):
+        self._traffic_prediction = {k: '' for k in self._all_ids}
+        self._traffic_analysis = {k: '' for k in self._all_ids}
+        self._turn_prediction = None
 
     def on_connect(self, client, userdata, flags, rc):
         """
@@ -66,10 +85,10 @@ class TrafficLightAdapter:
         :return: None
         """
         if rc == 0:  # Connection established
-            # Subscribe to the traffic prediction, analysis and turn prediction topics
-            self._mqtt_client.subscribe(TRAFFIC_PREDICTION_TOPIC)
-            self._mqtt_client.subscribe(ANALYSIS_TOPIC)
-            self._mqtt_client.subscribe(TURN_PREDICTION_TOPIC)
+            # Subscribe to the traffic prediction, analysis (adjacent and self) and turn prediction topics
+            self._mqtt_client.subscribe(self._all_traffic_prediction_topics)
+            self._mqtt_client.subscribe(self._all_traffic_analysis_topics)
+            self._mqtt_client.subscribe(TURN_PREDICTION_TOPIC + '/' + self._id)
 
     def on_message(self, client, userdata, msg):
         """
@@ -79,20 +98,49 @@ class TrafficLightAdapter:
         :param msg: message received from the middleware
         :return: None
         """
-        # Parse message to dict
-        traffic_info = ast.literal_eval(msg.payload.decode('utf-8'))
+        pass
 
-        # Check the topic it comes from
-        if msg.topic == TRAFFIC_PREDICTION_TOPIC:
-            # Retrieve predicted traffic type
-            self._traffic_prediction = traffic_info
-        if msg.topic == ANALYSIS_TOPIC:
-            # Retrieve analyzed traffic type
-            self._traffic_analysis = traffic_info
-        if msg.topic == TURN_PREDICTION_TOPIC:
-            self._turn_prediction = traffic_info
-            # Retrieve turn prediction -> Update junction connections
-            update_edge_turns_with_probs(self._turns_per_road, traffic_info)
+    def on_message_traffic_prediction(self, client, userdata, msg):
+        """
+        Callback called when the client receives a message from to the traffic prediction topic.
+        :param client: MQTT client
+        :param userdata: MQTT client data
+        :param msg: message received from the middleware
+        :return: None
+        """
+        # Retrieve junction id
+        junction_id = str(msg.topic).split('/')[1] if '/' in msg.topic else ''
+
+        # Parse message to dict
+        self._traffic_prediction[junction_id] = ast.literal_eval(msg.payload.decode('utf-8'))
+
+    def on_message_traffic_analysis(self, client, userdata, msg):
+        """
+        Callback called when the client receives a message from to the traffic analysis topic.
+        :param client: MQTT client
+        :param userdata: MQTT client data
+        :param msg: message received from the middleware
+        :return: None
+        """
+        # Retrieve junction id
+        junction_id = str(msg.topic).split('/')[1] if '/' in msg.topic else ''
+
+        # Parse message to dict
+        self._traffic_analysis[junction_id] = ast.literal_eval(msg.payload.decode('utf-8'))
+
+    def on_message_turn_prediction(self, client, userdata, msg):
+        """
+        Callback called when the client receives a message from to the turn prediction topic.
+        :param client: MQTT client
+        :param userdata: MQTT client data
+        :param msg: message received from the middleware
+        :return: None
+        """
+        # Parse message to dict
+        self._turn_prediction = ast.literal_eval(msg.payload.decode('utf-8'))
+
+        # Retrieve turn prediction -> Update junction connections
+        update_edge_turns_with_probs(self._turns_per_road, self._turn_prediction)
 
     def get_new_tl_program(self) -> dict:
         """
@@ -101,97 +149,67 @@ class TrafficLightAdapter:
         :return: new tl program per traffic light
         :rtype: dict
         """
-        current_traffic_type = None
+        # TODO with Cristina
+        current_traffic_type, adapter_new_tl_program = None, None
 
-        if self._traffic_analysis and self._turn_prediction:
-            current_traffic_type = {}
-            current_traffic_analysis = {}
-            # TODO process the information to propagate the neighbor information
-            for junction, traffic_type in self._traffic_analysis.items():
-                adjacent_junction_ns, adjacent_junction_ew = get_adjacent_junctions_probs(
-                    turns_per_road=self._turns_per_road,
-                    junction=junction)
-
-                # NS
-                new_traffic_type_ns = get_new_traffic_type_by_direction(adjacent_junction_probs=adjacent_junction_ns,
-                                                                        traffic_analysis=self._traffic_analysis,
-                                                                        direction='ns')
-
-                # EW
-                new_traffic_type_ew = get_new_traffic_type_by_direction(adjacent_junction_probs=adjacent_junction_ew,
-                                                                        traffic_analysis=self._traffic_analysis,
-                                                                        direction='ew')
-                current_traffic_type[junction] = (new_traffic_type_ns, new_traffic_type_ew)
-
-
-                found = False
-                for k, v in TRAFFIC_TYPE_RELATION.items():
-                    if v == (new_traffic_type_ns, new_traffic_type_ew):
-                        found = True
-                        break
-
-                # TODO there are cases where the traffic is "Very Low" y "Medium", and as they are not represented yet,
-                # it fails, in order to fix it. Define more traffic types
-                if found:
-                    current_traffic_type[junction] = [k for k, v in TRAFFIC_TYPE_RELATION.items()
-                                                      if v == (new_traffic_type_ns, new_traffic_type_ew)][0]
-
-                current_traffic_analysis[junction] = TRAFFIC_TYPE_RELATION[traffic_type]
-
+        # Calculate adjacent information
+        if is_dict_full(self._traffic_analysis) and is_dict_full(self._turn_prediction):
+            pass
+        
         # If only analyzer is deployed
-        if self._traffic_analysis and not self._traffic_prediction:
+        if is_dict_full(self._traffic_analysis) and not is_dict_full(self._traffic_prediction):
             current_traffic_type = self._traffic_analysis
         # If only predictor is deployed
-        elif self._traffic_prediction and not self._traffic_analysis:
+        elif is_dict_full(self._traffic_prediction) and not is_dict_full(self._traffic_analysis):
             current_traffic_type = self._traffic_prediction
-        elif self._traffic_analysis and self._traffic_prediction:
-            current_traffic_type = dict()
-            # If both analyzer and predictor are deployed
-            if self._traffic_analysis and self._traffic_prediction:
-                # It is chosen the traffic_analysis but can be used both as they have the same information
-                for traffic_light in self._traffic_analysis.keys():
-                    # update this
-                    self.calculate_actual_traffic_type(current_traffic_type=current_traffic_type,
-                                                       traffic_light=traffic_light)
-
-                # Store the difference between prediction and analysis
-                # self._adapt_items.append(abs(self._traffic_prediction - self._traffic_analysis))
-
-                # Remove used traffic information -> To check again if there is information available
-                self._traffic_analysis = None
-                self._traffic_prediction = None
-                self._turn_prediction = None
-
-        adapter_tl_programs = dict()
+        # Both analyzer and predictor are deployed
+        elif is_dict_full(self._traffic_analysis) and is_dict_full(self._traffic_prediction):
+            # Calculate the current traffic type based on both information
+            current_traffic_type = self.calculate_current_traffic_type()
+            
+            # Remove used traffic information -> To check again if there is information available
+            self.reset_traffic_counters()
 
         if current_traffic_type is not None:
-            # If the traffic type exists get the new traffic light program per traffic light
-            for traffic_light, traffic_type in current_traffic_type.items():
-                adapter_tl_programs[traffic_light] = TRAFFIC_TYPE_TL_ALGORITHMS[str(int(traffic_type))]
-        else:
-            adapter_tl_programs = None
+            # Retrieve only the self traffic type
+            adapter_new_tl_program = TRAFFIC_TYPE_TL_ALGORITHMS[str(int(current_traffic_type))]
 
-        return adapter_tl_programs
+        return adapter_new_tl_program
 
-    def calculate_actual_traffic_type(self, current_traffic_type, traffic_light):
-        # Calculate the difference between the traffic types
-        error_distance = self._traffic_analysis[traffic_light] \
-                         - self._traffic_prediction[traffic_light]
+    def calculate_current_traffic_type(self):
+        """
+
+        """
+        current_traffic_type = None
+        # TODO with Cristina
+        # Calculate the difference between the traffic types (prediction and analysis)
+        error_distance = self._traffic_analysis[self._id] - self._traffic_prediction[self._id]
         # If the distance is less than the threshold
         if abs(error_distance) <= ERROR_THRESHOLD:
             # The analyzer is right, use its value
-            current_traffic_type[traffic_light] = self._traffic_analysis[traffic_light]
+            current_traffic_type = self._traffic_analysis[self._id]
         # Otherwise calculate the weighted value
         else:
             # 1/3 closest to the analyzer as it is in real time
-            new_traffic_type = self._traffic_analysis[traffic_light] \
+            new_traffic_type = self._traffic_analysis[self._id] \
                                - int(error_distance / 3)
             if new_traffic_type >= 0 or new_traffic_type <= NUM_TRAFFIC_TYPES:
                 # If calculated value is valid, store it
-                current_traffic_type[traffic_light] = new_traffic_type
+                current_traffic_type = new_traffic_type
+        return current_traffic_type
 
     def close_connection(self):
         """
         Close MQTT client connection
         """
         self._mqtt_client.loop_stop()
+
+    @property
+    def adjacent_ids(self):
+        """
+        Traffic Light Adapter adjacent ids getter
+
+        :return: list of adjacent traffic light ids
+        :rtype: list
+        """
+        return self._adjacent_ids

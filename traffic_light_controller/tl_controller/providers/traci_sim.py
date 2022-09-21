@@ -2,9 +2,13 @@ import paho.mqtt.client as mqtt
 import traci
 from sumo_generators.time_patterns.time_patterns import TimePattern
 from sumo_generators.time_patterns.utils import retrieve_date_info
+from sumo_generators.utils.utils import parse_str_to_valid_schema
 from tl_controller.providers.adapter import TrafficLightAdapter
+from tl_controller.providers.traffic_light import TrafficLight
 from tl_controller.providers.utils import *
 from tl_controller.static.constants import *
+from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, TRAFFIC_INFO_TOPIC, TIMESTEPS_PER_HALF_HOUR, \
+    TIMESTEPS_TO_STORE_INFO
 
 
 class TraCISimulator:
@@ -75,9 +79,9 @@ class TraCISimulator:
 
         # Save vehicles info
         if save_vehicles_dir:
-            # Add save vehicles info parameters, sorted and with the last used route
+            # Add save vehicles info parameters, sorted and with the last used route.
             add_params = ["--vehroute-output", save_vehicles_dir, "--vehroute-output.last-route", "t",
-                          "--vehroute-output.sorted", "t"]
+                          "--vehroute-output.sorted", "t", "--route-files", FLOWS_OUTPUT_DIR]
         # Load vehicles info
         elif load_vehicles_dir:
             add_params = ["--route-files", load_vehicles_dir]
@@ -85,7 +89,7 @@ class TraCISimulator:
             add_params = ["--route-files", FLOWS_OUTPUT_DIR]
 
         # Retrieve base params
-        sumo_params = [self._sumo_binary, "-c", self._config_file, "--no-warnings", ]
+        sumo_params = [self._sumo_binary, "-c", self._config_file, "--no-warnings"]
 
         # Extend with additional ones
         sumo_params.extend(add_params)
@@ -96,62 +100,49 @@ class TraCISimulator:
         # Store traci instance into the class
         self._traci = traci
 
+        # Load TL programs
+        for traffic_light in self._traci.trafficlight.getIDList():
+            self._traci.trafficlight.setProgram(traffic_light, self._tl_program)
+
         # Retrieve network topology
         self._topology_rows, self._topology_cols = get_topology_dim(self._traci)
 
-        # Retrieve all roads
+        # Retrieve all edges
         edges = [edge for edge in self._traci.edge.getIDList() if ':' not in edge]
 
         # Define and generate the network graph
         net_graph = NetGraph(num_rows=self._topology_rows, num_cols=self._topology_cols, valid_edges=edges)
         net_graph.generate_graph()
 
-        # Initialize the Traffic Light Adapter
-        adapter = TrafficLightAdapter(rows=self._topology_rows, cols=self._topology_cols, net_graph=net_graph)
-
-        # Load TL program
-        for traffic_light in self._traci.trafficlight.getIDList():
-            self._traci.trafficlight.setProgram(traffic_light, self._tl_program)
-
-        # Initialize basic traffic info schema
-        traffic_info = {traffic_light: {'tl_program': '', 'passing_veh_n_s': 0, 'passing_veh_e_w': 0,
-                                        'waiting_time_veh_n_s': 0, 'waiting_time_veh_e_w': 0,
-                                        'turning_vehicles': {'forward': 0, 'right': 0, 'left': 0, 'veh_passed': set()},
-                                        'roads': list(set([self._traci.lane.getEdgeID(lane) for lane in
-                                                           set(self._traci.trafficlight.getControlledLanes(
-                                                               traffic_light))])),
-                                        'veh_passed': set()}
-                        for traffic_light in self._traci.trafficlight.getIDList()}
+        # Initialize Traffic Lights and its adapters
+        traffic_lights = {traffic_light: TrafficLight(id=traffic_light, traci=traci,
+                                                      adapter=TrafficLightAdapter(net_graph=net_graph, id=traffic_light,
+                                                                                  rows=self._topology_rows,
+                                                                                  cols=self._topology_cols))
+                          for traffic_light in self._traci.trafficlight.getIDList()}
 
         # Append traffic global information
         summary_waiting_time, summary_veh_passed = 0, 0
 
-        # Get total waiting time per lane at the beginning of the simulation
-        current_waiting_time_per_lane = get_total_waiting_time_per_lane(traci)
-
-        # Traci simulation
-        # Iterate until simulation is ended
+        # Traci simulation. Iterate until simulation is ended
         while cur_timestep < max_timesteps:
 
-            # Get new TL programs per traffic light from the adapter
-            adapter_tl_programs = adapter.get_new_tl_program()
+            # Here the global controller signalises the traffic lights to perform different actions
+            # Signal each traffic light to perform its own adaptation process
+            for traffic_light_id, traffic_light in traffic_lights.items():
+                # 1. Update the traffic light program based on the adapter
+                traffic_light.update_tl_program()
 
-            # If the adapter is available (it returns a dict with TL programs per traffic light)
-            if adapter_tl_programs:
-                # Apply the new TL program selected by the adapter
-                self.apply_tl_programs(adapter_tl_programs)
+                # 2. Remove previous passing vehicles
+                traffic_light.remove_passing_vehicles()
 
-            # Update number of vehicles passing
-            update_passing_vehicles(traci=self._traci, traffic_info=traffic_info)
+                # 3. Count number of vehicles passing
+                traffic_light.count_passing_vehicles()
 
-            # Update the waiting time per lane on each junction
-            current_waiting_time_per_lane = update_traffic_waiting_time_info(traci=self._traci,
-                                                                             waiting_time_per_lane=
-                                                                             current_waiting_time_per_lane,
-                                                                             traffic_info=traffic_info,
-                                                                             cols=self._topology_cols)
+                # 4. Update waiting time per lane on each junction
+                traffic_light.calculate_waiting_time_per_lane(cols=self._topology_cols)
 
-            # Check if there are turns
+            # Check if turns are enabled
             if self._turn_pattern:
                 # If vehicles are not loaded means that they need to calculate the new route
                 if not load_vehicles_dir:
@@ -162,14 +153,13 @@ class TraCISimulator:
 
                     # Update current vehicles routes to enable turns
                     # Insert the traffic info to store the number of turning vehicles
-                    update_route_with_turns(self._traci, traffic_info=traffic_info, net_graph=net_graph,
+                    update_route_with_turns(self._traci, net_graph=net_graph, traffic_lights=traffic_lights,
                                             turn_prob_by_edges=turn_prob_by_edges)
 
                 else:
-                    # TODO check if this counts the vehicles fine
+
                     # Otherwise calculate the number of turning vehicles
-                    calculate_turning_vehicles(self._traci, traffic_info=traffic_info, net_graph=net_graph,
-                                               rows=self._topology_rows, cols=self._topology_cols)
+                    calculate_turning_vehicles(self._traci, traffic_lights=traffic_lights, net_graph=net_graph)
 
             # Store info each time interval
             if cur_timestep % TIMESTEPS_TO_STORE_INFO == 0:
@@ -177,39 +167,37 @@ class TraCISimulator:
                 # Retrieve date info
                 date_info = retrieve_date_info(timestep=cur_timestep, time_pattern=self._time_pattern)
 
-                # Initialize turning vehicles
-                veh_passed, turning_veh_passed = {}, {}
-                # Retrieve vehicles passed and turning vehicles passed per traffic light
-                for k, v in traffic_info.items():
-                    veh_passed[k] = v['veh_passed']
-                    turning_veh_passed[k] = v['turning_vehicles']['veh_passed']
+                # Iterate over each traffic light, retrieve its information and signalize to publish them
+                for traffic_light_id, traffic_light in traffic_lights.items():
+                    # Retrieve traffic light information
+                    traffic_light_info = traffic_light.traffic_light_info
 
-                # Retrieve summary of waiting time
-                for junction, info in traffic_info.items():
-                    summary_waiting_time += info['waiting_time_veh_n_s'] + info['waiting_time_veh_e_w']
-                    summary_veh_passed += info['passing_veh_n_s'] + info['passing_veh_e_w']
+                    # Store summary of waiting time and vehicles passed
+                    summary_waiting_time += traffic_light_info['waiting_time_veh_n_s'] + \
+                                            traffic_light_info['waiting_time_veh_e_w']
+                    summary_veh_passed += traffic_light_info['passing_veh_n_s'] + \
+                                          traffic_light_info['passing_veh_e_w']
 
-                # Add summary information
-                traffic_info['summary'] = {'waiting_time': summary_waiting_time, 'veh_passed': summary_veh_passed}
+                    # Append date info to traffic light
+                    traffic_light.append_date_contextual_info(date_info=date_info)
 
-                # Process traffic and date info
-                traffic_info_payload = process_payload(traffic_info=traffic_info, date_info=date_info)
+                    # Signal to publish the contextual information
+                    traffic_light.publish_contextual_info()
+
+                    # Reset contextual information
+                    traffic_light.reset_contextual_info()
+
+                # Create a dict with the summary information
+                summary_info = {'waiting_time': summary_waiting_time, 'veh_passed': summary_veh_passed}
+
+                # Process summary information
+                traffic_info_payload = process_payload(traffic_info=summary_info, date_info=date_info)
 
                 # Publish data
                 self._mqtt_client.publish(topic=TRAFFIC_INFO_TOPIC,
                                           payload=parse_str_to_valid_schema(traffic_info_payload))
 
-                # Reset counters, except the vehicles passed sets
-                traffic_info = {traffic_light: {'tl_program': '', 'passing_veh_n_s': 0, 'passing_veh_e_w': 0,
-                                                'waiting_time_veh_n_s': 0, 'waiting_time_veh_e_w': 0,
-                                                'turning_vehicles': {'forward': 0, 'right': 0, 'left': 0,
-                                                                     'veh_passed': turning_veh_passed[traffic_light]},
-                                                'roads': list(set([self._traci.lane.getEdgeID(lane) for lane in
-                                                                   set(self._traci.trafficlight.getControlledLanes(
-                                                                       traffic_light))])),
-                                                'veh_passed': veh_passed[traffic_light]}
-                                for traffic_light in self._traci.trafficlight.getIDList()}
-
+                # Reset counters
                 summary_waiting_time, summary_veh_passed = 0, 0
 
             # Simulate a step
@@ -218,9 +206,10 @@ class TraCISimulator:
             # Increase simulation step
             cur_timestep += 1
 
-        # Close TraCI simulation, the adapter connection and the MQTT client
+        # Close TraCI simulation, the adapters connection and the MQTT client
         self._traci.close()
-        adapter.close_connection()
+        for traffic_light_id, traffic_light in traffic_lights.items():
+            traffic_light.close_adapter_connection()
         self._mqtt_client.loop_stop()
 
     def apply_tl_programs(self, tl_programs: dict) -> None:
