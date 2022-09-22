@@ -15,7 +15,7 @@ class TrafficLightAdapter:
     """
 
     def __init__(self, net_graph: NetGraph, id: str, mqtt_url: str = MQTT_URL, mqtt_port: int = MQTT_PORT,
-                 rows: int = -1, cols: int = -1):
+                 rows: int = -1, cols: int = -1, local: bool = False):
         """
         Traffic Light Adapter initializer.
 
@@ -31,13 +31,17 @@ class TrafficLightAdapter:
         :type rows: int
         :param cols: topology cols. Default to -1.
         :type cols: int
+        :param local: flag to execute locally the component. It will not connect to the middleware.
+        :type local: bool
         """
         # Store traffic prediction, traffic analysis and turn prediction
         self._traffic_prediction, self._traffic_analysis, self._turn_prediction = None, None, None
 
         # Define topology rows and cols
-        self._rows = rows
-        self._cols = cols
+        self._rows, self._cols = rows, cols
+
+        # Store the local flag
+        self._local = local
 
         # Define junction connections
         self._turns_per_road = retrieve_turns_edges(net_graph=net_graph, cols=cols)
@@ -59,17 +63,25 @@ class TrafficLightAdapter:
         # Reset counters
         self.reset_traffic_counters()
 
-        # Create the MQTT client, its callbacks and its connection to the broker
-        self._mqtt_client = mqtt.Client()
-        self._mqtt_client.message_callback_add(TRAFFIC_PREDICTION_TOPIC + '/#', self.on_message_traffic_prediction)
-        self._mqtt_client.message_callback_add(TRAFFIC_ANALYSIS_TOPIC + '/#', self.on_message_traffic_analysis)
-        self._mqtt_client.message_callback_add(TURN_PREDICTION_TOPIC + '/' + id, self.on_message_turn_prediction)
-        self._mqtt_client.on_connect = self.on_connect
-        self._mqtt_client.on_message = self.on_message
-        self._mqtt_client.connect(mqtt_url, mqtt_port)
-        self._mqtt_client.loop_start()
+        if self._local:
+            self._mqtt_client = None
+        else:
+            # Create the MQTT client, its callbacks and its connection to the broker
+            self._mqtt_client = mqtt.Client()
+            self._mqtt_client.message_callback_add(TRAFFIC_PREDICTION_TOPIC + '/#', self.on_message_traffic_prediction)
+            self._mqtt_client.message_callback_add(TRAFFIC_ANALYSIS_TOPIC + '/#', self.on_message_traffic_analysis)
+            self._mqtt_client.message_callback_add(TURN_PREDICTION_TOPIC + '/' + id, self.on_message_turn_prediction)
+            self._mqtt_client.on_connect = self.on_connect
+            self._mqtt_client.on_message = self.on_message
+            self._mqtt_client.connect(mqtt_url, mqtt_port)
+            self._mqtt_client.loop_start()
 
-    def reset_traffic_counters(self):
+    def reset_traffic_counters(self) -> None:
+        """
+        Reset traffic prediction, analysis and turn prediction variables
+
+        :return: None
+        """
         self._traffic_prediction = {k: '' for k in self._all_ids}
         self._traffic_analysis = {k: '' for k in self._all_ids}
         self._turn_prediction = None

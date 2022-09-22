@@ -1,5 +1,7 @@
 import paho.mqtt.client as mqtt
 import traci
+from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, TRAFFIC_INFO_TOPIC, TIMESTEPS_PER_HALF_HOUR, \
+    TIMESTEPS_TO_STORE_INFO
 from sumo_generators.time_patterns.time_patterns import TimePattern
 from sumo_generators.time_patterns.utils import retrieve_date_info
 from sumo_generators.utils.utils import parse_str_to_valid_schema
@@ -7,8 +9,6 @@ from tl_controller.providers.adapter import TrafficLightAdapter
 from tl_controller.providers.traffic_light import TrafficLight
 from tl_controller.providers.utils import *
 from tl_controller.static.constants import *
-from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, TRAFFIC_INFO_TOPIC, TIMESTEPS_PER_HALF_HOUR, \
-    TIMESTEPS_TO_STORE_INFO
 
 
 class TraCISimulator:
@@ -17,7 +17,7 @@ class TraCISimulator:
     """
 
     def __init__(self, sumo_conf, turn_pattern_file: str, time_pattern_file: str = '', dates: str = '',
-                 mqtt_url: str = MQTT_URL, mqtt_port: int = MQTT_PORT):
+                 mqtt_url: str = MQTT_URL, mqtt_port: int = MQTT_PORT, local: bool = False):
         """
         TraCISimulator initializer.
 
@@ -32,6 +32,8 @@ class TraCISimulator:
         :type mqtt_url: str
         :param mqtt_port: MQTT middleware broker port. Default to 1883.
         :type mqtt_port: int
+        :param local: flag to execute locally the component. It will not connect to the middleware.
+        :type local: bool
         """
 
         if time_pattern_file != '':
@@ -59,14 +61,24 @@ class TraCISimulator:
         # TL program to the middle one
         self._tl_program = TL_PROGRAMS[int(len(TL_PROGRAMS) / 2)]
 
-        # Create the MQTT client, its callbacks and its connection to the broker
-        self._mqtt_client = mqtt.Client()
-        self._mqtt_client.connect(mqtt_url, mqtt_port)
-        self._mqtt_client.loop_start()
+        # Store local flag
+        self._local = local
+
+        # Execute locally
+        if local:
+            self._mqtt_client = None
+        # Connect to middleware
+        else:
+            # Create the MQTT client, its callbacks and its connection to the broker
+            self._mqtt_client = mqtt.Client()
+            self._mqtt_client.connect(mqtt_url, mqtt_port)
+            self._mqtt_client.loop_start()
 
     def simulate(self, load_vehicles_dir: str = '', save_vehicles_dir: str = ''):
         """
         Perform the simulations by a time pattern with TraCI.
+
+        :param
 
         :return: None
         """
@@ -115,10 +127,11 @@ class TraCISimulator:
         net_graph.generate_graph()
 
         # Initialize Traffic Lights and its adapters
-        traffic_lights = {traffic_light: TrafficLight(id=traffic_light, traci=traci,
+        traffic_lights = {traffic_light: TrafficLight(id=traffic_light, traci=traci, local=self._local,
                                                       adapter=TrafficLightAdapter(net_graph=net_graph, id=traffic_light,
                                                                                   rows=self._topology_rows,
-                                                                                  cols=self._topology_cols))
+                                                                                  cols=self._topology_cols,
+                                                                                  local=self._local))
                           for traffic_light in self._traci.trafficlight.getIDList()}
 
         # Append traffic global information
@@ -161,8 +174,8 @@ class TraCISimulator:
                     # Otherwise calculate the number of turning vehicles
                     calculate_turning_vehicles(self._traci, traffic_lights=traffic_lights, net_graph=net_graph)
 
-            # Store info each time interval
-            if cur_timestep % TIMESTEPS_TO_STORE_INFO == 0:
+            # Store info each time interval if it is not executed locally
+            if not self._local and cur_timestep % TIMESTEPS_TO_STORE_INFO == 0:
 
                 # Retrieve date info
                 date_info = retrieve_date_info(timestep=cur_timestep, time_pattern=self._time_pattern)
@@ -208,9 +221,11 @@ class TraCISimulator:
 
         # Close TraCI simulation, the adapters connection and the MQTT client
         self._traci.close()
-        for traffic_light_id, traffic_light in traffic_lights.items():
-            traffic_light.close_adapter_connection()
-        self._mqtt_client.loop_stop()
+        # If it is deployed
+        if not self._local:
+            for traffic_light_id, traffic_light in traffic_lights.items():
+                traffic_light.close_adapter_connection()
+            self._mqtt_client.loop_stop()
 
     def apply_tl_programs(self, tl_programs: dict) -> None:
         """

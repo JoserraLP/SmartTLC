@@ -11,7 +11,7 @@ class TrafficLight:
     """
 
     def __init__(self, id: str, traci, adapter: TrafficLightAdapter, mqtt_url: str = MQTT_URL,
-                 mqtt_port: int = MQTT_PORT):
+                 mqtt_port: int = MQTT_PORT, local: bool = False):
         """
         Traffic Light initializer.
 
@@ -24,11 +24,16 @@ class TrafficLight:
         :type mqtt_url: str
         :param mqtt_port: MQTT middleware broker port. Default to 1883.
         :type mqtt_port: int
+        :param local: flag to execute locally the component. It will not connect to the middleware.
+        :type local: bool
         """
         # Store traffic light information
         self._id = id
         self._traci = traci
         self._adapter = adapter
+
+        # Store the local flag
+        self._local = local
 
         # Retrieve adjacent node ids
         self._adjacent_ids = adapter.adjacent_ids
@@ -56,9 +61,12 @@ class TrafficLight:
         self._traffic_light_detectors = [detector for detector in self._traci.inductionloop.getIDList()
                                          if traci.inductionloop.getLaneID(detector).split('_')[1] == id]
 
-        # Create the MQTT client and its connection to the broker
-        self._mqtt_client = mqtt.Client()
-        self._mqtt_client.connect(mqtt_url, mqtt_port)
+        if self._local:
+            self._mqtt_client = None
+        else:
+            # Create the MQTT client and its connection to the broker
+            self._mqtt_client = mqtt.Client()
+            self._mqtt_client.connect(mqtt_url, mqtt_port)
 
     def increase_turning_vehicles(self, turn: str) -> None:
         """
@@ -110,8 +118,10 @@ class TrafficLight:
 
         :return: None
         """
-        self._mqtt_client.publish(topic=TRAFFIC_INFO_TOPIC + '/' + self._id,
-                                  payload=parse_str_to_valid_schema(self._publish_info))
+        # If it is deployed
+        if not self._local:
+            self._mqtt_client.publish(topic=TRAFFIC_INFO_TOPIC + '/' + self._id,
+                                      payload=parse_str_to_valid_schema(self._publish_info))
 
     def append_date_contextual_info(self, date_info: dict) -> None:
         """

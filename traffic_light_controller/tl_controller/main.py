@@ -35,6 +35,8 @@ def get_options():
 
     arg_parser.add_argument("--nogui", action="store_true",
                                 default=cnt.DEFAULT_GUI_FLAG, help="run the commandline version of sumo")
+    arg_parser.add_argument("--local", dest="local", action="store_true", default=False,
+                            help="run the component locally. It will not connect to middleware.")
     arg_parser.add_argument("-c", "--config", dest="config_file", action='store', default=cnt.DEFAULT_CONFIG_FILE,
                                 type=check_file, help=f"sumo configuration file location. Default is "
                                                      f"{cnt.DEFAULT_CONFIG_FILE}")
@@ -89,10 +91,10 @@ if __name__ == "__main__":
     # Create the TraCI Traffic simulator based on time pattern or dates
     if exec_options.time_pattern:
         traci_sim = TraCISimulator(sumo_conf=sim_args, time_pattern_file=exec_options.time_pattern,
-                                   turn_pattern_file=exec_options.turn_pattern)
+                                   turn_pattern_file=exec_options.turn_pattern, local=exec_options.local)
     elif exec_options.dates:
         traci_sim = TraCISimulator(sumo_conf=sim_args, dates=exec_options.dates,
-                                   turn_pattern_file=exec_options.turn_pattern)
+                                   turn_pattern_file=exec_options.turn_pattern, local=exec_options.local)
 
     # Start the simulation process
     traci_sim.simulate(load_vehicles_dir=exec_options.load_vehicles_dir,
