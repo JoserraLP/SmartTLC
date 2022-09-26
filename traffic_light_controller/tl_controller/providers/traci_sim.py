@@ -1,14 +1,47 @@
 import paho.mqtt.client as mqtt
 import traci
-from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, TRAFFIC_INFO_TOPIC, TIMESTEPS_PER_HALF_HOUR, \
-    TIMESTEPS_TO_STORE_INFO
+from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, TRAFFIC_INFO_TOPIC, TIMESTEPS_TO_STORE_INFO
 from sumo_generators.time_patterns.time_patterns import TimePattern
 from sumo_generators.time_patterns.utils import retrieve_date_info
 from sumo_generators.utils.utils import parse_str_to_valid_schema
 from tl_controller.providers.adapter import TrafficLightAdapter
+from t_analyzer.providers.analyzer import TrafficAnalyzer
 from tl_controller.providers.traffic_light import TrafficLight
 from tl_controller.providers.utils import *
 from tl_controller.static.constants import *
+
+
+def enable_traffic_component(traffic_lights: dict, component: str, component_type: str) -> None:
+    """
+    Enables different components inside the traffic lights specified by parameters.
+
+    :param traffic_lights: dictionary with all the traffic lights.
+    :type traffic_lights: dict
+    :param component: component to enable.
+    :type component: str
+    :param component_type: component type. Can be 'traffic_analyzer', 'traffic_predictor' or 'turn_predictor'
+    :type component_type: str
+    :return: None
+    """
+    # Start the components in the specified traffic lights
+    if component == 'all':
+        component_traffic_lights = [v for k, v in traffic_lights.items()]
+    elif component:
+        if ',' in component:
+            # Retrieve those traffic lights specified
+            component_traffic_lights = [v for k, v in traffic_lights.items() if k in component.split(',')]
+        else:
+            # Single one traffic light
+            component_traffic_lights = [traffic_lights[component]]
+    else:
+        # Empty
+        component_traffic_lights = []
+
+    # Iterate over the traffic lights components
+    for traffic_light in component_traffic_lights:
+        if component_type == 'traffic_analyzer':
+            # Initialize empty to deploy locally
+            traffic_light.enable_traffic_analyzer(traffic_analyzer=TrafficAnalyzer(mqtt_url='', mqtt_port=''))
 
 
 class TraCISimulator:
@@ -74,12 +107,16 @@ class TraCISimulator:
             self._mqtt_client.connect(mqtt_url, mqtt_port)
             self._mqtt_client.loop_start()
 
-    def simulate(self, load_vehicles_dir: str = '', save_vehicles_dir: str = ''):
+    def simulate(self, load_vehicles_dir: str = '', save_vehicles_dir: str = '', analyzer: str = ''):
         """
         Perform the simulations by a time pattern with TraCI.
 
-        :param
-
+        :param load_vehicles_dir: directory to load the vehicles flows.
+        :type: str
+        :param save_vehicles_dir: directory to save the vehicles flows.
+        :type: str
+        :param analyzer: enables analyzer on the specified traffic lights.
+        :type: str
         :return: None
         """
         # Loop over the time pattern simulation
@@ -133,6 +170,9 @@ class TraCISimulator:
                                                                                   cols=self._topology_cols,
                                                                                   local=self._local))
                           for traffic_light in self._traci.trafficlight.getIDList()}
+
+        # Enable traffic analyzers
+        enable_traffic_component(traffic_lights=traffic_lights, component=analyzer, component_type='traffic_analyzer')
 
         # Append traffic global information
         summary_waiting_time, summary_veh_passed = 0, 0
@@ -194,8 +234,11 @@ class TraCISimulator:
                     # Append date info to traffic light
                     traffic_light.append_date_contextual_info(date_info=date_info)
 
-                    # Signal to publish the contextual information
+                    # Publish the contextual information
                     traffic_light.publish_contextual_info()
+
+                    # Publish traffic analyzer information
+                    traffic_light.publish_analyzer_info()
 
                     # Reset contextual information
                     traffic_light.reset_contextual_info()
@@ -226,16 +269,3 @@ class TraCISimulator:
             for traffic_light_id, traffic_light in traffic_lights.items():
                 traffic_light.close_adapter_connection()
             self._mqtt_client.loop_stop()
-
-    def apply_tl_programs(self, tl_programs: dict) -> None:
-        """
-        Apply a new program to each traffic light in the topology.
-
-        :param tl_programs: new traffic light program per traffic light dict
-        :type tl_programs: dict
-        :return: None
-        """
-        for traffic_light, program in tl_programs.items():
-            # Update program if it is not the same
-            if self._traci.trafficlight.getProgram(traffic_light) != program:
-                self._traci.trafficlight.setProgram(traffic_light, program)

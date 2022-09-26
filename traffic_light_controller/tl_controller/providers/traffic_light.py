@@ -1,7 +1,8 @@
 import paho.mqtt.client as mqtt
-from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, TRAFFIC_INFO_TOPIC
+from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, TRAFFIC_INFO_TOPIC, TRAFFIC_ANALYSIS_TOPIC
 from sumo_generators.utils.utils import parse_str_to_valid_schema
 from tl_controller.providers.adapter import TrafficLightAdapter
+from t_analyzer.providers.analyzer import TrafficAnalyzer
 from tl_controller.providers.utils import process_payload
 
 
@@ -31,6 +32,9 @@ class TrafficLight:
         self._id = id
         self._traci = traci
         self._adapter = adapter
+
+        # Initialize traffic analyzer to None
+        self._traffic_analyzer = None
 
         # Store the local flag
         self._local = local
@@ -68,6 +72,18 @@ class TrafficLight:
             self._mqtt_client = mqtt.Client()
             self._mqtt_client.connect(mqtt_url, mqtt_port)
 
+    # External components utils
+    def enable_traffic_analyzer(self, traffic_analyzer: TrafficAnalyzer) -> None:
+        """
+        Enable the traffic analyzer in the traffic light
+
+        :param traffic_analyzer: traffic light analyzer instance. Default is disabled.
+        :type: TrafficAnalyzer
+        :return: None
+        """
+        self._traffic_analyzer = traffic_analyzer
+
+    # Vehicles utils
     def increase_turning_vehicles(self, turn: str) -> None:
         """
         Increase the number of turning vehicles by 1 on the given turn
@@ -105,12 +121,16 @@ class TrafficLight:
 
         :return: None
         """
+        # Retrieve traffic type analysis
+        traffic_analysis = self.analyze_current_traffic()
+
         # Retrieve new traffic light program from adapter
-        new_program = self._adapter.get_new_tl_program()
+        new_program = self._adapter.get_new_tl_program(traffic_analysis)
+
         # Check if the new program is valid and it is not the same as the actual one
         if new_program and new_program != self._traffic_light_info['actual_program']:
             # Update new program
-            self._traci.traffic_light.setProgram(self._id, new_program)
+            self._traci.trafficlight.setProgram(self._id, new_program)
 
     def publish_contextual_info(self) -> None:
         """
@@ -279,6 +299,28 @@ class TrafficLight:
         self._traffic_light_info['vehicles_passed'].difference_update(deleted_vehicles)
         self._traffic_light_info['turning_vehicles']['vehicles_passed'].difference_update(deleted_vehicles)
 
+    # Analyzer utils
+    def analyze_current_traffic(self) -> int:
+        """
+        Analyze current traffic flow and stores into the analyzer
+
+        :return: analyzed traffic type
+        :rtype: int
+        """
+        return self._traffic_analyzer.analyze_current_traffic_flow(
+            passing_veh_n_s=self._traffic_light_info['passing_veh_n_s'],
+            passing_veh_e_w=self._traffic_light_info['passing_veh_e_w'])
+
+    def publish_analyzer_info(self):
+        """
+        Publish the analyzed traffic info into the topic related to the traffic light.
+
+        :return: None
+        """
+        self._mqtt_client.publish(topic=TRAFFIC_ANALYSIS_TOPIC + '/' + self._id,
+                                  payload=parse_str_to_valid_schema(self._traffic_analyzer.traffic_type))
+
+    # Adapter utils
     def close_adapter_connection(self) -> None:
         """
         Close Traffic Light Adapter middleware connection

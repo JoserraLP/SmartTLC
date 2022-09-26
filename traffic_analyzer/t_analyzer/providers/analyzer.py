@@ -64,12 +64,19 @@ class TrafficAnalyzer:
         self.med_upper_bound = round((self.med_vehs_per_hour + self.med_vehs_range) / window_proportion)
         self.high_upper_bound = round((self.high_vehs_per_hour + self.high_vehs_range) / window_proportion)
 
-        # Create the MQTT client, its callbacks and its connection to the broker
-        self._mqtt_client = mqtt.Client()
-        self._mqtt_client.on_connect = self.on_connect
-        self._mqtt_client.on_message = self.on_message
-        self._mqtt_client.connect(mqtt_url, mqtt_port)
-        self._mqtt_client.loop_forever()
+        # Define traffic type
+        self._traffic_type = 0
+
+        # In case it is deployed, create the middleware connection
+        if mqtt_url and mqtt_port:
+            # Create the MQTT client, its callbacks and its connection to the broker
+            self._mqtt_client = mqtt.Client()
+            self._mqtt_client.on_connect = self.on_connect
+            self._mqtt_client.on_message = self.on_message
+            self._mqtt_client.connect(mqtt_url, mqtt_port)
+            self._mqtt_client.loop_forever()
+        else:
+            self._mqtt_client = None
 
     def on_connect(self, client, userdata, flags, rc):
         """
@@ -103,13 +110,13 @@ class TrafficAnalyzer:
         # Check valid value
         if junction_id != '':
             # Analyze the current traffic and get the traffic type
-            analyzed_type = self.analyze_current_traffic_flow(
+            self._traffic_type = self.analyze_current_traffic_flow(
                 passing_veh_n_s=int(traffic_info['passing_veh_n_s']),
                 passing_veh_e_w=int(traffic_info['passing_veh_e_w']))
 
             # Publish the message
             self._mqtt_client.publish(topic=TRAFFIC_ANALYSIS_TOPIC + '/' + junction_id,
-                                      payload=parse_str_to_valid_schema(analyzed_type))
+                                      payload=parse_str_to_valid_schema(self._traffic_type))
 
     def analyze_current_traffic_flow(self, passing_veh_n_s: int, passing_veh_e_w: int) -> int:
         """
@@ -123,45 +130,55 @@ class TrafficAnalyzer:
         :rtype: int
         """
         # Initialize the traffic type
-        traffic_type = 0
+        self._traffic_type = -1
 
         # Calculate the traffic type with the use of bounds (NS, EW).
         # Lower bound of a type is the highest bound of the previous one:
         if self.very_low_lower_bound <= passing_veh_n_s <= self.very_low_upper_bound \
                 and self.very_low_lower_bound <= passing_veh_e_w <= self.very_low_upper_bound:
-            traffic_type = 0  # (very_low, very_low)
+            self._traffic_type = 0  # (very_low, very_low)
         elif self.very_low_lower_bound <= passing_veh_n_s <= self.very_low_upper_bound <= passing_veh_e_w \
                 <= self.low_upper_bound:
-            traffic_type = 1  # (very_low, low)
+            self._traffic_type = 1  # (very_low, low)
         elif self.low_upper_bound >= passing_veh_n_s >= self.very_low_upper_bound >= passing_veh_e_w \
                 >= self.very_low_lower_bound:
-            traffic_type = 2  # (low, very_low)
+            self._traffic_type = 2  # (low, very_low)
         elif self.very_low_upper_bound <= passing_veh_n_s <= self.low_upper_bound \
                 and self.very_low_upper_bound <= passing_veh_e_w <= self.low_upper_bound:
-            traffic_type = 3  # (low, low)
+            self._traffic_type = 3  # (low, low)
         elif self.very_low_upper_bound <= passing_veh_n_s <= self.low_upper_bound <= passing_veh_e_w <= \
                 self.med_upper_bound:
-            traffic_type = 4  # (low, med)
+            self._traffic_type = 4  # (low, med)
         elif self.very_low_upper_bound <= passing_veh_n_s <= self.low_upper_bound and self.med_upper_bound <= \
                 passing_veh_e_w <= self.high_upper_bound:
-            traffic_type = 5  # (low, high)
+            self._traffic_type = 5  # (low, high)
         elif self.med_upper_bound >= passing_veh_n_s >= self.low_upper_bound >= passing_veh_e_w >= \
                 self.very_low_upper_bound:
-            traffic_type = 6  # (med, low)
+            self._traffic_type = 6  # (med, low)
         elif self.low_upper_bound <= passing_veh_n_s <= self.med_upper_bound and self.low_upper_bound <= \
                 passing_veh_e_w <= self.med_upper_bound:
-            traffic_type = 7  # (med, med)
+            self._traffic_type = 7  # (med, med)
         elif self.low_upper_bound <= passing_veh_n_s <= self.med_upper_bound <= passing_veh_e_w <= \
                 self.high_upper_bound:
-            traffic_type = 8  # (med, high)
+            self._traffic_type = 8  # (med, high)
         elif self.med_upper_bound <= passing_veh_n_s <= self.high_upper_bound and self.very_low_upper_bound <= \
                 passing_veh_e_w <= self.low_upper_bound:
-            traffic_type = 9  # (high, low)
+            self._traffic_type = 9  # (high, low)
         elif self.high_upper_bound >= passing_veh_n_s >= self.med_upper_bound >= passing_veh_e_w >= \
                 self.low_upper_bound:
-            traffic_type = 10  # (high, med)
+            self._traffic_type = 10  # (high, med)
         elif self.med_upper_bound <= passing_veh_n_s <= self.high_upper_bound and self.med_upper_bound <= \
                 passing_veh_e_w <= self.high_upper_bound:
-            traffic_type = 11  # (high, high)
+            self._traffic_type = 11  # (high, high)
 
-        return traffic_type
+        return self._traffic_type
+
+    @property
+    def traffic_type(self) -> int:
+        """
+        Analyzer traffic type
+
+        :return: traffic type id
+        :rtype: ind
+        """
+        return self._traffic_type
