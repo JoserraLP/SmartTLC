@@ -7,7 +7,8 @@ This component retrieve contextual information (waiting time and number of vehic
 traffic simulation each 30 minutes.  
 
 It is important to mention that each traffic light monitors its contextual information individually and publish it into 
-the middleware, each one of them having its own adapter.  
+the middleware, each one of them having its own adapter. Additionally, each traffic light can have a traffic analyzer,
+a traffic predictor and a turn predictor.
 
 ## Usage
 The execution command for this component is the following one:
@@ -29,7 +30,21 @@ Where the parameters are:
 - **-d DATES, --dates DATES**: indicates the range of dates, retrieved from the generated calendar, that will be 
   simulated. The format is *dd/mm/yyyy-dd/mm/yyyy*, where the first date is the start, and the second one is the end, 
   both included.
+- **--turn-pattern TURN_PATTERN**: turn pattern input location file.
+- **-s SAVE_VEHICLES_DIR, --save-vehicles SAVE_VEHICLES_DIR**: directory where the vehicles' routes will be saved. 
+  Cannot be used with the *--load-vehicles option*.
+- **-l LOAD_VEHICLES_DIR, --load-vehicles LOAD_VEHICLES_DIR**: directory from where the vehicles' routes will be load. 
+  Cannot be used with the *--save-vehicles option*. Default to *False*.
+- **--traffic-analyzer TRAFFIC_ANALYZER**: enable traffic analyzer on traffic lights. Can be 'all', or the names of the 
+  traffic lights split by ','.
+- **--turn-predictor TURN_PREDICTOR**: enable turn predictor on traffic lights. Can be 'all', or the names of the 
+  traffic lights split by ','.
+- **--traffic-predictor TRAFFIC_PREDICTOR**: enable traffic predictor on traffic lights. Can be 'all', or the names of 
+  the traffic lights split by ','.
+- **--traffic-predictor-type TRAFFIC_PREDICTOR_TYPE**: select the traffic predictor type. Possible values are 'date' 
+  and 'context'. Default to *'date'*.
   
+
 Note that the time pattern and dates are indicated in the deployment scripts with the characters ":" and "#".
 
 ## Data model
@@ -63,7 +78,7 @@ This component is related to the adaptation process of the traffic light algorit
 and predicted from the Traffic Analyzer and Traffic Light Predictor, respectively.
 
 The main considerations about this component are:
-- If there is only one traffic type related component (TA or TLP) deployed, the traffic type used to select the best 
+- If there is only one traffic type related component (TA or TP) deployed, the traffic type used to select the best 
   traffic light algorithm will be the one retrieved by that component as the other one is down and does not provide any 
   kind of information.
 - If there is information about the two components:

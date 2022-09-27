@@ -4,8 +4,8 @@ import stat
 
 from sumo_generators.config_generator import generate_flow_file
 
-from argparse_types import check_file, check_dimension, check_valid_format
-from constants import CALENDAR_PATTERN_FILE, ADAPTATION_COMPONENTS, ADAPTATION_FILE_SCHEMA
+from argparse_types import check_file, check_dimension, check_valid_format, check_valid_predictor_value
+from constants import CALENDAR_PATTERN_FILE, ADAPTATION_FILE_SCHEMA, ADAPTATION_APPROACHES
 
 
 def get_num_parent_folders(folder_name: str) -> int:
@@ -124,7 +124,7 @@ if __name__ == '__main__':
                            rows=rows, cols=cols)
 
     # 2. Create sh file per each adaptation
-    for adaptation, add_components in ADAPTATION_COMPONENTS.items():
+    for adaptation, tl_components in ADAPTATION_APPROACHES.items():
         # Retrieve file schema, set the adaptation name and initialize the TLC pattern
         file_str, adaptation_name, tlc_pattern = ADAPTATION_FILE_SCHEMA, 'example_' + adaptation, ''
 
@@ -140,6 +140,8 @@ if __name__ == '__main__':
         if turn_pattern_path:
             # Replace ../ for /etc/ -> For Docker-compose generation
             tlc_pattern += ':turn#' + turn_pattern_path.replace('../', '/etc/')
+            # If there is a turn pattern load it means the turns are allowed
+            tlc_pattern += ':allow-turns#'
 
         # Define output executable sh file
         file_name = output_dir + '/' + adaptation_name + ".sh"
@@ -148,8 +150,9 @@ if __name__ == '__main__':
         with open(file_name, "w") as adaptation_file:
             adaptation_file.write(file_str.format(num_parent_folders=num_parent_folders * '../',
                                                   tlc_pattern=tlc_pattern, rows=rows, cols=cols, lanes=lanes,
+                                                  tl_components=tl_components,
                                                   exp_file=f'grid_{rows}x{cols}_{adaptation_name}.xlsx',
-                                                  add_components=add_components))
+                                                  add_components=''))
         # Get sh file current permissions
         st = os.stat(file_name)
         # Update the permissions to be executable

@@ -169,6 +169,9 @@ class DockerComposeGenerator:
                 # Add network topology number of lanes to SUMO generator
                 elif param_type == 'lanes':
                     sumo_generator_str += f'-l {param_value} '
+                # Add allow turns
+                elif param_type == 'allow-turns':
+                    sumo_generator_str += f'--allow-turns '
                 # Add route files to TLC volume
                 elif param_type == 'load':
                     # It is fixed to the second position

@@ -47,11 +47,11 @@ def get_options():
     arg_parser.add_argument("--turn-pattern", dest="turn_pattern", action="store", type=check_file,
                                 help="turn pattern input file.")
     arg_parser.add_argument("-s", "--save-vehicles", action="store", dest="save_vehicles_dir", type=str,
-                                help="directory where the vehicles info will be saved. Cannot be used with the "
+                                help="directory where the vehicles routes will be saved. Cannot be used with the "
                                      "--load-vehicles option.")
     arg_parser.add_argument("-l", "--load-vehicles", action="store", default=False, dest="load_vehicles_dir",
                             type=check_file,
-                                help="directory from where the vehicles info will be load. Cannot be used with the "
+                                help="directory from where the vehicles routes will be load. Cannot be used with the "
                                      "--save-vehicles option. Default to False.")
     arg_parser.add_argument("--traffic-analyzer", action="store", dest="traffic_analyzer", type=str,
                                 help="enable traffic analyzer on traffic lights. Can be 'all' or the names of the "
