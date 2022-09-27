@@ -70,7 +70,8 @@ ALL_CONTAINERS = {
         'restart': 'on-failure',
         'links': 'mosquitto',
         'volumes': ['./traffic_light_controller:/etc/traffic_light_controller/', './sumo-utils:/etc/sumo-utils/',
-                    '{}'+f':{DEFAULT_ROUTE_DIR}'],
+                    '{}'+f':{DEFAULT_ROUTE_DIR}', './traffic_predictor:/etc/traffic_predictor/',
+                    './turn_predictor:/etc/turn_predictor/', './traffic_analyzer:/etc/traffic_analyzer/'],
         'command': 'bash -c "pip3 install -r /etc/traffic_light_controller/requirements.txt && '
                    'cd /etc/sumo-utils/sumo_generators && python3 config_generator.py {} && '
                    'cd /etc/traffic_light_controller/tl_controller/ &&  dockerize -wait '
@@ -98,26 +99,6 @@ ALL_CONTAINERS = {
                    'tcp://172.20.0.3:8086 -timeout 120s -wait-retry-interval 40s python3 ml_trainer.py --component -n 1'
                    ' --middleware_host 172.20.0.2 --middleware_port 1883"',
         'ipv4_address': '172.20.0.12'
-    },
-    'player': {
-        'image': 'python:3.8.12-slim',
-        'container_name': 'player',
-        'restart': 'on-failure',
-        'links': 'mosquitto',
-        'volumes': './player:/etc/player/',
-        'command': 'bash -c "pip3 install -r /etc/player/requirements.txt && '
-                   'cd /etc/player/ && python3 main.py -i {}"',
-        'ipv4_address': '172.20.0.9'
-    },
-    'recorder': {
-        'image': 'python:3.8.12-slim',
-        'container_name': 'recorder',
-        'restart': 'on-failure',
-        'links': 'mosquitto',
-        'volumes': './recorder:/etc/recorder/',
-        'command': 'bash -c "pip3 install -r /etc/recorder/requirements.txt && '
-                   'cd /etc/recorder/ && python3 main.py -o {}"',
-        'ipv4_address': '172.20.0.10'
     },
     'exp_collector': {
         'image': 'python:3.8.12-slim',
