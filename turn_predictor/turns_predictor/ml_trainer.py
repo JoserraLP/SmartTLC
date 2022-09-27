@@ -8,7 +8,7 @@ import pandas as pd
 from turns_predictor.ml.dataset import TurnDataset
 from turns_predictor.ml.model_predictor import ModelPredictor
 from turns_predictor.ml.model_trainer import ModelTrainer
-from turns_predictor.providers.predictor import Predictor
+from turns_predictor.providers.predictor import TurnPredictor
 from turns_predictor.static.argparse_types import check_file, check_dimension, check_valid_prediction_info, \
     check_greater_zero
 from turns_predictor.static.constants import MODEL_BASE_DIR, MODEL_PARSED_VALUES_FILE, \
@@ -123,5 +123,5 @@ if __name__ == "__main__":
         print(model.predict(data, num_models=1))
     elif exec_options.component:  # Component process
         # Start predictor process
-        predictor = Predictor(mqtt_url=exec_options.mqtt_url, mqtt_port=exec_options.mqtt_port,
-                              num_models=exec_options.num_models)
+        predictor = TurnPredictor(mqtt_url=exec_options.mqtt_url, mqtt_port=exec_options.mqtt_port,
+                                  num_models=exec_options.num_models)

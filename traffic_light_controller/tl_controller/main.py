@@ -56,6 +56,9 @@ def get_options():
     arg_parser.add_argument("-a", "--analyzer", action="store", dest="analyzer", type=str, default="all",
                                 help="enable traffic analyzer on traffic lights. Can be 'all' or the names of the "
                                      "traffic lights split by ','.")
+    arg_parser.add_argument("--turn-predictor", action="store", dest="turn_predictor", type=str, default="all",
+                                help="enable turn predictor on traffic lights. Can be 'all' or the names of the "
+                                     "traffic lights split by ','.")
 
     # Retrieve the arguments parsed
     args = arg_parser.parse_args()
@@ -102,4 +105,5 @@ if __name__ == "__main__":
     # Start the simulation process
     traci_sim.simulate(load_vehicles_dir=exec_options.load_vehicles_dir,
                        save_vehicles_dir=exec_options.save_vehicles_dir,
-                       analyzer=exec_options.analyzer)
+                       analyzer=exec_options.analyzer,
+                       turn_predictor=exec_options.turn_predictor)

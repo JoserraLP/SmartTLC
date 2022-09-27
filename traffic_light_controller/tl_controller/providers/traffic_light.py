@@ -1,8 +1,12 @@
+import copy
+
 import paho.mqtt.client as mqtt
-from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, TRAFFIC_INFO_TOPIC, TRAFFIC_ANALYSIS_TOPIC
+from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, TRAFFIC_INFO_TOPIC, TRAFFIC_ANALYSIS_TOPIC, \
+    TURN_PREDICTION_TOPIC
 from sumo_generators.utils.utils import parse_str_to_valid_schema
 from tl_controller.providers.adapter import TrafficLightAdapter
 from t_analyzer.providers.analyzer import TrafficAnalyzer
+from turns_predictor.providers.predictor import TurnPredictor
 from tl_controller.providers.utils import process_payload
 
 
@@ -33,8 +37,8 @@ class TrafficLight:
         self._traci = traci
         self._adapter = adapter
 
-        # Initialize traffic analyzer to None
-        self._traffic_analyzer = None
+        # Initialize traffic analyzer, turn predictor to None
+        self._traffic_analyzer, self._turn_predictor = None, None
 
         # Store the local flag
         self._local = local
@@ -54,8 +58,8 @@ class TrafficLight:
             'roads': self._roads, 'actual_program': self._traci.trafficlight.getProgram(id)
         }
 
-        # Initialize publish information
-        self._publish_info = None
+        # Initialize publish information, turn predictions
+        self._publish_info, self._turn_predictions = None, None
 
         # Get the waiting time per lane when the traffic light is created
         self._prev_waiting_time = {lane: traci.lane.getWaitingTime(lane) for lane in
@@ -82,6 +86,16 @@ class TrafficLight:
         :return: None
         """
         self._traffic_analyzer = traffic_analyzer
+
+    def enable_turn_predictor(self, turn_predictor: TurnPredictor) -> None:
+        """
+        Enable the turn predictor in the traffic light
+
+        :param turn_predictor: turn predictor instance. Default is disabled.
+        :type: TurnPredictor
+        :return: None
+        """
+        self._turn_predictor = turn_predictor
 
     # Vehicles utils
     def increase_turning_vehicles(self, turn: str) -> None:
@@ -320,6 +334,36 @@ class TrafficLight:
         self._mqtt_client.publish(topic=TRAFFIC_ANALYSIS_TOPIC + '/' + self._id,
                                   payload=parse_str_to_valid_schema(self._traffic_analyzer.traffic_type))
 
+    # Turn predictor utils
+    def predict_turn_probabilities(self, date_info: dict) -> None:
+        """
+        Predicts the turn probabilities based on a road and a date
+
+        :param date_info: date information (hour, day, month and year)
+        :type date_info: dict
+        :return: None
+        """
+        # Copy the date info into a dict
+        traffic_info = copy.deepcopy(date_info)
+
+        # Remove day from traffic info
+        del traffic_info['day']
+
+        # Add the roads to the traffic info
+        traffic_info.update({'roads': self._roads})
+
+        # Retrieve turn predictions
+        self._turn_predictions = self._turn_predictor.predict_turn_probabilities(traffic_info=traffic_info)
+
+    def publish_turn_predictions(self) -> None:
+        """
+        Publish the turn predictions of each road
+
+        :return: None
+        """
+        self._mqtt_client.publish(topic=TURN_PREDICTION_TOPIC + '/' + self._id,
+                                  payload=parse_str_to_valid_schema(self._turn_predictions))
+
     # Adapter utils
     def close_adapter_connection(self) -> None:
         """
@@ -367,3 +411,21 @@ class TrafficLight:
         :rtype: list
         """
         return self._adjacent_ids
+
+    @property
+    def traffic_analyzer(self):
+        """
+        Traffic Light traffic analyzer getter
+
+        :return: traffic analyzer
+        """
+        return self._traffic_analyzer
+
+    @property
+    def turn_predictor(self):
+        """
+        Traffic Light turn predictor getter
+
+        :return: turn predictor
+        """
+        return self._turn_predictor
