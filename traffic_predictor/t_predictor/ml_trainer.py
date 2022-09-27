@@ -7,7 +7,7 @@ import pandas as pd
 from t_predictor.ml.dataset import SimulationDataset
 from t_predictor.ml.model_predictor import ModelPredictor
 from t_predictor.ml.model_trainer import ModelTrainer
-from t_predictor.providers.predictor import Predictor
+from t_predictor.providers.predictor import TrafficPredictor
 from t_predictor.static.argparse_types import check_greater_zero, check_valid_prediction_info
 from t_predictor.static.constants import MODEL_BASE_DIR_DATE, MODEL_BASE_DIR_CONTEXT, \
     MODEL_PARSED_VALUES_FILE, MODEL_PERFORMANCE_FILE_DATE, MODEL_PERFORMANCE_FILE_CONTEXT, \
@@ -148,7 +148,11 @@ if __name__ == "__main__":
         print(model.predict(data, num_models=DEFAULT_NUM_MODELS))
     # Component process
     elif exec_options.component:
+        # Define the directories
+        model_base_dir = MODEL_BASE_DIR_DATE if exec_options.date else MODEL_BASE_DIR_CONTEXT
+        performance_file = MODEL_PERFORMANCE_FILE_DATE if exec_options.date else MODEL_PERFORMANCE_FILE_CONTEXT
 
         # Start predictor process
-        predictor = Predictor(date=exec_options.date, mqtt_url=exec_options.mqtt_url, mqtt_port=exec_options.mqtt_port,
-                              num_models=exec_options.num_models)
+        predictor = TrafficPredictor(date=exec_options.date, mqtt_url=exec_options.mqtt_url,
+                                     mqtt_port=exec_options.mqtt_port, num_models=exec_options.num_models,
+                                     model_base_dir=model_base_dir, performance_file=performance_file)

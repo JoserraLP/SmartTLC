@@ -2,8 +2,9 @@ import copy
 
 import paho.mqtt.client as mqtt
 from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, TRAFFIC_INFO_TOPIC, TRAFFIC_ANALYSIS_TOPIC, \
-    TURN_PREDICTION_TOPIC
+    TURN_PREDICTION_TOPIC, TRAFFIC_PREDICTION_TOPIC
 from sumo_generators.utils.utils import parse_str_to_valid_schema
+from t_predictor.providers.predictor import TrafficPredictor
 from tl_controller.providers.adapter import TrafficLightAdapter
 from t_analyzer.providers.analyzer import TrafficAnalyzer
 from turns_predictor.providers.predictor import TurnPredictor
@@ -37,8 +38,8 @@ class TrafficLight:
         self._traci = traci
         self._adapter = adapter
 
-        # Initialize traffic analyzer, turn predictor to None
-        self._traffic_analyzer, self._turn_predictor = None, None
+        # Initialize traffic analyzer, turn predictor and traffic predictor to None
+        self._traffic_analyzer, self._turn_predictor, self._traffic_predictor = None, None, None
 
         # Store the local flag
         self._local = local
@@ -58,8 +59,8 @@ class TrafficLight:
             'roads': self._roads, 'actual_program': self._traci.trafficlight.getProgram(id)
         }
 
-        # Initialize publish information, turn predictions
-        self._publish_info, self._turn_predictions = None, None
+        # Initialize publish information, turn predictions and traffic predictions
+        self._publish_info, self._turn_predictions, self._traffic_predictions = None, None, None
 
         # Get the waiting time per lane when the traffic light is created
         self._prev_waiting_time = {lane: traci.lane.getWaitingTime(lane) for lane in
@@ -96,6 +97,16 @@ class TrafficLight:
         :return: None
         """
         self._turn_predictor = turn_predictor
+
+    def enable_traffic_predictor(self, traffic_predictor: TrafficPredictor) -> None:
+        """
+        Enable the turn predictor in the traffic light
+
+        :param traffic_predictor: traffic predictor instance. Default is disabled.
+        :type: TrafficPredictor
+        :return: None
+        """
+        self._traffic_predictor = traffic_predictor
 
     # Vehicles utils
     def increase_turning_vehicles(self, turn: str) -> None:
@@ -364,6 +375,39 @@ class TrafficLight:
         self._mqtt_client.publish(topic=TURN_PREDICTION_TOPIC + '/' + self._id,
                                   payload=parse_str_to_valid_schema(self._turn_predictions))
 
+    # Traffic predictor utils
+    def predict_traffic_type(self, date_info: dict) -> None:
+        """
+        Predicts the traffic prediction based on a junction and a date
+
+        :param date_info: date information (hour, day, month and year)
+        :type date_info: dict
+        :return: None
+
+        :return: None
+        """
+
+        # Copy the date info into a dict
+        traffic_info = copy.deepcopy(date_info)
+
+        # Add the roads to the traffic info
+        traffic_info.update(self._traffic_light_info)
+
+        # Remove vehicles passed as it is not used on the training process
+        traffic_info.pop('vehicles_passed')
+
+        # Retrieve traffic predictions
+        self._traffic_predictions = self._traffic_predictor.predict_traffic_type(traffic_info=traffic_info)
+
+    def publish_traffic_type_prediction(self) -> None:
+        """
+        Publish the traffic prediction
+
+        :return: None
+        """
+        self._mqtt_client.publish(topic=TRAFFIC_PREDICTION_TOPIC + '/' + self._id,
+                                  payload=parse_str_to_valid_schema(self._traffic_predictions))
+
     # Adapter utils
     def close_adapter_connection(self) -> None:
         """
@@ -382,6 +426,16 @@ class TrafficLight:
         :rtype: str
         """
         return self._id
+
+    @property
+    def adjacent_ids(self) -> list:
+        """
+        Adjacent ids getter
+
+        :return: adjacent ids
+        :rtype: list
+        """
+        return self._adjacent_ids
 
     @property
     def adapter(self):
@@ -403,16 +457,6 @@ class TrafficLight:
         return self._traffic_light_info
 
     @property
-    def adjacent_ids(self) -> list:
-        """
-        Adjacent ids getter
-
-        :return: adjacent ids
-        :rtype: list
-        """
-        return self._adjacent_ids
-
-    @property
     def traffic_analyzer(self):
         """
         Traffic Light traffic analyzer getter
@@ -429,3 +473,12 @@ class TrafficLight:
         :return: turn predictor
         """
         return self._turn_predictor
+
+    @property
+    def traffic_predictor(self):
+        """
+        Traffic Light traffic type predictor getter
+
+        :return: traffic predictor
+        """
+        return self._traffic_predictor

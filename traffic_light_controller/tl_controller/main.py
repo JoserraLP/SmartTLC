@@ -5,7 +5,7 @@ import sys
 import tl_controller.static.constants as cnt
 from sumolib import checkBinary
 from tl_controller.providers.traci_sim import TraCISimulator
-from tl_controller.static.argparse_types import check_file, check_valid_format
+from tl_controller.static.argparse_types import check_file, check_valid_format, check_valid_predictor_value
 
 
 def import_required_libs():
@@ -53,12 +53,19 @@ def get_options():
                             type=check_file,
                                 help="directory from where the vehicles info will be load. Cannot be used with the "
                                      "--save-vehicles option. Default to False.")
-    arg_parser.add_argument("-a", "--analyzer", action="store", dest="analyzer", type=str, default="all",
+    arg_parser.add_argument("--traffic-analyzer", action="store", dest="traffic_analyzer", type=str,
                                 help="enable traffic analyzer on traffic lights. Can be 'all' or the names of the "
                                      "traffic lights split by ','.")
-    arg_parser.add_argument("--turn-predictor", action="store", dest="turn_predictor", type=str, default="all",
+    arg_parser.add_argument("--turn-predictor", action="store", dest="turn_predictor", type=str,
                                 help="enable turn predictor on traffic lights. Can be 'all' or the names of the "
                                      "traffic lights split by ','.")
+    arg_parser.add_argument("--traffic-predictor", action="store", dest="traffic_predictor", type=str,
+                                help="enable traffic predictor on traffic lights. Can be 'all' or the names of the "
+                                     "traffic lights split by ','.")
+    arg_parser.add_argument("--traffic-predictor-type", action="store", dest="traffic_predictor_type",
+                            type=check_valid_predictor_value, default="date",
+                                help="select the traffic predictor type. Possible values are 'date' and 'context'. "
+                                     "Default to 'date'.")
 
     # Retrieve the arguments parsed
     args = arg_parser.parse_args()
@@ -105,5 +112,7 @@ if __name__ == "__main__":
     # Start the simulation process
     traci_sim.simulate(load_vehicles_dir=exec_options.load_vehicles_dir,
                        save_vehicles_dir=exec_options.save_vehicles_dir,
-                       analyzer=exec_options.analyzer,
-                       turn_predictor=exec_options.turn_predictor)
+                       traffic_analyzer=exec_options.traffic_analyzer,
+                       turn_predictor=exec_options.turn_predictor,
+                       traffic_predictor=exec_options.traffic_predictor,
+                       traffic_predictor_type=exec_options.traffic_predictor_type)

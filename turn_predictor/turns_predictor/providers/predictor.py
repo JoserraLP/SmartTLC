@@ -44,7 +44,7 @@ class TurnPredictor:
         # Create model predictor
         self._model_predictor = ModelPredictor(model_base_dir=model_base_dir, parsed_values_file=parsed_values_file)
 
-        # Load all the models when connecting to the middleware
+        # Load all the models
         self._model_predictor.load_best_models(num_models=self._num_models, performance_file=performance_file)
 
         # In case it is deployed, create the middleware connection
@@ -90,6 +90,7 @@ class TurnPredictor:
 
         # Check valid value
         if junction_id != '':
+            # Predict turn probabilities
             turn_predictions_per_road = self.predict_turn_probabilities(traffic_info=traffic_info)
 
             # Publish the message

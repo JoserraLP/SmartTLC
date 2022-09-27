@@ -5,6 +5,7 @@ from sumo_generators.time_patterns.time_patterns import TimePattern
 from sumo_generators.time_patterns.utils import retrieve_date_info
 from sumo_generators.utils.utils import parse_str_to_valid_schema
 from t_analyzer.providers.analyzer import TrafficAnalyzer
+from t_predictor.providers.predictor import TrafficPredictor
 from tl_controller.providers.adapter import TrafficLightAdapter
 from tl_controller.providers.traffic_light import TrafficLight
 from tl_controller.providers.utils import *
@@ -50,6 +51,22 @@ def enable_traffic_component(traffic_lights: dict, components: dict) -> None:
                                                  model_base_dir='../../turn_predictor/regression_models/',
                                                  parsed_values_file='../../turn_predictor/output/parsed_values_dict.json',
                                                  performance_file='../../turn_predictor/regression_models/ml_performance.json'))
+            elif 'traffic_predictor' in component_type:
+                # Retrieve type of traffic predictor
+                _, traffic_predictor_type = component_type.split(':')
+                # Get flag related to the predictor type
+                date = True if traffic_predictor_type == 'date' else False
+
+                # Get values based on the predictor type
+                model_base_dir = f'../../traffic_predictor/classifier_models_{traffic_predictor_type}/'
+                performance_file = f'../../traffic_predictor/classifier_models_{traffic_predictor_type}/ml_performance.json'
+
+                # Initialize empty to deploy locally
+                traffic_light.enable_traffic_predictor(
+                    traffic_predictor=TrafficPredictor(date=date, mqtt_url='', mqtt_port='',
+                                                       model_base_dir=model_base_dir,
+                                                       parsed_values_file='../../traffic_predictor/output/parsed_values_dict.json',
+                                                       performance_file=performance_file))
 
 
 class TraCISimulator:
@@ -115,8 +132,8 @@ class TraCISimulator:
             self._mqtt_client.connect(mqtt_url, mqtt_port)
             self._mqtt_client.loop_start()
 
-    def simulate(self, load_vehicles_dir: str = '', save_vehicles_dir: str = '', analyzer: str = '',
-                 turn_predictor: str = ''):
+    def simulate(self, load_vehicles_dir: str = '', save_vehicles_dir: str = '', traffic_analyzer: str = '',
+                 turn_predictor: str = '', traffic_predictor: str = '', traffic_predictor_type: str = ''):
         """
         Perform the simulations by a time pattern with TraCI.
 
@@ -124,10 +141,14 @@ class TraCISimulator:
         :type load_vehicles_dir: str
         :param save_vehicles_dir: directory to save the vehicles flows.
         :type save_vehicles_dir: str
-        :param analyzer: enables analyzer on the specified traffic lights.
-        :type analyzer: str
+        :param traffic_analyzer: enables analyzer on the specified traffic lights.
+        :type traffic_analyzer: str
         :param turn_predictor: enables turn predictor on the specified traffic lights.
         :type turn_predictor: str
+        :param traffic_predictor: enables traffic predictor on the specified traffic lights.
+        :type traffic_predictor: str
+        :param traffic_predictor_type: specify the traffic predictor type. Options are: 'date' or 'contextual'
+        :type traffic_predictor_type: str
         :return: None
         """
         # Loop over the time pattern simulation
@@ -182,8 +203,9 @@ class TraCISimulator:
                                                                                   local=self._local))
                           for traffic_light in self._traci.trafficlight.getIDList()}
 
-        # Enable traffic analyzers, turn predictors
-        components = {'traffic_analyzer': analyzer, 'turn_predictor': turn_predictor}
+        # Enable traffic analyzers, traffic and turn predictors
+        components = {'traffic_analyzer': traffic_analyzer, 'turn_predictor': turn_predictor,
+                      'traffic_predictor:'+traffic_predictor_type: traffic_predictor}
         enable_traffic_component(traffic_lights=traffic_lights, components=components)
 
         # Append traffic global information
@@ -263,7 +285,12 @@ class TraCISimulator:
                         # Publish turn predictors information
                         traffic_light.publish_turn_predictions()
 
-
+                    # Check if the component is enabled
+                    if traffic_light.traffic_predictor:
+                        # Predict traffic type
+                        traffic_light.predict_traffic_type(date_info=date_info)
+                        # Publish traffic type predictors information
+                        traffic_light.publish_traffic_type_prediction()
 
                     # Reset contextual information
                     traffic_light.reset_contextual_info()
