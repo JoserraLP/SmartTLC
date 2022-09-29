@@ -1,5 +1,5 @@
 from sumo_generators.generators.utils import generate_detector_file, generate_tl_file, generate_network_file, \
-    generate_flow_file, generate_sumo_config_file
+    generate_flow_file, generate_sumo_config_file, generate_simulation_flow_file
 from sumo_generators.static.argparse_types import *
 from sumo_generators.static.constants import *
 
@@ -115,6 +115,10 @@ def get_options():
     flows_generator_group.add_argument("--dates", dest="dates", action="store", type=str,
                                        help="calendar dates from start to end to simulate. Format is "
                                             "dd/mm/yyyy-dd/mm/yyyy.")
+
+    flows_generator_group.add_argument("--turn-pattern", dest="turn_pattern_path", action="store", type=check_file,
+                                       help="turn pattern input file.")
+
     # Retrieve the arguments parsed
     args = arg_parser.parse_args()
     return args
@@ -154,3 +158,9 @@ if __name__ == '__main__':
         # Generate flow file based on time pattern
         generate_flow_file(time_pattern_path=exec_options.time_pattern_path, flows_path=exec_options.flows_path,
                            rows=exec_options.rows, cols=exec_options.cols)
+
+    # Start a simulation and update the flow file
+    generate_simulation_flow_file(turn_pattern_file=exec_options.turn_pattern_path,
+                                  sumo_config_file=exec_options.sumo_config_path,
+                                  time_pattern_file=exec_options.time_pattern_path, dates=exec_options.dates,
+                                  flows_file=exec_options.flows_path)

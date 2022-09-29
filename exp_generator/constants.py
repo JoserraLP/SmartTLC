@@ -12,7 +12,7 @@ ADAPTATION_APPROACHES = {
 
 ADAPTATION_FILE_SCHEMA = '#!/bin/sh \n\
 \n\
-cwd=$(pwd)/flows.rou.xml \n\
+cwd=$(pwd)/config/flows.rou.xml \n\
 \n\
 # Move to docker generator folder \n\
 cd {num_parent_folders}docker-utils/docker_generator || exit \n\
@@ -29,3 +29,5 @@ exp_collector:exp_file#{exp_file}:waiting#4500{add_components} \n\
 \n\
 # Deploy the architecture\n\
 sudo docker-compose up\n'
+
+DEFAULT_CONFIG_GENERATOR_SCRIPT = "../sumo-utils/sumo_generators/config_generator.py"

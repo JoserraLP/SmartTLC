@@ -2,10 +2,11 @@ import argparse
 import os
 import stat
 
-from sumo_generators.config_generator import generate_flow_file
+from sumo_generators.static.constants import DEFAULT_NODES_FILENAME, DEFAULT_EDGES_FILENAME, DEFAULT_NET_FILENAME, \
+    DEFAULT_DET_FILENAME, DEFAULT_TLL_FILENAME, DEFAULT_ROUTE_FILENAME, DEFAULT_CONFIG_FILENAME
 
-from argparse_types import check_file, check_dimension, check_valid_format, check_valid_predictor_value
-from constants import CALENDAR_PATTERN_FILE, ADAPTATION_FILE_SCHEMA, ADAPTATION_APPROACHES
+from argparse_types import check_file, check_dimension, check_valid_format
+from constants import ADAPTATION_FILE_SCHEMA, ADAPTATION_APPROACHES, DEFAULT_CONFIG_GENERATOR_SCRIPT
 
 
 def get_num_parent_folders(folder_name: str) -> int:
@@ -96,10 +97,13 @@ if __name__ == '__main__':
 
     # Output dir
     output_dir = exec_options.output_directory
+    config_dir = output_dir+'/config'
 
     # Check if directory does not exist, to create it
     if output_dir and not os.path.exists(output_dir):
         os.mkdir(output_dir)
+        # Store configuration files
+        os.mkdir(config_dir)
 
     # Get number of parent folders to "docker-utils" component:
     num_parent_folders = get_num_parent_folders('docker-utils')
@@ -112,16 +116,23 @@ if __name__ == '__main__':
     dates = exec_options.dates
     turn_pattern_path = exec_options.turn_pattern_path
 
-    # 1. We need to create the flows.rou.xml file based on the time pattern and network topology
-    # Execute the SUMO utils generator script
+    # 1. Generate SUMO configuration files and flows with or without turns
+    command = f"python {DEFAULT_CONFIG_GENERATOR_SCRIPT} -n {config_dir+'/'+DEFAULT_NODES_FILENAME} " \
+              f"-e {config_dir+'/'+DEFAULT_EDGES_FILENAME} -d {config_dir+'/'+DEFAULT_DET_FILENAME} " \
+              f"-t {config_dir+'/'+DEFAULT_TLL_FILENAME} -o {config_dir+'/'+DEFAULT_NET_FILENAME} " \
+              f"-f {config_dir+'/'+DEFAULT_ROUTE_FILENAME} -s {config_dir+'/'+DEFAULT_CONFIG_FILENAME} " \
+              f"-r {rows} -c {cols} -l {lanes} -p --allow-turns "
+
     if dates:
-        # Generate flow file based on date interval
-        generate_flow_file(dates=dates, flows_path=output_dir + "/flows.rou.xml",
-                           rows=rows, cols=cols, calendar_pattern_file=CALENDAR_PATTERN_FILE)
+        command += f"--dates {dates} "
     elif time_pattern_path:
-        # Generate flow file based on time pattern
-        generate_flow_file(time_pattern_path=time_pattern_path, flows_path=output_dir + "/flows.rou.xml",
-                           rows=rows, cols=cols)
+        command += f"--time-pattern {time_pattern_path} "
+
+    if turn_pattern_path:
+        command += f"--turn-pattern {turn_pattern_path} "
+
+    # Execute command
+    os.system(command)
 
     # 2. Create sh file per each adaptation
     for adaptation, tl_components in ADAPTATION_APPROACHES.items():
@@ -133,11 +144,11 @@ if __name__ == '__main__':
             tlc_pattern = 'date#' + dates
         # If time pattern set pattern parameter
         elif time_pattern_path:
-            # Replace ../ for /etc/ -> For Docker-compose generation
+            # Replace ../ for /etc/ -> For Docker-compose
             tlc_pattern = 'pattern#' + time_pattern_path.replace('../', '/etc/')
 
-        # If turns follows a given pattern
-        if turn_pattern_path:
+        # If turns follows a given turn pattern or is not used in the adaptation approach
+        if turn_pattern_path and 'no_turn' not in adaptation:
             # Replace ../ for /etc/ -> For Docker-compose generation
             tlc_pattern += ':turn#' + turn_pattern_path.replace('../', '/etc/')
             # If there is a turn pattern load it means the turns are allowed

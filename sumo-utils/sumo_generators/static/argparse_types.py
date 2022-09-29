@@ -1,4 +1,5 @@
 import argparse
+import os
 
 
 def check_dimension(dimension: str) -> int:
@@ -82,3 +83,16 @@ def check_valid_tl_layout(tl_layout: str) -> str:
         raise argparse.ArgumentTypeError('Invalid value. Possible values are: "opposites", "incoming", '
                                          '"alternateOneWay"')
     return tl_layout
+
+
+def check_file(file_dir: str) -> str:
+    """
+    Check if the file exists
+    :param file_dir: file directory
+    :type file_dir: str
+    :return: file_dir
+    :rtype: str
+    """
+    if not os.path.exists(file_dir):
+        raise argparse.ArgumentTypeError(f'Invalid value. File {file_dir} does not exist.')
+    return file_dir

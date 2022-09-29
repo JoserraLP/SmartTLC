@@ -70,10 +70,9 @@ ALL_CONTAINERS = {
         'restart': 'on-failure',
         'links': 'mosquitto',
         'volumes': ['./traffic_light_controller:/etc/traffic_light_controller/', './sumo-utils:/etc/sumo-utils/',
-                    '{}'+f':{DEFAULT_ROUTE_DIR}', './traffic_predictor:/etc/traffic_predictor/',
+                    '{}:{}', './traffic_predictor:/etc/traffic_predictor/',
                     './turn_predictor:/etc/turn_predictor/', './traffic_analyzer:/etc/traffic_analyzer/'],
         'command': 'bash -c "pip3 install -r /etc/traffic_light_controller/requirements.txt && '
-                   'cd /etc/sumo-utils/sumo_generators && python3 config_generator.py {} && '
                    'cd /etc/traffic_light_controller/tl_controller/ &&  dockerize -wait '
                    'tcp://172.20.0.3:8086 -timeout 120s -wait-retry-interval 20s python3 {}"',
         'ipv4_address': '172.20.0.7'
@@ -114,8 +113,8 @@ ALL_CONTAINERS = {
 
 DOCKER_EXECUTION_OPTIONS = {
     'traffic_light_controller': {
-        'pattern': 'main.py -c /etc/sumo-utils/output/simulation.sumocfg --nogui -t {}',
-        'date': 'main.py -c /etc/sumo-utils/output/simulation.sumocfg --nogui -d {}'
+        'pattern': 'main.py -c /etc/config/simulation.sumocfg --nogui -t {}',
+        'date': 'main.py -c /etc/config/simulation.sumocfg --nogui -d {}'
 
     },
     'traffic_predictor': {

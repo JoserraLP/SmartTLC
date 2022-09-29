@@ -143,7 +143,9 @@ class DockerComposeGenerator:
             container_name = params.pop(0)
 
         # Define params str
-        pattern_str, sumo_generator_str, pattern_file, date_range, exp_file, waiting_time = "", "", "", "", "", ""
+        pattern_str, pattern_file, date_range, exp_file, waiting_time = "", "", "", "", ""
+        # Define configuration file for SUMO on pattern_str
+        # pattern_str = ' -c /etc/config/simulation.sumocfg '
         if params:
             # Iterate over different params
             for value in params:
@@ -153,31 +155,16 @@ class DockerComposeGenerator:
                 # Retrieve time pattern from file or date range from calendar
                 if param_type in ['pattern', 'date']:
                     # Store time pattern for TLC
-                    pattern_str = DOCKER_EXECUTION_OPTIONS['traffic_light_controller'][param_type]. \
+                    pattern_str += DOCKER_EXECUTION_OPTIONS['traffic_light_controller'][param_type]. \
                         format(param_value)
-                    # Store time pattern or date range for SUMO generator
-                    if param_type == 'pattern':
-                        pattern_file = param_value
-                    elif param_type == 'date':
-                        date_range = param_value
-                # Add network topology rows to SUMO generator
-                elif param_type == 'rows':
-                    sumo_generator_str += f'-r {param_value} '
-                # Add network topology cols to SUMO generator
-                elif param_type == 'cols':
-                    sumo_generator_str += f'-c {param_value} '
-                # Add network topology number of lanes to SUMO generator
-                elif param_type == 'lanes':
-                    sumo_generator_str += f'-l {param_value} '
-                # Add allow turns
-                elif param_type == 'allow-turns':
-                    sumo_generator_str += f'--allow-turns '
                 # Add route files to TLC volume
                 elif param_type == 'load':
+                    # Remove the flows file from the param value
+                    configuration_folder = '/'.join(param_value.split('/')[0:-1])
                     # It is fixed to the second position
-                    container['volumes'][2] = container['volumes'][2].format(param_value)
+                    container['volumes'][2] = container['volumes'][2].format(configuration_folder, '/etc/config')
                     # Store time pattern for SUMO generator
-                    pattern_str += f' -l {DEFAULT_ROUTE_DIR}'
+                    pattern_str += f' -l /etc/config/flows.rou.xml'
                 # Add turn probabilities file to SUMO generator
                 elif param_type == 'turn':
                     pattern_str += f' --turn-pattern {param_value} '
@@ -187,15 +174,6 @@ class DockerComposeGenerator:
                 # Add number of seconds for the experiment collector to wait until it finishes
                 elif param_type == 'waiting':
                     waiting_time = param_value
-
-            # Add the "proportion" flag and the time pattern to the SUMO generator
-            sumo_generator_str += "-p "
-
-            # Add the pattern file or date range to SUMO generator
-            if pattern_file:
-                sumo_generator_str += f"--time-pattern {pattern_file}"
-            elif date_range:
-                sumo_generator_str += f"--date {date_range}"
 
         # Generate the volumes field
         volumes = parse_field_to_str(container['volumes'])
@@ -239,8 +217,7 @@ class DockerComposeGenerator:
                     container_str += "    command: {}\n".format(container['command'].format(exp_file, waiting_time))
                 # Otherwise only add the SUMO generator and time pattern parameters
                 else:
-                    container_str += "    command: {}\n".format(container['command'].format(sumo_generator_str,
-                                                                                            pattern_str))
+                    container_str += "    command: {}\n".format(container['command'].format(pattern_str))
             # No parameters
             else:
                 container_str += "    command: {}\n".format(container['command'])

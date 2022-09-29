@@ -21,7 +21,18 @@ MAXIMUM_TIME_PHASE = 80
 MAXIMUM_TIME_BOUND_PHASE = UPPER_BOUND_TIME_PHASE - LOWER_BOUND_TIME_PHASE
 
 # File path constants
-DEFAULT_DIR = "../output/"
+DEFAULT_DIR = "../config/"
+# Define file names
+DET_FILENAME = './out.xml'
+DEFAULT_NODES_FILENAME = "topology.nod.xml"
+DEFAULT_EDGES_FILENAME = "topology.edg.xml"
+DEFAULT_NET_FILENAME = "topology.net.xml"
+DEFAULT_DET_FILENAME = "topology.det.xml"
+DEFAULT_TLL_FILENAME = "topology.tll.xml"
+DEFAULT_ROUTE_FILENAME = "flows.rou.xml"
+DEFAULT_CONFIG_FILENAME = "simulation.sumocfg"
+
+# Define files paths
 DET_FILE = DEFAULT_DIR + './out.xml'
 DEFAULT_NODES_DIR = DEFAULT_DIR + "topology.nod.xml"
 DEFAULT_EDGES_DIR = DEFAULT_DIR + "topology.edg.xml"
