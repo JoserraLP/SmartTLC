@@ -91,7 +91,7 @@ class TurnPredictor:
         # Check valid value
         if junction_id != '':
             # Predict turn probabilities
-            turn_predictions_per_road = self.predict_turn_probabilities(traffic_info=traffic_info)
+            turn_predictions_per_road = {junction_id: self.predict_turn_probabilities(traffic_info=traffic_info)}
 
             # Publish the message
             self._mqtt_client.publish(topic=TURN_PREDICTION_TOPIC + '/' + junction_id,

@@ -109,7 +109,7 @@ class TrafficPredictor:
         # Check valid value
         if junction_id != '':
             # Predict traffic type
-            predicted_traffic_type = self.predict_traffic_type(traffic_info=traffic_info)
+            predicted_traffic_type = {junction_id: self.predict_traffic_type(traffic_info=traffic_info)}
             
             # Publish the message
             self._mqtt_client.publish(topic=TRAFFIC_PREDICTION_TOPIC + '/' + junction_id,

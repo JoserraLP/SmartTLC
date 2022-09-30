@@ -110,9 +110,9 @@ class TrafficAnalyzer:
         # Check valid value
         if junction_id != '':
             # Analyze the current traffic and get the traffic type
-            self._traffic_type = self.analyze_current_traffic_flow(
+            self._traffic_type = {junction_id: self.analyze_current_traffic_flow(
                 passing_veh_n_s=int(traffic_info['passing_veh_n_s']),
-                passing_veh_e_w=int(traffic_info['passing_veh_e_w']))
+                passing_veh_e_w=int(traffic_info['passing_veh_e_w']))}
 
             # Publish the message
             self._mqtt_client.publish(topic=TRAFFIC_ANALYSIS_TOPIC + '/' + junction_id,

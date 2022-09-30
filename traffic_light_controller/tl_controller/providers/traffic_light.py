@@ -146,11 +146,14 @@ class TrafficLight:
 
         :return: None
         """
-        # Retrieve traffic type analysis
-        traffic_analysis = self.analyze_current_traffic()
+        new_program = None
 
-        # Retrieve new traffic light program from adapter
-        new_program = self._adapter.get_new_tl_program(traffic_analysis)
+        if self._traffic_analyzer:
+            # Retrieve traffic type analysis
+            traffic_analysis = self.analyze_current_traffic()
+
+            # Retrieve new traffic light program from adapter
+            new_program = self._adapter.get_new_tl_program(traffic_analysis)
 
         # Check if the new program is valid and it is not the same as the actual one
         if new_program and new_program != self._traffic_light_info['actual_program']:
@@ -343,7 +346,7 @@ class TrafficLight:
         :return: None
         """
         self._mqtt_client.publish(topic=TRAFFIC_ANALYSIS_TOPIC + '/' + self._id,
-                                  payload=parse_str_to_valid_schema(self._traffic_analyzer.traffic_type))
+                                  payload=parse_str_to_valid_schema({self._id: self._traffic_analyzer.traffic_type}))
 
     # Turn predictor utils
     def predict_turn_probabilities(self, date_info: dict) -> None:
@@ -373,7 +376,7 @@ class TrafficLight:
         :return: None
         """
         self._mqtt_client.publish(topic=TURN_PREDICTION_TOPIC + '/' + self._id,
-                                  payload=parse_str_to_valid_schema(self._turn_predictions))
+                                  payload=parse_str_to_valid_schema({self._id: self._turn_predictions}))
 
     # Traffic predictor utils
     def predict_traffic_type(self, date_info: dict) -> None:
@@ -406,7 +409,7 @@ class TrafficLight:
         :return: None
         """
         self._mqtt_client.publish(topic=TRAFFIC_PREDICTION_TOPIC + '/' + self._id,
-                                  payload=parse_str_to_valid_schema(self._traffic_predictions))
+                                  payload=parse_str_to_valid_schema({self._id: self._traffic_predictions}))
 
     # Adapter utils
     def close_adapter_connection(self) -> None:
