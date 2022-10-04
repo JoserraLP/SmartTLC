@@ -41,6 +41,9 @@ class TurnPredictor:
         # Store the number of models
         self._num_models = num_models
 
+        # Define turn probabilities dict
+        self._turn_probabilities = {}
+
         # Create model predictor
         self._model_predictor = ModelPredictor(model_base_dir=model_base_dir, parsed_values_file=parsed_values_file)
 
@@ -91,11 +94,11 @@ class TurnPredictor:
         # Check valid value
         if junction_id != '':
             # Predict turn probabilities
-            turn_predictions_per_road = {junction_id: self.predict_turn_probabilities(traffic_info=traffic_info)}
+            self._turn_probabilities = {junction_id: self.predict_turn_probabilities(traffic_info=traffic_info)}
 
             # Publish the message
             self._mqtt_client.publish(topic=TURN_PREDICTION_TOPIC + '/' + junction_id,
-                                      payload=parse_str_to_valid_schema(turn_predictions_per_road))
+                                      payload=parse_str_to_valid_schema(self._turn_probabilities))
 
     def predict_turn_probabilities(self, traffic_info: dict) -> dict:
         """
@@ -150,4 +153,15 @@ class TurnPredictor:
         for index, row in information_per_road.iterrows():
             turn_predictions_per_road[row['road']] = turn_predictions[index].tolist()
 
-        return turn_predictions_per_road
+        self._turn_probabilities = turn_predictions_per_road
+
+        return self._turn_probabilities
+
+    @property
+    def turn_probabilities(self):
+        """
+        Turn Predictor probabilities getter
+
+        :return: turn probabilities
+        """
+        return self._turn_probabilities

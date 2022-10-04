@@ -56,6 +56,9 @@ class TrafficPredictor:
         # Store if models are trained in date only
         self._date = date
 
+        # Define traffic type
+        self._traffic_type = 0
+
         # Create model predictor
         self._model_predictor = ModelPredictor(model_base_dir=model_base_dir, parsed_values_file=parsed_values_file,
                                                date=date)
@@ -109,11 +112,11 @@ class TrafficPredictor:
         # Check valid value
         if junction_id != '':
             # Predict traffic type
-            predicted_traffic_type = {junction_id: self.predict_traffic_type(traffic_info=traffic_info)}
-            
+            self._traffic_type = {junction_id: self.predict_traffic_type(traffic_info=traffic_info)}
+
             # Publish the message
             self._mqtt_client.publish(topic=TRAFFIC_PREDICTION_TOPIC + '/' + junction_id,
-                                      payload=parse_str_to_valid_schema(predicted_traffic_type))
+                                      payload=parse_str_to_valid_schema(self._traffic_type))
 
     def predict_traffic_type(self, traffic_info: dict) -> int:
         """
@@ -127,10 +130,14 @@ class TrafficPredictor:
         # Convert the traffic information to dataframe
         traffic_data = pd.DataFrame([list(traffic_info.values())], columns=list(traffic_info.keys()))
 
+        # Define labels to remove
+        labels = ['actual_program', 'waiting_time_veh_e_w', 'waiting_time_veh_n_s', 'turning_vehicles', 'roads']
+
+        if 'vehicles_passed' in traffic_data:
+            labels.append('vehicles_passed')
+
         # Remove unused model features
-        traffic_data = traffic_data.drop(
-            labels=['actual_program', 'waiting_time_veh_e_w', 'waiting_time_veh_n_s', 'turning_vehicles', 'roads'],
-            axis=1)
+        traffic_data = traffic_data.drop(labels=labels, axis=1)
 
         # Remove the number of vehicles passing features
         if self._date:
@@ -140,5 +147,17 @@ class TrafficPredictor:
             traffic_data['passing_veh_e_w'] = traffic_data['passing_veh_e_w'] * self._window_proportion
             traffic_data['passing_veh_n_s'] = traffic_data['passing_veh_n_s'] * self._window_proportion
 
+        self._traffic_type = self._model_predictor.predict(traffic_data, num_models=self._num_models)[0]
+
         # Return the prediction
-        return self._model_predictor.predict(traffic_data, num_models=self._num_models)[0]
+        return self._traffic_type
+
+    @property
+    def traffic_type(self) -> int:
+        """
+        Analyzer traffic type
+
+        :return: traffic type id
+        :rtype: ind
+        """
+        return self._traffic_type
