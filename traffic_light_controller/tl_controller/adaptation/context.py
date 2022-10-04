@@ -1,51 +1,57 @@
-import copy
+import ast
 
 import paho.mqtt.client as mqtt
-from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, TRAFFIC_INFO_TOPIC, TRAFFIC_ANALYSIS_TOPIC, \
-    TURN_PREDICTION_TOPIC, TRAFFIC_PREDICTION_TOPIC
+from sumo_generators.network.net_graph import NetGraph
+from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, DEFAULT_QOS, TRAFFIC_INFO_TOPIC, \
+    TRAFFIC_ANALYSIS_TOPIC, TURN_PREDICTION_TOPIC, TRAFFIC_PREDICTION_TOPIC
 from sumo_generators.utils.utils import parse_str_to_valid_schema
-from t_predictor.providers.predictor import TrafficPredictor
-from tl_controller.providers.adapter import TrafficLightAdapter
 from t_analyzer.providers.analyzer import TrafficAnalyzer
+from t_predictor.providers.predictor import TrafficPredictor
+from tl_controller.adaptation.strategy import AdaptationStrategy
+from tl_controller.providers.utils import retrieve_turns_edges, process_payload
 from turns_predictor.providers.predictor import TurnPredictor
-from tl_controller.providers.utils import process_payload
 
 
-class TrafficLight:
+class TrafficLightAdapter:
     """
-    Traffic Light class
+    The Traffic Light Adapter defines the interface of interest and stores other relevant information
     """
 
-    def __init__(self, id: str, traci, adapter: TrafficLightAdapter, mqtt_url: str = MQTT_URL,
-                 mqtt_port: int = MQTT_PORT, local: bool = False):
+    def __init__(self, adaptation_strategy: AdaptationStrategy, net_graph: NetGraph, traci, id: str,
+                 mqtt_url: str = MQTT_URL, mqtt_port: int = MQTT_PORT, rows: int = -1,
+                 cols: int = -1, local: bool = False) -> None:
         """
-        Traffic Light initializer.
+        Traffic Light Adapter initializer.
 
+        :param adaptation_strategy: adaptation concrete strategy
+        :type adaptation_strategy: AdaptationStrategy
+        :param net_graph: network topology graph
+        :type net_graph: NetGraph
+        :param traci: TraCI instance
         :param id: traffic light junction identifier
         :type id: str
-        :param traci: TraCI instance
-        :param adapter: traffic light adapter instance
-        :type: TrafficLightAdapter
         :param mqtt_url: MQTT middleware broker url. Default to '172.20.0.2'.
         :type mqtt_url: str
         :param mqtt_port: MQTT middleware broker port. Default to 1883.
         :type mqtt_port: int
+        :param rows: topology rows. Default to -1.
+        :type rows: int
+        :param cols: topology cols. Default to -1.
+        :type cols: int
         :param local: flag to execute locally the component. It will not connect to the middleware.
         :type local: bool
         """
-        # Store traffic light information
-        self._id = id
-        self._traci = traci
-        self._adapter = adapter
+        # Store the adaptation strategy
+        self._adaptation_strategy = adaptation_strategy
+
+        # Store parameter values
+        self._rows, self._cols, self._local, self._id, self._traci = rows, cols, local, id, traci
 
         # Initialize traffic analyzer, turn predictor and traffic predictor to None
         self._traffic_analyzer, self._turn_predictor, self._traffic_predictor = None, None, None
 
-        # Store the local flag
-        self._local = local
-
-        # Retrieve adjacent node ids
-        self._adjacent_ids = adapter.adjacent_ids
+        # Initialize adjacent and self traffic info dict
+        self._adjacent_traffic_info, self._traffic_info, self._publish_info = {}, {}, {}
 
         # Retrieve connected roads
         self._roads = list(set([self._traci.lane.getEdgeID(lane) for lane
@@ -59,8 +65,18 @@ class TrafficLight:
             'roads': self._roads, 'actual_program': self._traci.trafficlight.getProgram(id)
         }
 
-        # Initialize publish information, turn predictions and traffic predictions
-        self._publish_info, self._turn_predictions, self._traffic_predictions = None, None, None
+        # Define junction connections
+        self._turns_per_road = retrieve_turns_edges(net_graph=net_graph, cols=cols)
+
+        # Define identifiers
+        self._adjacent_ids = net_graph.get_adjacent_nodes_by_node(id)
+
+        # Retrieve those ids that are relevant to the adapter (central ones)
+        self._all_ids = [junction_id for junction_id in self._adjacent_ids if 'c' in junction_id]
+
+        # Define topics to subscribe to
+        self._all_traffic_info_topics = [(str(TRAFFIC_INFO_TOPIC + '/' + junction_id), DEFAULT_QOS)
+                                         for junction_id in self._all_ids]
 
         # Get the waiting time per lane when the traffic light is created
         self._prev_waiting_time = {lane: traci.lane.getWaitingTime(lane) for lane in
@@ -70,45 +86,41 @@ class TrafficLight:
         self._traffic_light_detectors = [detector for detector in self._traci.inductionloop.getIDList()
                                          if traci.inductionloop.getLaneID(detector).split('_')[1] == id]
 
+        # Reset counters
+        self.reset_traffic_counters()
+
         if self._local:
             self._mqtt_client = None
         else:
-            # Create the MQTT client and its connection to the broker
+            # Create the MQTT client, its callbacks and its connection to the broker
             self._mqtt_client = mqtt.Client()
+            self._mqtt_client.on_connect = self.on_connect
+            self._mqtt_client.on_message = self.on_message
             self._mqtt_client.connect(mqtt_url, mqtt_port)
+            self._mqtt_client.loop_start()
 
-    # External components utils
-    def enable_traffic_analyzer(self, traffic_analyzer: TrafficAnalyzer) -> None:
+    """ TRAFFIC LIGHT UTILS """
+
+    def update_tl_program(self) -> str:
         """
-        Enable the traffic analyzer in the traffic light
-
-        :param traffic_analyzer: traffic light analyzer instance. Default is disabled.
-        :type: TrafficAnalyzer
-        :return: None
+        Traffic Light Adapter delegates on the adaptation strategy the retrieval of the new traffic light
         """
-        self._traffic_analyzer = traffic_analyzer
+        # Gather all the traffic light information (self and adjacent)
+        all_traffic_info = dict(self._traffic_light_info)
 
-    def enable_turn_predictor(self, turn_predictor: TurnPredictor) -> None:
-        """
-        Enable the turn predictor in the traffic light
+        if self._adjacent_traffic_info:
+            all_traffic_info.update(self._adjacent_traffic_info)
 
-        :param turn_predictor: turn predictor instance. Default is disabled.
-        :type: TurnPredictor
-        :return: None
-        """
-        self._turn_predictor = turn_predictor
+        # Get new traffic light algorithm based on the adaptation strategy
+        new_tl_program = self._adaptation_strategy.get_new_tl_program(all_traffic_info)
 
-    def enable_traffic_predictor(self, traffic_predictor: TrafficPredictor) -> None:
-        """
-        Enable the turn predictor in the traffic light
+        # Check if the new program is valid and it is not the same as the actual one
+        if new_tl_program and new_tl_program != self._traffic_light_info['actual_program']:
+            # Update new program
+            self._traci.trafficlight.setProgram(self._id, new_tl_program)
 
-        :param traffic_predictor: traffic predictor instance. Default is disabled.
-        :type: TrafficPredictor
-        :return: None
-        """
-        self._traffic_predictor = traffic_predictor
+    """ VEHICLE UTILS """
 
-    # Vehicles utils
     def increase_turning_vehicles(self, turn: str) -> None:
         """
         Increase the number of turning vehicles by 1 on the given turn
@@ -139,64 +151,6 @@ class TrafficLight:
         :rtype: bool
         """
         return vehicle_id in self._traffic_light_info['turning_vehicles']['vehicles_passed']
-
-    def update_tl_program(self) -> None:
-        """
-        Retrieve the new traffic light program from the adapter and update it.
-
-        :return: None
-        """
-        new_program = None
-
-        if self._traffic_analyzer:
-            # Retrieve traffic type analysis
-            traffic_analysis = self.analyze_current_traffic()
-
-            # Retrieve new traffic light program from adapter
-            new_program = self._adapter.get_new_tl_program(traffic_analysis)
-
-        # Check if the new program is valid and it is not the same as the actual one
-        if new_program and new_program != self._traffic_light_info['actual_program']:
-            # Update new program
-            self._traci.trafficlight.setProgram(self._id, new_program)
-
-    def publish_contextual_info(self) -> None:
-        """
-        Publish the traffic light contextual information
-
-        :return: None
-        """
-        # If it is deployed
-        if not self._local:
-            self._mqtt_client.publish(topic=TRAFFIC_INFO_TOPIC + '/' + self._id,
-                                      payload=parse_str_to_valid_schema(self._publish_info))
-
-    def append_date_contextual_info(self, date_info: dict) -> None:
-        """
-        Append date information to contextual traffic information and store it on the "publish_info" variable
-
-        :return: None
-        """
-        self._publish_info = process_payload(traffic_info=self._traffic_light_info, date_info=date_info)
-
-    def reset_contextual_info(self) -> None:
-        """
-        Restore to default values the traffic light information
-
-        :return: None
-        """
-        # Store previous vehicles passed and turning
-        vehicles_passed, turning_vehicles_passed = self._traffic_light_info['vehicles_passed'], \
-                                                   self._traffic_light_info['turning_vehicles']['vehicles_passed']
-
-        # Reset counters to 0, except the roads and the vehicles stored previously
-        self._traffic_light_info = {
-            'passing_veh_n_s': 0, 'passing_veh_e_w': 0, 'waiting_time_veh_n_s': 0, 'waiting_time_veh_e_w': 0,
-            'vehicles_passed': vehicles_passed,
-            'turning_vehicles': {'forward': 0, 'right': 0, 'left': 0,
-                                 'vehicles_passed': turning_vehicles_passed},
-            'roads': self._roads, 'actual_program': self._traci.trafficlight.getProgram(self._id)
-        }
 
     def count_passing_vehicles(self) -> None:
         """
@@ -230,6 +184,8 @@ class TrafficLight:
         # Update number of vehicles passing
         self._traffic_light_info['passing_veh_n_s'] += num_passing_vehicles['north'] + num_passing_vehicles['south']
         self._traffic_light_info['passing_veh_e_w'] += num_passing_vehicles['east'] + num_passing_vehicles['west']
+
+# TODO make a wrapper to validate the information passed to the analyzer and predictors, based on the adaptation strategy
 
     def retrieve_edges_vehicles(self) -> dict:
         """
@@ -327,17 +283,17 @@ class TrafficLight:
         self._traffic_light_info['vehicles_passed'].difference_update(deleted_vehicles)
         self._traffic_light_info['turning_vehicles']['vehicles_passed'].difference_update(deleted_vehicles)
 
-    # Analyzer utils
-    def analyze_current_traffic(self) -> int:
-        """
-        Analyze current traffic flow and stores into the analyzer
+    """ EXTERNAL COMPONENTS """
 
-        :return: analyzed traffic type
-        :rtype: int
+    def enable_traffic_analyzer(self, traffic_analyzer: TrafficAnalyzer) -> None:
         """
-        return self._traffic_analyzer.analyze_current_traffic_flow(
-            passing_veh_n_s=self._traffic_light_info['passing_veh_n_s'],
-            passing_veh_e_w=self._traffic_light_info['passing_veh_e_w'])
+        Enable the traffic analyzer in the traffic light
+
+        :param traffic_analyzer: traffic light analyzer instance. Default is disabled.
+        :type: TrafficAnalyzer
+        :return: None
+        """
+        self._traffic_analyzer = traffic_analyzer
 
     def publish_analyzer_info(self):
         """
@@ -348,26 +304,15 @@ class TrafficLight:
         self._mqtt_client.publish(topic=TRAFFIC_ANALYSIS_TOPIC + '/' + self._id,
                                   payload=parse_str_to_valid_schema({self._id: self._traffic_analyzer.traffic_type}))
 
-    # Turn predictor utils
-    def predict_turn_probabilities(self, date_info: dict) -> None:
+    def enable_turn_predictor(self, turn_predictor: TurnPredictor) -> None:
         """
-        Predicts the turn probabilities based on a road and a date
+        Enable the turn predictor in the traffic light
 
-        :param date_info: date information (hour, day, month and year)
-        :type date_info: dict
+        :param turn_predictor: turn predictor instance. Default is disabled.
+        :type: TurnPredictor
         :return: None
         """
-        # Copy the date info into a dict
-        traffic_info = copy.deepcopy(date_info)
-
-        # Remove day from traffic info
-        del traffic_info['day']
-
-        # Add the roads to the traffic info
-        traffic_info.update({'roads': self._roads})
-
-        # Retrieve turn predictions
-        self._turn_predictions = self._turn_predictor.predict_turn_probabilities(traffic_info=traffic_info)
+        self._turn_predictor = turn_predictor
 
     def publish_turn_predictions(self) -> None:
         """
@@ -376,31 +321,18 @@ class TrafficLight:
         :return: None
         """
         self._mqtt_client.publish(topic=TURN_PREDICTION_TOPIC + '/' + self._id,
-                                  payload=parse_str_to_valid_schema({self._id: self._turn_predictions}))
+                                  payload=parse_str_to_valid_schema(
+                                      {self._id: self._turn_predictor.turn_probabilities}))
 
-    # Traffic predictor utils
-    def predict_traffic_type(self, date_info: dict) -> None:
+    def enable_traffic_predictor(self, traffic_predictor: TrafficPredictor) -> None:
         """
-        Predicts the traffic prediction based on a junction and a date
+        Enable the turn predictor in the traffic light
 
-        :param date_info: date information (hour, day, month and year)
-        :type date_info: dict
-        :return: None
-
+        :param traffic_predictor: traffic predictor instance. Default is disabled.
+        :type: TrafficPredictor
         :return: None
         """
-
-        # Copy the date info into a dict
-        traffic_info = copy.deepcopy(date_info)
-
-        # Add the roads to the traffic info
-        traffic_info.update(self._traffic_light_info)
-
-        # Remove vehicles passed as it is not used on the training process
-        traffic_info.pop('vehicles_passed')
-
-        # Retrieve traffic predictions
-        self._traffic_predictions = self._traffic_predictor.predict_traffic_type(traffic_info=traffic_info)
+        self._traffic_predictor = traffic_predictor
 
     def publish_traffic_type_prediction(self) -> None:
         """
@@ -409,16 +341,96 @@ class TrafficLight:
         :return: None
         """
         self._mqtt_client.publish(topic=TRAFFIC_PREDICTION_TOPIC + '/' + self._id,
-                                  payload=parse_str_to_valid_schema({self._id: self._traffic_predictions}))
+                                  payload=parse_str_to_valid_schema({self._id: self._traffic_predictor.traffic_type}))
 
-    # Adapter utils
-    def close_adapter_connection(self) -> None:
+    """ TRAFFIC INFO """
+
+    def reset_traffic_counters(self) -> None:
         """
-        Close Traffic Light Adapter middleware connection
+        Reset adjacent traffic info counters
 
         :return: None
         """
-        self.adapter.close_connection()
+        self._adjacent_traffic_info = {k: '' for k in self._all_ids}
+
+    def publish_contextual_info(self) -> None:
+        """
+        Publish the traffic light contextual information
+
+        :return: None
+        """
+        # If it is deployed
+        if not self._local:
+            self._mqtt_client.publish(topic=TRAFFIC_INFO_TOPIC + '/' + self._id,
+                                      payload=parse_str_to_valid_schema(self._publish_info))
+
+    def append_date_contextual_info(self, date_info: dict) -> None:
+        """
+        Append date information to contextual traffic information and store it on the "publish_info" variable
+
+        :return: None
+        """
+        self._publish_info = process_payload(traffic_info=self._traffic_light_info, date_info=date_info)
+
+    def reset_contextual_info(self) -> None:
+        """
+        Restore to default values the traffic light information
+
+        :return: None
+        """
+        # Store previous vehicles passed and turning
+        vehicles_passed, turning_vehicles_passed = self._traffic_light_info['vehicles_passed'], \
+                                                   self._traffic_light_info['turning_vehicles']['vehicles_passed']
+
+        # Reset counters to 0, except the roads and the vehicles stored previously
+        self._traffic_light_info = {
+            'passing_veh_n_s': 0, 'passing_veh_e_w': 0, 'waiting_time_veh_n_s': 0, 'waiting_time_veh_e_w': 0,
+            'vehicles_passed': vehicles_passed,
+            'turning_vehicles': {'forward': 0, 'right': 0, 'left': 0,
+                                 'vehicles_passed': turning_vehicles_passed},
+            'roads': self._roads, 'actual_program': self._traci.trafficlight.getProgram(self._id)
+        }
+
+    """ MIDDLEWARE """
+
+    def on_connect(self, client, userdata, flags, rc):
+        """
+        Callback called when the client connects to the broker.
+
+        :param client: MQTT client
+        :param userdata: MQTT client data
+        :param flags: MQTT connection flags
+        :param rc: MQTT connection response code
+        :return: None
+        """
+        if rc == 0:  # Connection established
+            # Subscribe to the traffic information of adjacent neighbors
+            self._mqtt_client.subscribe(self._all_traffic_info_topics)
+
+    def on_message(self, client, userdata, msg):
+        """
+        Callback called when the client receives a message from to the broker.
+        :param client: MQTT client
+        :param userdata: MQTT client data
+        :param msg: message received from the middleware
+        :return: None
+        """
+        # Retrieve junction id
+        junction_id = str(msg.topic).split('/')[1] if '/' in msg.topic else ''
+
+        if junction_id:
+            # Retrieve only the number of passing and turning vehicles
+            traffic_info = ast.literal_eval(msg.payload.decode('utf-8')).items()
+            # Parse message to dict
+            self._adjacent_traffic_info[junction_id] = traffic_info
+
+    def close_connection(self):
+        """
+        Close MQTT client connection
+        """
+        self._mqtt_client.loop_stop()
+
+    """ SETTERS AND GETTERS """
 
     @property
     def id(self) -> str:
@@ -431,33 +443,57 @@ class TrafficLight:
         return self._id
 
     @property
+    def adaptation_strategy(self) -> AdaptationStrategy:
+        """
+        Adaptation strategy interface getter
+
+        :return: adaptation strategy
+        :rtype: AdaptationStrategy
+        """
+        return self._adaptation_strategy
+
+    @adaptation_strategy.setter
+    def adaptation_strategy(self, adaptation_strategy: AdaptationStrategy) -> None:
+        """
+        Adaptation strategy setter.
+
+        It allows to change the adaptation strategy object at runtime
+
+        :param adaptation_strategy: adaptation strategy
+        :type adaptation_strategy: AdaptationStrategy
+        :return: None
+        """
+        self._adaptation_strategy = adaptation_strategy
+
+    @property
     def adjacent_ids(self) -> list:
         """
-        Adjacent ids getter
+        Traffic Light Adapter adjacent ids getter
 
-        :return: adjacent ids
+        :return: list of adjacent traffic light ids
         :rtype: list
         """
         return self._adjacent_ids
 
     @property
-    def adapter(self):
-        """
-        Traffic Light adapter getter
-
-        :return: traffic light adapter
-        """
-        return self._adapter
-
-    @property
     def traffic_light_info(self) -> dict:
         """
-        Traffic Light info getter
+        Self traffic light info getter
 
         :return: traffic light info
-        :rtype: dict
         """
         return self._traffic_light_info
+
+    @traffic_light_info.setter
+    def traffic_light_info(self, traffic_light_info: dict) -> None:
+        """
+        Self traffic light info setter.
+
+        :param traffic_light_info: traffic light info
+        :type traffic_light_info: dict
+        :return: None
+        """
+        self._traffic_light_info = traffic_light_info
 
     @property
     def traffic_analyzer(self):

@@ -6,8 +6,8 @@ from sumo_generators.time_patterns.utils import retrieve_date_info
 from sumo_generators.utils.utils import parse_str_to_valid_schema
 from t_analyzer.providers.analyzer import TrafficAnalyzer
 from t_predictor.providers.predictor import TrafficPredictor
-from tl_controller.providers.adapter import TrafficLightAdapter
-from tl_controller.providers.traffic_light import TrafficLight
+from tl_controller.adaptation.context import TrafficLightAdapter
+from tl_controller.adaptation.strategy import StaticAS, SelfTrafficAnalyzerAS, SelfTrafficPredictorAS
 from tl_controller.providers.utils import *
 from tl_controller.static.constants import *
 from turns_predictor.providers.predictor import TurnPredictor
@@ -130,6 +130,8 @@ class TraCISimulator:
             # Create the MQTT client, its callbacks and its connection to the broker
             self._mqtt_client = mqtt.Client()
             self._mqtt_client.connect(mqtt_url, mqtt_port)
+            self._mqtt_url = mqtt_url
+            self._mqtt_port = mqtt_port
             self._mqtt_client.loop_start()
 
     def simulate(self, load_vehicles_dir: str = '', save_vehicles_dir: str = '', traffic_analyzer: str = '',
@@ -195,17 +197,18 @@ class TraCISimulator:
         net_graph = NetGraph(num_rows=self._topology_rows, num_cols=self._topology_cols, valid_edges=edges)
         net_graph.generate_graph()
 
-        # Initialize Traffic Lights and its adapters
-        traffic_lights = {traffic_light: TrafficLight(id=traffic_light, traci=traci, local=self._local,
-                                                      adapter=TrafficLightAdapter(net_graph=net_graph, id=traffic_light,
-                                                                                  rows=self._topology_rows,
-                                                                                  cols=self._topology_cols,
-                                                                                  local=self._local))
+        # Initialize Traffic Lights with the static adaptation strategy
+        traffic_lights = {traffic_light: TrafficLightAdapter(id=traffic_light, traci=traci, local=self._local,
+                                                             adaptation_strategy=StaticAS(), net_graph=net_graph,
+                                                             mqtt_url=self._mqtt_url, mqtt_port=self._mqtt_port,
+                                                             rows=self._topology_rows,
+                                                             cols=self._topology_cols)
+
                           for traffic_light in self._traci.trafficlight.getIDList()}
 
         # Enable traffic analyzers, traffic and turn predictors
         components = {'traffic_analyzer': traffic_analyzer, 'turn_predictor': turn_predictor,
-                      'traffic_predictor:'+traffic_predictor_type: traffic_predictor}
+                      'traffic_predictor:' + traffic_predictor_type: traffic_predictor}
         enable_traffic_component(traffic_lights=traffic_lights, components=components)
 
         # Append traffic global information
@@ -228,6 +231,31 @@ class TraCISimulator:
 
                 # 4. Update waiting time per lane on each junction
                 traffic_light.calculate_waiting_time_per_lane(cols=self._topology_cols)
+
+                """
+                # In order to test the change of adaptation technique in runtime, change all traffic light adaptations
+                # Change from 3600 to 7200 to Analyzer
+                if cur_timestep == 3599:
+                    print(f"Updating traffic light {traffic_light.id} adaptation strategy from "
+                          f"{type(traffic_light.adaptation_strategy)} to SelfTrafficAnalyzerAS "
+                          f"on timestamp {cur_timestep}")
+                    traffic_light.adaptation_strategy = SelfTrafficAnalyzerAS(traffic_light.traffic_analyzer)
+
+                # Change from 7200 to 10800 to Traffic Predictor
+                if cur_timestep == 7199:
+                    print(f"Updating traffic light {traffic_light.id} adaptation strategy from "
+                          f"{type(traffic_light.adaptation_strategy)} to SelfTrafficPredictorAS "
+                          f"on timestamp {cur_timestep}")
+                    traffic_light.adaptation_strategy = SelfTrafficPredictorAS(traffic_light.traffic_predictor)
+
+                # Return to static one from 10800 until the end of the simulation
+                if cur_timestep == 10799:
+                    print(f"Updating traffic light {traffic_light.id} adaptation strategy from "
+                          f"{type(traffic_light.adaptation_strategy)} to StaticAS "
+                          f"on timestamp {cur_timestep}")
+                    traffic_light.adaptation_strategy = StaticAS()
+                    
+                """
 
             # Check if turns are enabled
             if self._turn_pattern:
@@ -273,22 +301,16 @@ class TraCISimulator:
 
                     # Check if the component is enabled
                     if traffic_light.traffic_analyzer:
-                        # Analyze current traffic
-                        traffic_light.analyze_current_traffic()
                         # Publish traffic analyzer information
                         traffic_light.publish_analyzer_info()
 
                     # Check if the component is enabled
                     if traffic_light.turn_predictor:
-                        # Predict turn probabilities
-                        traffic_light.predict_turn_probabilities(date_info=date_info)
                         # Publish turn predictors information
                         traffic_light.publish_turn_predictions()
 
                     # Check if the component is enabled
                     if traffic_light.traffic_predictor:
-                        # Predict traffic type
-                        traffic_light.predict_traffic_type(date_info=date_info)
                         # Publish traffic type predictors information
                         traffic_light.publish_traffic_type_prediction()
 
@@ -319,5 +341,5 @@ class TraCISimulator:
         # If it is deployed
         if not self._local:
             for traffic_light_id, traffic_light in traffic_lights.items():
-                traffic_light.close_adapter_connection()
+                traffic_light.close_connection()
             self._mqtt_client.loop_stop()
