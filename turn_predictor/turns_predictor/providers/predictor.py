@@ -8,7 +8,7 @@ from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, TRAFFIC_INFO_T
 from sumo_generators.utils.utils import parse_str_to_valid_schema
 from turns_predictor.ml.model_predictor import ModelPredictor
 from turns_predictor.static.constants import DEFAULT_NUM_MODELS, MODEL_PARSED_VALUES_FILE, MODEL_BASE_DIR, \
-    MODEL_PERFORMANCE_FILE
+    MODEL_PERFORMANCE_FILE, DEFAULT_TURN_DICT
 
 
 class TurnPredictor:
@@ -42,7 +42,7 @@ class TurnPredictor:
         self._num_models = num_models
 
         # Define turn probabilities dict
-        self._turn_probabilities = {}
+        self._turn_probabilities = DEFAULT_TURN_DICT
 
         # Create model predictor
         self._model_predictor = ModelPredictor(model_base_dir=model_base_dir, parsed_values_file=parsed_values_file)
