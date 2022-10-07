@@ -9,23 +9,6 @@ from sumo_generators.static.constants import DEFAULT_DATE_MONTH, DEFAULT_DATE_YE
     DATE_FIELDS, TIMESTEPS_PER_HALF_HOUR, DEFAULT_TURN_DICT
 
 
-def is_dict_full(dict_info: dict) -> bool:
-    """
-    Return if a dict has all its values filled
-    
-    :param dict_info: dictionary info
-    :type dict_info: dict
-    :return: True if is full, False otherwise
-    :rtype: bool
-    """
-    full = True
-    if dict_info:
-        for k, v in dict_info.items():
-            if v == '':
-                full = False
-    return full
-
-
 def get_topology_dim(traci):
     """
     Retrieve the dimensions of the network topology: rows and cols
@@ -204,7 +187,7 @@ def calculate_turning_vehicles(traci, net_graph: NetGraph, traffic_lights: dict)
             # Get closest junction
             next_junction = next_junction[0][0]
             # Check if vehicle is not counted
-            if next_junction and not traffic_lights[next_junction].is_vehicle_turning_counted(vehicle):
+            if next_junction and not traffic_lights[next_junction].is_vehicle_turning_counted(vehicle_id=vehicle):
                 # Retrieve vehicle route and current edge
                 veh_route = traci.vehicle.getRoute(vehicle)
                 cur_edge_index = traci.vehicle.getRouteIndex(vehicle)

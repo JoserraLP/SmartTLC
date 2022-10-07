@@ -48,10 +48,18 @@ class SelfTrafficAnalyzerAS(AdaptationStrategy):
         self._analyzer = analyzer
 
     def get_new_tl_program(self, traffic_info: dict) -> str:
+        # Retrieve self traffic information (last item of the info)
+        traffic_light_info = traffic_info[list(traffic_info.keys())[-1]].get_traffic_analyzer_info()
+
+        print("\nAnalyzing new traffic light info...")
+        print(traffic_light_info)
+
         # There is only one junction, so retrieve its information
         current_traffic_type = self._analyzer.analyze_current_traffic_flow(
-            passing_veh_n_s=traffic_info['passing_veh_n_s'],
-            passing_veh_e_w=traffic_info['passing_veh_e_w'])
+            passing_veh_n_s=traffic_light_info['passing_veh_n_s'],
+            passing_veh_e_w=traffic_light_info['passing_veh_e_w'])
+
+        print(f"The analyzed traffic type is {current_traffic_type}")
 
         return TRAFFIC_TYPE_TL_ALGORITHMS[str(int(current_traffic_type))]
 
@@ -65,7 +73,16 @@ class SelfTrafficPredictorAS(AdaptationStrategy):
         self._traffic_predictor = traffic_predictor
 
     def get_new_tl_program(self, traffic_info: dict) -> str:
+        # Retrieve self traffic information (last item of the info)
+        traffic_light_info = traffic_info[list(traffic_info.keys())[-1]].get_traffic_predictor_info()
+
+        print("\nPredicting new traffic light info...")
+        print(traffic_light_info)
+
         current_traffic_type = self._traffic_predictor.predict_traffic_type(traffic_info)
+
+        print(f"The predicted traffic type is {current_traffic_type}")
+
         return TRAFFIC_TYPE_TL_ALGORITHMS[str(int(current_traffic_type))]
 
 
