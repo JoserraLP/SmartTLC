@@ -1,4 +1,4 @@
-from sumo_generators.network.net_matrix import NetMatrix
+from sumo_generators.network.node_matrix import NodeMatrix
 from sumo_generators.static.constants import *
 
 
@@ -40,7 +40,7 @@ class NetGenerator:
         self._tl_layout = tl_layout
 
         # Define network matrix
-        net_matrix = NetMatrix(num_rows=rows, num_cols=cols)
+        net_matrix = NodeMatrix(num_rows=rows, num_cols=cols)
 
         # Generate connections matrix
         self._net_matrix = net_matrix.generate_connections_matrix()

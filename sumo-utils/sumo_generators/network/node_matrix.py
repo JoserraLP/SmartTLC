@@ -3,7 +3,7 @@ import numpy as np
 from sumo_generators.static.constants import *
 
 
-class NetMatrix:
+class NodeMatrix:
     """
     Class representing the network matrix
 

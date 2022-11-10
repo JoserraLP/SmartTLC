@@ -10,10 +10,11 @@ import traci
 from sumo_generators.generators.flows_generator import FlowsGenerator
 from sumo_generators.generators.sumo_config_generator import SumoConfigGenerator
 from sumo_generators.network.net_generator import NetGenerator
-from sumo_generators.network.net_graph import NetGraph
+from sumo_generators.network.topology.net_matrix import NetMatrix
 from sumo_generators.static.constants import *
 from sumo_generators.time_patterns.time_patterns import TimePattern
 from sumolib import checkBinary
+from tl_controller.adaptation.context import TrafficLightAdapter
 
 
 def generate_detector_file(network_path: str, detector_path: str, cols: int = MIN_COLS):
@@ -405,82 +406,6 @@ def retrieve_turn_prob_by_edge(traci, turn_prob: pd.DataFrame) -> dict:
 
     return prob_by_edges
 
-
-def update_route_with_turns(traci, net_graph: NetGraph, traffic_lights: dict, turn_prob_by_edges: dict) -> None:
-    """
-    Update the vehicles routes based on the turn probabilities and count them
-
-    :param traci: TraCI instance
-    :param net_graph: network graph
-    :type net_graph: NetGraph
-    :param traffic_lights: dictionary with the traffic lights of the simulation
-    :type traffic_lights: dict
-    :param turn_prob_by_edges: dictionary with the probabilities of turning per edge
-    :type turn_prob_by_edges: dict
-    :return: None
-    """
-    # Get all vehicles from simulation
-    vehicles = traci.vehicle.getIDList()
-
-    # Iterate over the vehicles
-    for vehicle in vehicles:
-        # Get current vehicle road, origin and destination
-        vehicle_road = traci.vehicle.getRoadID(vehicle)
-        # Exclude inner edges
-        if ':' not in vehicle_road:
-            # Retrieve origin and destination junctions
-            source, destination = vehicle_road.split('_')
-
-            # Initialize variable to store the destination info
-            graph_destination_info = None
-            # Iterate over the possible destinations of the current junction
-            for possible_destination in net_graph.graph.get(source):
-                # Retrieve the information if its available
-                if possible_destination['to'] == destination:
-                    graph_destination_info = possible_destination['out_edge']
-                    break
-
-            # Retrieve next traffic light
-            next_junction = destination if 'c' in destination else ''
-
-            # Target edge and turn
-            target_edge, turn = '', ''
-            # Check if there is next traffic light, if the vehicle is not counted and the next junction info is
-            # available
-            if next_junction != '' and vehicle not in traffic_lights[next_junction] and graph_destination_info:
-                # Retrieve turn type [0.0, 1.0)
-                turn_type = random.random()
-
-                # Retrieve turn probabilities for each direction
-                turn_right, turn_left, turn_forward = list(turn_prob_by_edges[vehicle_road].values())
-
-                if turn_type < turn_forward:  # forward
-                    turn = 'forward'
-                elif turn_type < turn_right:  # right
-                    turn = 'right'
-                elif turn_type < turn_left:  # left
-                    turn = 'left'
-
-                # Calculate the new target edge
-                target_edge = graph_destination_info[f'{source}_{destination}'][turn]
-
-                # Calculate if the target edge is valid
-                if target_edge != '':
-                    # Retrieve vehicle type to find new route
-                    cur_vehicle_type = traci.vehicle.getTypeID(vehicle)
-                    # Find new route
-                    new_route = traci.simulation.findRoute(fromEdge=vehicle_road, toEdge=target_edge,
-                                                           vType=cur_vehicle_type).edges
-
-                    # Check if there are routes available (from and to) based on the current vehicle type
-                    if new_route:
-                        # Set new route
-                        traci.vehicle.setRoute(vehicle, new_route)
-
-                        # Add new vehicle
-                        traffic_lights[next_junction].add(vehicle)
-
-
 def generate_simulation_flow_file(turn_pattern_file: str, sumo_config_file: str, time_pattern_file: str, dates: str,
                                   flows_file: str):
     """
@@ -551,11 +476,17 @@ def generate_simulation_flow_file(turn_pattern_file: str, sumo_config_file: str,
     edges = [edge for edge in traci.edge.getIDList() if ':' not in edge]
 
     # Define and generate the network graph
-    net_graph = NetGraph(num_rows=topology_rows, num_cols=topology_cols, valid_edges=edges)
-    net_graph.generate_graph()
+    net_topology = NetMatrix(num_rows=topology_rows, num_cols=topology_cols, valid_edges=edges, traci=traci)
+    net_topology.generate_network()
 
-    # Define traffic lights with the of turning vehicles
-    traffic_lights = {traffic_light: set() for traffic_light in traci.trafficlight.getIDList()}
+    # Initialize Traffic Lights with the static adaptation strategy
+    traffic_lights = {traffic_light: TrafficLightAdapter(id=traffic_light, traci=traci, local=True,
+                                                               adaptation_strategy=None,
+                                                               net_topology=net_topology,
+                                                               mqtt_url=None, mqtt_port=None,
+                                                               rows=topology_rows,
+                                                               cols=topology_cols)
+                            for traffic_light in traci.trafficlight.getIDList()}
 
     # Traci simulation. Iterate until simulation is ended
     while cur_timestep < max_timesteps:
@@ -569,8 +500,7 @@ def generate_simulation_flow_file(turn_pattern_file: str, sumo_config_file: str,
 
             # Update current vehicles routes to enable turns
             # Insert the traffic info to store the number of turning vehicles
-            update_route_with_turns(traci, net_graph=net_graph, traffic_lights=traffic_lights,
-                                    turn_prob_by_edges=turn_prob_by_edges)
+            net_topology.update_route_with_turns(traffic_lights=traffic_lights, turn_prob_by_edges=turn_prob_by_edges)
 
         # Simulate a step
         traci.simulationStep()

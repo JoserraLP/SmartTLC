@@ -1,5 +1,6 @@
 import paho.mqtt.client as mqtt
 import traci
+from sumo_generators.network.topology.net_matrix import NetMatrix
 from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, TRAFFIC_INFO_TOPIC, TIMESTEPS_TO_STORE_INFO
 from sumo_generators.time_patterns.time_patterns import TimePattern
 from sumo_generators.time_patterns.utils import retrieve_date_info
@@ -59,7 +60,7 @@ class TraCISimulator:
         self._config_file, self._sumo_binary = sumo_conf['config_file'], sumo_conf['sumo_binary']
 
         # Initialize TraCI simulation to none, to use it in different methods
-        self._traci, self._topology_rows, self._topology_cols, self._topology_network, self._net_graph, self._traffic_lights = None, None, None, None, None, None
+        self._traci, self._topology_rows, self._topology_cols, self._net_topology, self._traffic_lights = None, None, None, None, None
         # TL program to the middle one
         self._tl_program = TL_PROGRAMS[int(len(TL_PROGRAMS) / 2)]
 
@@ -78,25 +79,18 @@ class TraCISimulator:
             self._mqtt_port = mqtt_port
             self._mqtt_client.loop_start()
 
-    def retrieve_simulation_params(self, load_vehicles_dir: str = '', save_vehicles_dir: str = '') -> list:
+    def retrieve_simulation_params(self, load_vehicles_dir: str = '') -> list:
         """
         Retrieve the simulation params
 
         :param load_vehicles_dir: directory to load the vehicles flows.
         :type load_vehicles_dir: str
-        :param save_vehicles_dir: directory to save the vehicles flows.
-        :type save_vehicles_dir: str
 
         :return: simulation parameters
         :rtype: list
         """
-        # Save vehicles info
-        if save_vehicles_dir:
-            # Add save vehicles info parameters, sorted and with the last used route.
-            add_params = ["--vehroute-output", save_vehicles_dir, "--vehroute-output.last-route", "t",
-                          "--vehroute-output.sorted", "t", "--route-files", FLOWS_OUTPUT_DIR]
         # Load vehicles info
-        elif load_vehicles_dir:
+        if load_vehicles_dir:
             add_params = ["--route-files", load_vehicles_dir]
         else:
             add_params = ["--route-files", FLOWS_OUTPUT_DIR]
@@ -196,14 +190,15 @@ class TraCISimulator:
         # Retrieve all edges
         edges = [edge for edge in self._traci.edge.getIDList() if ':' not in edge]
 
-        # Define and generate the network graph
-        self._net_graph = NetGraph(num_rows=self._topology_rows, num_cols=self._topology_cols, valid_edges=edges)
-        self._net_graph.generate_graph()
+        # Define and generate the network topology
+        self._net_topology = NetMatrix(num_rows=self._topology_rows, num_cols=self._topology_cols,
+                                       valid_edges=edges, traci=self._traci)
+        self._net_topology.generate_network()
 
         # Initialize Traffic Lights with the static adaptation strategy
         self._traffic_lights = {traffic_light: TrafficLightAdapter(id=traffic_light, traci=traci, local=self._local,
                                                                    adaptation_strategy=StaticAS(),
-                                                                   net_graph=self._net_graph,
+                                                                   net_topology=self._net_topology,
                                                                    mqtt_url=self._mqtt_url, mqtt_port=self._mqtt_port,
                                                                    rows=self._topology_rows,
                                                                    cols=self._topology_cols)
@@ -254,14 +249,14 @@ class TraCISimulator:
                                                             turn_prob=self._turn_pattern.retrieve_turn_prob
                                                             (simulation_timestep=cur_timestep))
 
-            # Update current vehicles routes to enable turns
+            # Update current vehicles routes to enable turns, using the network topology
             # Insert the traffic info to store the number of turning vehicles
-            update_route_with_turns(self._traci, net_graph=self._net_graph, traffic_lights=self._traffic_lights,
-                                    turn_prob_by_edges=turn_prob_by_edges)
+            self._net_topology.update_route_with_turns(traffic_lights=self._traffic_lights,
+                                                       turn_prob_by_edges=turn_prob_by_edges)
 
         else:
-            # Otherwise calculate the number of turning vehicles as they are loaded
-            calculate_turning_vehicles(self._traci, traffic_lights=self._traffic_lights, net_graph=self._net_graph)
+            # Otherwise calculate the number of turning vehicles as they are loaded, using the network topology
+            self._net_topology.calculate_turning_vehicles(traffic_lights=self._traffic_lights)
 
     def process_publish_traffic_information(self, summary_waiting_time: int, summary_veh_passed: int,
                                             date_info: dict) -> None:

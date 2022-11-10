@@ -1,14 +1,13 @@
 import ast
 
 import paho.mqtt.client as mqtt
-from sumo_generators.network.net_graph import NetGraph
+from sumo_generators.network.topology.net_topology import NetTopology
 from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, DEFAULT_QOS, TRAFFIC_INFO_TOPIC, \
     TRAFFIC_ANALYSIS_TOPIC, TURN_PREDICTION_TOPIC, TRAFFIC_PREDICTION_TOPIC
 from sumo_generators.utils.utils import parse_str_to_valid_schema
 from t_analyzer.providers.analyzer import TrafficAnalyzer
 from t_predictor.providers.predictor import TrafficPredictor
 from tl_controller.adaptation.strategy import AdaptationStrategy
-from tl_controller.providers.utils import retrieve_turns_edges
 from tl_controller.storage.storage import TrafficLightInfoStorage
 from turns_predictor.providers.predictor import TurnPredictor
 
@@ -18,7 +17,7 @@ class TrafficLightAdapter:
     The Traffic Light Adapter defines the interface of interest and stores other relevant information
     """
 
-    def __init__(self, adaptation_strategy: AdaptationStrategy, net_graph: NetGraph, traci, id: str,
+    def __init__(self, adaptation_strategy: AdaptationStrategy, net_topology: NetTopology, traci, id: str,
                  mqtt_url: str = MQTT_URL, mqtt_port: int = MQTT_PORT, rows: int = -1,
                  cols: int = -1, local: bool = False) -> None:
         """
@@ -26,8 +25,8 @@ class TrafficLightAdapter:
 
         :param adaptation_strategy: adaptation concrete strategy
         :type adaptation_strategy: AdaptationStrategy
-        :param net_graph: network topology graph
-        :type net_graph: NetGraph
+        :param net_topology: network topology
+        :type net_topology: NetTopology
         :param traci: TraCI instance
         :param id: traffic light junction identifier
         :type id: str
@@ -56,10 +55,10 @@ class TrafficLightAdapter:
                                 in set(self._traci.trafficlight.getControlledLanes(id))]))
 
         # Define junction connections
-        self._turns_per_road = retrieve_turns_edges(net_graph=net_graph, cols=cols)
+        self._turns_per_road = net_topology.retrieve_turns_edges(cols=cols)
 
         # Retrieve all adjacent node identifiers
-        self._adjacent_node_ids = net_graph.get_adjacent_nodes_by_node(id)
+        self._adjacent_node_ids = net_topology.get_adjacent_nodes_by_source(id)
 
         # Retrieve those node ids that are traffic lights (central ones)
         self._adjacent_traffic_lights_ids = [junction_id for junction_id in self._adjacent_node_ids if
