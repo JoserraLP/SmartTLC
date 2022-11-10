@@ -46,13 +46,9 @@ def get_options():
                             help="calendar dates from start to end to simulate. Format is dd/mm/yyyy-dd/mm/yyyy.")
     arg_parser.add_argument("--turn-pattern", dest="turn_pattern", action="store", type=check_file,
                             help="turn pattern input file.")
-    arg_parser.add_argument("-s", "--save-vehicles", action="store", dest="save_vehicles_dir", type=str,
-                            help="directory where the vehicles routes will be saved. Cannot be used with the "
-                                 "--load-vehicles option.")
     arg_parser.add_argument("-l", "--load-vehicles", action="store", default=False, dest="load_vehicles_dir",
                             type=check_file,
-                            help="directory from where the vehicles routes will be load. Cannot be used with the "
-                                 "--save-vehicles option. Default to False.")
+                            help="directory from where the vehicles routes will be load. Default to False.")
     arg_parser.add_argument("--traffic-analyzer", action="store", dest="traffic_analyzer", type=str,
                             help="enable traffic analyzer on traffic lights. Can be 'all' or the names of the "
                                  "traffic lights split by ','.")
@@ -80,11 +76,6 @@ if __name__ == "__main__":
     # Retrieve execution options (parameters)
     exec_options = get_options()
 
-    # Check invalid arguments
-    if exec_options.save_vehicles_dir and exec_options.load_vehicles_dir:
-        print("Please, use the correct arguments")
-        exit(-1)
-
     # this script has been called from the command line. It will start sumo as a
     # server, then connect and run
     if exec_options.nogui:
@@ -110,8 +101,7 @@ if __name__ == "__main__":
                                    turn_pattern_file=exec_options.turn_pattern, local=exec_options.local)
 
     # Get simulation params
-    simulation_params = traci_sim.retrieve_simulation_params(load_vehicles_dir=exec_options.load_vehicles_dir,
-                                                             save_vehicles_dir=exec_options.save_vehicles_dir)
+    simulation_params = traci_sim.retrieve_simulation_params(load_vehicles_dir=exec_options.load_vehicles_dir)
 
     # Initialize the simulation topology
     traci_sim.initialize_simulation_topology(traffic_analyzer=exec_options.traffic_analyzer,

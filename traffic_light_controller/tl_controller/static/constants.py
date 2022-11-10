@@ -16,10 +16,10 @@ DEFAULT_GUI_FLAG = False
 DEFAULT_TURNS_FLAG = False
 DEFAULT_NUMBER_OF_SIMULATIONS = 0
 DEFAULT_CLI_VISUALIZE_FLAG = False
-DEFAULT_CONFIG_FILE = '../../sumo-utils/output/simulation.sumocfg'
+DEFAULT_CONFIG_FILE = '../../sumo-utils/config/simulation.sumocfg'
 
 # Default flows file
-FLOWS_OUTPUT_DIR = '../../sumo-utils/output/flows.rou.xml'
+FLOWS_OUTPUT_DIR = '../../sumo-utils/config/flows.rou.xml'
 
 # Default time pattern file
 DEFAULT_TIME_PATTERN_FILE = '../../sumo-utils/time_patterns/generated_calendar.csv'
