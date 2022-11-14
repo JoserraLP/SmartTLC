@@ -6,7 +6,8 @@ from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, TRAFFIC_PREDIC
     DEFAULT_TEMPORAL_WINDOW
 from sumo_generators.utils.utils import parse_str_to_valid_schema
 from t_predictor.ml.model_predictor import ModelPredictor
-from t_predictor.static.constants import DEFAULT_NUM_MODELS, MODEL_PARSED_VALUES_FILE
+from t_predictor.static.constants import DEFAULT_NUM_MODELS, MODEL_PARSED_VALUES_FILE, COLUMNS_DATE_PREDICTOR, \
+    COLUMNS_CONTEXT_PREDICTOR
 
 
 def calculate_proportion_value(temporal_window: float) -> float:
@@ -127,26 +128,21 @@ class TrafficPredictor:
         :return: traffic type
         :rtype: int
         """
-        # Convert the traffic information to dataframe
-        traffic_data = pd.DataFrame([list(traffic_info.values())], columns=list(traffic_info.keys()))
-
-        # Define labels to remove
-        labels = ['actual_program', 'waiting_time_veh_e_w', 'waiting_time_veh_n_s', 'turning_vehicles', 'roads']
-
-        if 'vehicles_passed' in traffic_data:
-            labels.append('vehicles_passed')
-
-        # Remove unused model features
-        traffic_data = traffic_data.drop(labels=labels, axis=1)
-
-        # Remove the number of vehicles passing features
+        # Retrieve columns by predictor type
         if self._date:
-            traffic_data = traffic_data.drop(labels=['passing_veh_e_w', 'passing_veh_n_s'], axis=1)
+            columns = COLUMNS_DATE_PREDICTOR
         else:
+            columns = COLUMNS_CONTEXT_PREDICTOR
+
+        # Convert the traffic information to dataframe by selecting valid columns
+        traffic_data = pd.DataFrame([list(traffic_info.values())], columns=columns)
+
+        if not self._date:
             # Otherwise multiply by proportion value as there are number of vehicles used to predict
             traffic_data['passing_veh_e_w'] = traffic_data['passing_veh_e_w'] * self._window_proportion
             traffic_data['passing_veh_n_s'] = traffic_data['passing_veh_n_s'] * self._window_proportion
 
+        # Predict the traffic type
         self._traffic_type = self._model_predictor.predict(traffic_data, num_models=self._num_models)[0]
 
         # Return the prediction

@@ -71,3 +71,8 @@ MODEL_PERFORMANCE_FILE_DATE = '../classifier_models_date/ml_performance.json'
 MODEL_PARSED_VALUES_FILE = '../output/parsed_values_dict.json'
 DEFAULT_NUM_MODELS = 1
 MODEL_NUM_FOLDS = 2
+
+
+# Prediction columns schema
+COLUMNS_DATE_PREDICTOR = ['hour', 'day', 'date_day', 'date_month', 'date_year']
+COLUMNS_CONTEXT_PREDICTOR = COLUMNS_DATE_PREDICTOR + ['passing_veh_n_s', 'passing_veh_e_w']

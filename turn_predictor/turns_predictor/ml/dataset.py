@@ -157,9 +157,9 @@ class TurnDataset:
                     road_info['turn_forward'] = float(turn_forward[road_idx])
                 # Otherwise use default turn info
                 else:
-                    road_info['turn_right'] = DEFAULT_TURN_DICT['turn_right']
-                    road_info['turn_left'] = DEFAULT_TURN_DICT['turn_left']
-                    road_info['turn_forward'] = DEFAULT_TURN_DICT['turn_forward']
+                    road_info['turn_right'] = DEFAULT_TURN_DICT['turn_prob_right']
+                    road_info['turn_left'] = DEFAULT_TURN_DICT['turn_prob_left']
+                    road_info['turn_forward'] = DEFAULT_TURN_DICT['turn_prob_forward']
 
                 # Store processed info
                 processed_dataset = processed_dataset.append(road_info, ignore_index=True)
