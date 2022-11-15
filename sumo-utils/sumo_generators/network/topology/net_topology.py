@@ -452,14 +452,14 @@ class NetTopology(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_adjacent_nodes_by_source(self, source_node: str):
+    def get_adjacent_nodes_by_source(self, source_node: str) -> dict:
         """
         Get adjacent nodes given a node
 
         :param source_node: source junction node
         :type source_node: str
         :return: adjacent nodes identifiers
-        :rtype: list
+        :rtype: dict
         """
         raise NotImplementedError
 

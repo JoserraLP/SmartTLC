@@ -46,9 +46,14 @@ class NetMatrix(NetTopology):
             self._nodes_names.index(destination))
 
         # Retrieve info from one of the lanes of the edge as the info is the for all of them
+        # TODO. In the future, retrieve all lanes
         road_info = {'from': source,
                      'to': destination,
                      'distance': self._traci.lane.getLength(f'{source}_{destination}_0'),
+                     'max_speed': self._traci.lane.getMaxSpeed(f'{source}_{destination}_0'),
+                     'num_non_sign_outs': 0,  # retrieve number of non-signalised out roads. Now is 0
+                     'num_non_sign_ins': 0,  # retrieve number of non-signalised in roads. Now is 0
+                     'traffic_density': 0,  # retrieve traffic density. Now is 0
                      'edge': f'{source}_{destination}',
                      'turns': self.retrieve_turn_edges(f'{source}_{destination}', is_single_cross_grid)
                      }
@@ -56,24 +61,33 @@ class NetMatrix(NetTopology):
         # Store the info in the matrix
         self._network[source_index][destination_index] = road_info
 
-    def get_adjacent_nodes_by_source(self, source_node: str):
+    def get_adjacent_nodes_by_source(self, source_node: str) -> dict:
         """
         Get adjacent nodes given a node
 
         :param source_node: source junction node
         :type source_node: str
         :return: adjacent nodes identifiers
-        :rtype: list
+        :rtype: dict
         """
         # Get source node index
         source_node_index = self._nodes_names.index(source_node)
 
-        # Retrieve the name of those adjacent nodes
-        adjacent_nodes_names = [self._network[source_node_index][i]['to']
-                                for i in range(len(self._network[source_node_index]))
-                                if self._network[source_node_index][i]]
+        adj_nodes_info = {}
 
-        return adjacent_nodes_names
+        # Retrieve adjacent node information
+        for i in range(len(self._network[source_node_index])):
+            # Check if exists
+            if self._network[source_node_index][i]:
+                # Retrieve adjacent node and store its distance
+                adj_nodes_info[self._network[source_node_index][i]['to']] = \
+                    {'distance': self._network[source_node_index][i]['distance'],
+                     'max_speed': self._network[source_node_index][i]['max_speed'],
+                     'num_non_sign_outs': self._network[source_node_index][i]['num_non_sign_outs'],
+                     'num_non_sign_ins': self._network[source_node_index][i]['num_non_sign_ins'],
+                     'traffic_density': self._network[source_node_index][i]['traffic_density']}
+
+        return adj_nodes_info
 
     def retrieve_turns_edges(self, cols: int) -> dict:
         """
