@@ -50,6 +50,9 @@ class TrafficLightAdapter:
         # Initialize traffic analyzer, turn predictor and traffic predictor to None
         self._traffic_analyzer, self._turn_predictor, self._traffic_predictor = None, None, None
 
+        # Initialize temporal window to 0
+        self._cur_temporal_window = 0
+
         # Retrieve connected roads
         self._roads = list(set([self._traci.lane.getEdgeID(lane) for lane
                                 in set(self._traci.trafficlight.getControlledLanes(id))]))
@@ -58,22 +61,24 @@ class TrafficLightAdapter:
         self._turns_per_road = net_topology.retrieve_turns_edges(cols=cols)
 
         # Retrieve all adjacent node identifiers
-        self._adjacent_node_ids = net_topology.get_adjacent_nodes_by_source(id)
+        self._adjacent_nodes = net_topology.get_adjacent_nodes_by_source(id)
 
         # Retrieve those node ids that are traffic lights (central ones)
-        self._adjacent_traffic_lights_ids = [junction_id for junction_id in self._adjacent_node_ids if
+        self._adjacent_traffic_lights_ids = [junction_id for junction_id in list(self._adjacent_nodes.keys()) if
                                              'c' in junction_id]
 
         # Gather all Traffic Light Information storage
-        # First adjacent info with no "roads" info
-        self._traffic_light_info = {adjacent_id: TrafficLightInfoStorage(roads=list()) for adjacent_id
-                                    in self._adjacent_traffic_lights_ids}
+        # Firstly append adjacent info with no "roads" info
+        self._traffic_light_info = {adjacent_id: TrafficLightInfoStorage(roads=list(),
+                                                                         topology_info=self._adjacent_nodes[
+                                                                             adjacent_id])
+                                    for adjacent_id in self._adjacent_traffic_lights_ids}
         # Append local info
         self._traffic_light_info[self._id] = TrafficLightInfoStorage(roads=self._roads)
 
         # Define topics to subscribe to
-        self._all_traffic_info_topics = [(str(TRAFFIC_INFO_TOPIC + '/' + junction_id), DEFAULT_QOS)
-                                         for junction_id in self._adjacent_traffic_lights_ids]
+        self._adjacent_traffic_info_topics = [(str(TRAFFIC_INFO_TOPIC + '/' + junction_id), DEFAULT_QOS)
+                                              for junction_id in self._adjacent_traffic_lights_ids]
 
         # Get the waiting time per lane when the traffic light is created
         self._prev_waiting_time = {lane: traci.lane.getWaitingTime(lane) for lane in
@@ -95,13 +100,19 @@ class TrafficLightAdapter:
 
     """ TRAFFIC LIGHT UTILS """
 
-    def update_tl_program(self) -> str:
+    def update_tl_program(self, timestep: int) -> None:
         """
         Traffic Light Adapter delegates on the adaptation strategy the retrieval of the new traffic light
+
+        :param timestep: simulation timestep
+        :type timestep: int
+        :return: None
         """
 
         # Get new traffic light algorithm based on the adaptation strategy
-        new_tl_program = self._adaptation_strategy.get_new_tl_program(self._traffic_light_info)
+        new_tl_program = self._adaptation_strategy.get_new_tl_program(traffic_info=self._traffic_light_info,
+                                                                      timestep=timestep,
+                                                                      temporal_window=self._cur_temporal_window)
 
         # Check if the new program is valid and it is not the same as the actual one
         if new_tl_program and new_tl_program != self._traffic_light_info[self._id].actual_program:
@@ -113,7 +124,7 @@ class TrafficLightAdapter:
     def count_passing_vehicles(self) -> None:
         """
         Update the counters of vehicles passing on both directions (NS and EW), appending them to the list
-
+        
         :return: None
         """
         # Initialize dictionary
@@ -140,10 +151,13 @@ class TrafficLightAdapter:
                 num_passing_vehicles[detector_direction] += len(not_counted_veh)
 
         # Update number of vehicles passing
-        self._traffic_light_info[self._id].increase_passing_vehicles_n_s(num_veh_n_s=num_passing_vehicles['north'] +
-                                                                                     num_passing_vehicles['south'])
-        self._traffic_light_info[self._id].increase_passing_vehicles_e_w(num_veh_e_w=num_passing_vehicles['east'] +
-                                                                                     num_passing_vehicles['west'])
+        self._traffic_light_info[self._id].increase_passing_vehicles(num_veh=num_passing_vehicles['north'] +
+                                                                             num_passing_vehicles['south'],
+                                                                     direction='n_s')
+
+        self._traffic_light_info[self._id].increase_passing_vehicles(num_veh=num_passing_vehicles['east'] +
+                                                                             num_passing_vehicles['west'],
+                                                                     direction='e_w')
 
     def retrieve_edges_vehicles(self) -> dict:
         """
@@ -200,26 +214,34 @@ class TrafficLightAdapter:
                 # Append waiting time to NS on outer edges
                 if ('n' in destination or ('s' in origin and 'c' in destination)) or \
                         ('s' in destination or ('n' in origin and 'c' in destination)):
-                    self._traffic_light_info[self._id].increase_waiting_time_n_s(
-                        waiting_time_n_s=self._prev_waiting_time[lane])
+                    self._traffic_light_info[self._id].increase_waiting_time(waiting_time=self._prev_waiting_time[lane],
+                                                                             direction='n_s')
                 # Append waiting time to EW on outer edges
                 if ('e' in destination or ('w' in origin and 'c' in destination)) or \
                         ('w' in destination or ('e' in origin and 'c' in destination)):
-                    self._traffic_light_info[self._id].increase_waiting_time_e_w(
-                        waiting_time_e_w=self._prev_waiting_time[lane])
+                    self._traffic_light_info[self._id].increase_waiting_time(waiting_time=self._prev_waiting_time[lane],
+                                                                             direction='e_w')
                 # Inner edges
                 if 'c' in origin and 'c' in destination:
                     # Get the junction identifiers
                     prev_tl_id, next_tl_id = int(origin[1:]), int(destination[1:])
 
+                    # Define direction
+                    direction = ''
+
                     # North-South - Append waiting time to NS
                     if prev_tl_id + cols == next_tl_id or prev_tl_id - cols == next_tl_id:
-                        self._traffic_light_info[self._id].increase_waiting_time_n_s(
-                            waiting_time_n_s=self._prev_waiting_time[lane])
+                        direction = 'n_s'
+
                     # East-West - Append waiting time to EW
                     elif prev_tl_id + 1 == next_tl_id or prev_tl_id - 1 == next_tl_id:
-                        self._traffic_light_info[self._id].increase_waiting_time_e_w(
-                            waiting_time_e_w=self._prev_waiting_time[lane])
+                        direction = 'e_w'
+
+                    # Increase the waiting time on the given direction
+                    if direction:
+                        self._traffic_light_info[self._id].increase_waiting_time(
+                            waiting_time=self._prev_waiting_time[lane],
+                            direction=direction)
 
         # Update the previous waiting time to the current waiting time
         self._prev_waiting_time = current_waiting_time
@@ -233,7 +255,7 @@ class TrafficLightAdapter:
         # Define a set to remove afterwards
         deleted_vehicles = set()
         # Iterate over the turning vehicles
-        for vehicle in self._traffic_light_info[self._id].turning_vehicles['vehicles_passed']:
+        for vehicle in self._traffic_light_info[self._id].turning_vehicles_passed:
             # Get vehicle edge
             cur_edge = self._traci.vehicle.getRoadID(vehicle)
             # Check if the vehicle has passed and it is not in the junction edges
@@ -343,24 +365,21 @@ class TrafficLightAdapter:
 
     """ TRAFFIC INFO """
 
-    def reset_traffic_contextual_info(self) -> None:
+    def insert_date_info(self, temporal_window: int, date_info: dict) -> None:
         """
-        Reset adjacent traffic info counters
+        Insert date information to current traffic light info at a given temporal window
 
+        :param temporal_window: temporal window identifier
+        :type temporal_window: int
+        :param date_info: simulation date information 
+        :type date_info: dict
         :return: None
         """
-        # Iterate over the traffic info storages
-        for id, storage in self._traffic_light_info.items():
-            # Reset traffic info on each storage
-            storage.reset_traffic_info()
+        # Insert also the temporal window
+        self._cur_temporal_window = temporal_window
 
-    def append_date_contextual_info(self, date_info: dict) -> None:
-        """
-        Append date information to current traffic light info
-
-        :return: None
-        """
-        self._traffic_light_info[self._id].date_info = date_info
+        # Insert the date info for the current traffic light at a given temporal window 
+        self._traffic_light_info[self._id].insert_date_info(temporal_window=temporal_window, date_info=date_info)
 
     def publish_contextual_info(self) -> None:
         """
@@ -371,10 +390,50 @@ class TrafficLightAdapter:
         # If it is deployed
         if not self._local:
             # Get processed publish info
-            publish_info = self._traffic_light_info[self._id].get_processed_publish_info()
+            publish_info = self._traffic_light_info[self._id].get_publish_info(self._cur_temporal_window)
             # Publish info
             self._mqtt_client.publish(topic=TRAFFIC_INFO_TOPIC + '/' + self._id,
                                       payload=parse_str_to_valid_schema(publish_info))
+
+    def get_traffic_info_by_temporal_window(self, temporal_window: int):
+        """
+        Get local traffic info by selected temporal window
+        """
+        return self._traffic_light_info[self._id].get_traffic_info_by_temporal_window(temporal_window=temporal_window)
+
+    def create_historical_traffic_info(self, temporal_window: int, passing_veh_n_s: int = 0, passing_veh_e_w: int = 0,
+                                       waiting_time_veh_n_s: int = 0, waiting_time_veh_e_w: int = 0,
+                                       turning_forward: int = 0, turning_right: int = 0, turning_left: int = 0) -> None:
+        """
+        Creates a new entry for the historical info for the timestep
+
+        :param temporal_window: current info temporal window
+        :type temporal_window: int
+        :param passing_veh_n_s: number of passing vehicles on NS direction. Default to 0.
+        :type passing_veh_n_s: int
+        :param passing_veh_e_w: number of passing vehicles on EW direction. Default to 0.
+        :type passing_veh_e_w: int
+        :param waiting_time_veh_n_s: waiting time on NS direction. Default to 0.
+        :type waiting_time_veh_n_s: int
+        :param waiting_time_veh_e_w: waiting time on EW direction. Default to 0.
+        :type waiting_time_veh_e_w: int
+        :param turning_forward: number of vehicles going forward. Default to 0.
+        :type turning_forward: int
+        :param turning_right: number of vehicles turning right. Default to 0.
+        :type turning_right: int
+        :param turning_left: number of vehicles turning left. Default to 0.
+        :type turning_left: int
+
+        :return: None
+        """
+        self._traffic_light_info[self._id].create_historical_traffic_info(temporal_window=temporal_window,
+                                                                          passing_veh_n_s=passing_veh_n_s,
+                                                                          passing_veh_e_w=passing_veh_e_w,
+                                                                          waiting_time_veh_n_s=waiting_time_veh_n_s,
+                                                                          waiting_time_veh_e_w=waiting_time_veh_e_w,
+                                                                          turning_forward=turning_forward,
+                                                                          turning_right=turning_right,
+                                                                          turning_left=turning_left)
 
     """ MIDDLEWARE """
 
@@ -390,7 +449,7 @@ class TrafficLightAdapter:
         """
         if rc == 0:  # Connection established
             # Subscribe to the traffic information of adjacent neighbors
-            self._mqtt_client.subscribe(self._all_traffic_info_topics)
+            self._mqtt_client.subscribe(self._adjacent_traffic_info_topics)
 
     def on_message(self, client, userdata, msg):
         """
@@ -408,15 +467,15 @@ class TrafficLightAdapter:
             traffic_info = ast.literal_eval(msg.payload.decode('utf-8'))
 
             # Update the traffic light info data parsing to TrafficLightInfoStorage class
-            self._traffic_light_info[junction_id] = \
-                TrafficLightInfoStorage(roads=traffic_info['roads'], passing_veh_n_s=traffic_info['passing_veh_n_s'],
-                                        passing_veh_e_w=traffic_info['passing_veh_e_w'],
-                                        waiting_time_veh_n_s=traffic_info['waiting_time_veh_n_s'],
-                                        waiting_time_veh_e_w=traffic_info['waiting_time_veh_e_w'],
-                                        turning_forward=traffic_info['turning_vehicles']['forward'],
-                                        turning_right=traffic_info['turning_vehicles']['right'],
-                                        turning_left=traffic_info['turning_vehicles']['left'],
-                                        actual_program=traffic_info['actual_program'])
+            self._traffic_light_info[junction_id].create_historical_traffic_info(
+                temporal_window=self._cur_temporal_window,
+                passing_veh_n_s=traffic_info['passing_veh_n_s'], passing_veh_e_w=traffic_info['passing_veh_e_w'],
+                waiting_time_veh_n_s=traffic_info['waiting_time_veh_n_s'],
+                waiting_time_veh_e_w=traffic_info['waiting_time_veh_e_w'],
+                turning_forward=traffic_info['turning_vehicles']['forward'],
+                turning_right=traffic_info['turning_vehicles']['right'],
+                turning_left=traffic_info['turning_vehicles']['left']
+            )
 
     def close_connection(self):
         """
@@ -460,16 +519,6 @@ class TrafficLightAdapter:
         self._adaptation_strategy = adaptation_strategy
 
     @property
-    def adjacent_node_ids(self) -> list:
-        """
-        Traffic Light Adapter adjacent node ids getter
-
-        :return: list of adjacent traffic light ids
-        :rtype: list
-        """
-        return self._adjacent_node_ids
-
-    @property
     def traffic_analyzer(self):
         """
         Traffic Light traffic analyzer getter
@@ -504,3 +553,22 @@ class TrafficLightAdapter:
         :return: traffic light info instance
         """
         return self._traffic_light_info
+
+    @property
+    def temporal_window(self):
+        """
+        Traffic Light temporal window getter
+
+        :return: traffic light temporal window
+        """
+        return self._cur_temporal_window
+
+    @temporal_window.setter
+    def temporal_window(self, temporal_window: int):
+        """
+        Traffic Light temporal window setter
+
+        :param temporal_window: traffic light temporal window
+        :type temporal_window: int
+        """
+        self._cur_temporal_window = temporal_window

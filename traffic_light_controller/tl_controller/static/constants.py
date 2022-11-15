@@ -48,3 +48,15 @@ TRAFFIC_TYPE_TL_ALGORITHMS = {
     '11': 'static_program_3',
 }
 
+
+# Traffic Light components files directories
+# Turn predictor
+TURN_PREDICTOR_MODEL_BASE_DIR = '../../turn_predictor/regression_models/'
+TURN_PREDICTOR_PARSED_VALUES_FILE = '../../turn_predictor/output/parsed_values_dict.json'
+TURN_PREDICTOR_PERFORMANCE_FILE = '../../turn_predictor/regression_models/ml_performance.json'
+
+# Traffic Predictor
+TRAFFIC_PREDICTOR_MODEL_BASE_DIR = '../../traffic_predictor/classifier_models_{}/'
+TRAFFIC_PREDICTOR_PARSED_VALUES_FILE = '../../traffic_predictor/output/parsed_values_dict.json'
+TRAFFIC_PREDICTOR_PERFORMANCE_FILE = '../../traffic_predictor/classifier_models_{}/ml_performance.json'
+

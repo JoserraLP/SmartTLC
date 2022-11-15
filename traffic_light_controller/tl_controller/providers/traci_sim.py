@@ -5,10 +5,8 @@ from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, TRAFFIC_INFO_T
 from sumo_generators.time_patterns.time_patterns import TimePattern
 from sumo_generators.time_patterns.utils import retrieve_date_info
 from sumo_generators.utils.utils import parse_str_to_valid_schema
-from t_analyzer.providers.analyzer import TrafficAnalyzer
-from t_predictor.providers.predictor import TrafficPredictor
 from tl_controller.adaptation.context import TrafficLightAdapter
-from tl_controller.adaptation.strategy import StaticAS
+from tl_controller.adaptation.strategy import *
 from tl_controller.providers.utils import *
 from tl_controller.static.constants import *
 from turns_predictor.providers.predictor import TurnPredictor
@@ -59,13 +57,21 @@ class TraCISimulator:
         # SUMO configuration files
         self._config_file, self._sumo_binary = sumo_conf['config_file'], sumo_conf['sumo_binary']
 
-        # Initialize TraCI simulation to none, to use it in different methods
-        self._traci, self._topology_rows, self._topology_cols, self._net_topology, self._traffic_lights = None, None, None, None, None
+        # Initialize TraCI simulation, topology info, traffic lights and date info to None
+        self._traci, self._topology_rows, self._topology_cols, self._net_topology, self._traffic_lights = None, None, \
+                                                                                                          None, None, \
+                                                                                                          None
         # TL program to the middle one
         self._tl_program = TL_PROGRAMS[int(len(TL_PROGRAMS) / 2)]
 
         # Store local flag
         self._local = local
+
+        # Initialize current simulation step and temporal window
+        self._cur_timestep, self._temporal_window = 0, 0
+
+        # Initialize date info
+        self._date_info = retrieve_date_info(timestep=0, time_pattern=self._time_pattern)
 
         # Execute locally
         if local:
@@ -103,9 +109,9 @@ class TraCISimulator:
 
         return sumo_params
 
-    def enable_traffic_component(self, components: dict) -> None:
+    def install_traffic_component(self, components: dict) -> None:
         """
-        Enables different components inside the traffic lights specified by parameters.
+        Install different components inside the traffic lights specified by parameters.
 
         :param components: component to enable, along with its type.
         :type components: dict
@@ -136,25 +142,23 @@ class TraCISimulator:
                     # Initialize empty to deploy locally
                     traffic_light.enable_turn_predictor(
                         turn_predictor=TurnPredictor(mqtt_url='', mqtt_port='',
-                                                     model_base_dir='../../turn_predictor/regression_models/',
-                                                     parsed_values_file='../../turn_predictor/output/parsed_values_dict.json',
-                                                     performance_file='../../turn_predictor/regression_models/ml_performance.json'))
+                                                     model_base_dir=TURN_PREDICTOR_MODEL_BASE_DIR,
+                                                     parsed_values_file=TURN_PREDICTOR_PARSED_VALUES_FILE,
+                                                     performance_file=TURN_PREDICTOR_PERFORMANCE_FILE))
                 elif 'traffic_predictor' in component_type:
                     # Retrieve type of traffic predictor
                     _, traffic_predictor_type = component_type.split(':')
                     # Get flag related to the predictor type
                     date = True if traffic_predictor_type == 'date' else False
 
-                    # Get values based on the predictor type
-                    model_base_dir = f'../../traffic_predictor/classifier_models_{traffic_predictor_type}/'
-                    performance_file = f'../../traffic_predictor/classifier_models_{traffic_predictor_type}/ml_performance.json'
-
                     # Initialize empty to deploy locally
                     traffic_light.enable_traffic_predictor(
                         traffic_predictor=TrafficPredictor(date=date, mqtt_url='', mqtt_port='',
-                                                           model_base_dir=model_base_dir,
-                                                           parsed_values_file='../../traffic_predictor/output/parsed_values_dict.json',
-                                                           performance_file=performance_file))
+                                                           model_base_dir=TRAFFIC_PREDICTOR_MODEL_BASE_DIR.format(
+                                                               traffic_predictor_type),
+                                                           parsed_values_file=TRAFFIC_PREDICTOR_PARSED_VALUES_FILE,
+                                                           performance_file=TRAFFIC_PREDICTOR_PERFORMANCE_FILE.format(
+                                                               traffic_predictor_type)))
 
     def initialize_simulation_topology(self, simulation_params: list, traffic_analyzer: str = '',
                                        turn_predictor: str = '', traffic_predictor: str = '',
@@ -195,20 +199,35 @@ class TraCISimulator:
                                        valid_edges=edges, traci=self._traci)
         self._net_topology.generate_network()
 
-        # Initialize Traffic Lights with the static adaptation strategy
+        # Initialize Traffic Lights with the static adaptation strategy by default
         self._traffic_lights = {traffic_light: TrafficLightAdapter(id=traffic_light, traci=traci, local=self._local,
-                                                                   adaptation_strategy=StaticAS(),
+                                                                   adaptation_strategy=StaticAS(traffic_light),
                                                                    net_topology=self._net_topology,
                                                                    mqtt_url=self._mqtt_url, mqtt_port=self._mqtt_port,
                                                                    rows=self._topology_rows,
                                                                    cols=self._topology_cols)
                                 for traffic_light in self._traci.trafficlight.getIDList()}
 
-        # Enable traffic analyzers, traffic and turn predictors
+        # "install" traffic analyzers, traffic and turn predictors on all the traffic lights
         # The traffic predictor also specifies the type of predictor using :
         components = {'traffic_analyzer': traffic_analyzer, 'turn_predictor': turn_predictor,
                       'traffic_predictor:' + traffic_predictor_type: traffic_predictor}
-        self.enable_traffic_component(components=components)
+        self.install_traffic_component(components=components)
+
+        # Initialize date info on each traffic light
+        for traffic_light_id, traffic_light in self._traffic_lights.items():
+            # Create new historical traffic info
+            traffic_light.create_historical_traffic_info(temporal_window=self._temporal_window)
+
+            # Store date info and temporal window
+            traffic_light.insert_date_info(temporal_window=self._temporal_window, date_info=self._date_info)
+
+        # TODO remove, it is only now for enabling strategies
+        for traffic_light_id, traffic_light in self._traffic_lights.items():
+            # Enable traffic analyzer from the beginning
+            # traffic_light.adaptation_strategy = AdjacentTrafficAnalyzerAS(traffic_light_id=traffic_light_id)
+            traffic_light.adaptation_strategy = SelfTrafficAnalyzerAS(traffic_light_id=traffic_light_id,
+                                                                      analyzer=traffic_light.traffic_analyzer)
 
     def monitor_adapt_traffic_lights(self) -> None:
         """
@@ -219,24 +238,26 @@ class TraCISimulator:
         # Here the global controller signalises the traffic lights to perform different actions
         # Signal each traffic light to perform its own adaptation process
         for traffic_light_id, traffic_light in self._traffic_lights.items():
-            # 1. Update the traffic light program based on the adapter
-            traffic_light.update_tl_program()
 
-            # 2. Remove previous passing vehicles
+            # If the temporal window is finished
+            # TODO ask cristina if we adapt each traffic light cycle or per time window of 5 minutes
+            if self._cur_timestep % TIMESTEPS_TO_STORE_INFO == 0:
+                # Update the traffic light program based on the adapter
+                traffic_light.update_tl_program(timestep=self._cur_timestep)
+
+            # Remove previous passing vehicles
             traffic_light.remove_passing_vehicles()
 
-            # 3. Count number of vehicles passing
+            # Count number of vehicles passing
             traffic_light.count_passing_vehicles()
 
-            # 4. Update waiting time per lane on each junction
+            # Update waiting time per lane on each junction
             traffic_light.calculate_waiting_time_per_lane(cols=self._topology_cols)
 
-    def calculate_turns(self, cur_timestep: int, load_vehicles_dir: str = '') -> None:
+    def calculate_turns(self, load_vehicles_dir: str = '') -> None:
         """
         Calculate the turns if enabled based on the actual timestamp
 
-        :param cur_timestep: current simulation timestep
-        :type cur_timestep: int
         :param load_vehicles_dir: directory to load the vehicles flows.
         :type load_vehicles_dir: str
         :return: None
@@ -246,8 +267,7 @@ class TraCISimulator:
         if not load_vehicles_dir and self._turn_pattern:
             # Retrieve turn probabilities by edges
             turn_prob_by_edges = retrieve_turn_prob_by_edge(traci=traci,
-                                                            turn_prob=self._turn_pattern.retrieve_turn_prob
-                                                            (simulation_timestep=cur_timestep))
+                                                            turn_prob=self._turn_pattern.retrieve_turn_prob(simulation_timestep=self._cur_timestep))
 
             # Update current vehicles routes to enable turns, using the network topology
             # Insert the traffic info to store the number of turning vehicles
@@ -271,19 +291,20 @@ class TraCISimulator:
         :type date_info: dict
         :return: None
         """
-        # Iterate over each traffic light, retrieve its information and signalize to publish them
+        # Iterate over each traffic light, retrieve its information using the current timestamp and signalize to
+        # publish them
         for traffic_light_id, traffic_light in self._traffic_lights.items():
             # Retrieve traffic light information
-            traffic_light_info = traffic_light.traffic_light_info[traffic_light_id]
+            traffic_light_info = traffic_light.get_traffic_info_by_temporal_window(self._temporal_window)
 
             # Store summary of waiting time and vehicles passed
-            summary_waiting_time += traffic_light_info.waiting_time_veh_n_s + \
-                                    traffic_light_info.waiting_time_veh_e_w
-            summary_veh_passed += traffic_light_info.passing_veh_n_s + \
-                                  traffic_light_info.passing_veh_e_w
+            summary_waiting_time += traffic_light_info['waiting_time_veh_n_s'] + \
+                                    traffic_light_info['waiting_time_veh_e_w']
+            summary_veh_passed += traffic_light_info['passing_veh_n_s'] + \
+                                  traffic_light_info['passing_veh_e_w']
 
             # Append date information
-            traffic_light.append_date_contextual_info(date_info=date_info)
+            traffic_light.insert_date_info(temporal_window=self._temporal_window, date_info=date_info)
 
             # Publish the contextual information
             traffic_light.publish_contextual_info()
@@ -299,9 +320,6 @@ class TraCISimulator:
             # Publish traffic type predictors information
             traffic_light.publish_traffic_type_prediction()
 
-            # Reset contextual information
-            traffic_light.reset_traffic_contextual_info()
-
     def simulate(self, load_vehicles_dir: str = ''):
         """
         Perform the simulations by a time pattern with TraCI.
@@ -313,48 +331,62 @@ class TraCISimulator:
 
         """ Initialize the simulation variables """
         # Define initial timestep and maximum timesteps
-        cur_timestep, max_timesteps = 0, len(self._time_pattern.pattern) * TIMESTEPS_PER_HALF_HOUR
+        self._cur_timestep, max_timesteps = 0, len(self._time_pattern.pattern) * TIMESTEPS_PER_HALF_HOUR
 
         # Append traffic global information
         summary_waiting_time, summary_veh_passed = 0, 0
 
         # Traci simulation. Iterate until simulation is ended
-        while cur_timestep < max_timesteps:
+        while self._cur_timestep < max_timesteps:
 
             # Update and monitor the traffic light behavior
             self.monitor_adapt_traffic_lights()
 
             # Calculate vehicle turns
-            self.calculate_turns(cur_timestep=cur_timestep, load_vehicles_dir=load_vehicles_dir)
+            self.calculate_turns(load_vehicles_dir=load_vehicles_dir)
 
-            # Store info each time interval if it is not executed locally
-            if not self._local and cur_timestep % TIMESTEPS_TO_STORE_INFO == 0:
-                # Retrieve date info
-                date_info = retrieve_date_info(timestep=cur_timestep, time_pattern=self._time_pattern)
+            # Store info each time interval
+            if self._cur_timestep % TIMESTEPS_TO_STORE_INFO == 0:
+                # Increase the temporal window
+                self._temporal_window += 1
 
-                # Gather all the traffic lights information and publish them
-                self.process_publish_traffic_information(summary_waiting_time=summary_waiting_time,
-                                                         summary_veh_passed=summary_veh_passed,
-                                                         date_info=date_info)
+                # Calculate new date info
+                self._date_info = retrieve_date_info(timestep=self._cur_timestep, time_pattern=self._time_pattern)
 
-                # Create a dict with the summary information
-                summary_info = {'waiting_time': summary_waiting_time, 'veh_passed': summary_veh_passed}
+                # Update new date to the traffic lights and store new temporal window
+                for traffic_light_id, traffic_light in self._traffic_lights.items():
+                    # Create new historical traffic info
+                    traffic_light.create_historical_traffic_info(temporal_window=self._temporal_window)
 
-                # Process summary information
-                traffic_info_payload = process_payload(traffic_info=summary_info, date_info=date_info)
+                    # Insert date info and temporal window
+                    traffic_light.insert_date_info(temporal_window=self._temporal_window, date_info=self._date_info)
 
-                # Publish data
-                self._mqtt_client.publish(topic=TRAFFIC_INFO_TOPIC,
-                                          payload=parse_str_to_valid_schema(traffic_info_payload))
+                # Publish the information
+                if not self._local:
 
-                # Reset counters
-                summary_waiting_time, summary_veh_passed = 0, 0
+                    # Gather all the traffic lights information and publish them
+                    self.process_publish_traffic_information(summary_waiting_time=summary_waiting_time,
+                                                             summary_veh_passed=summary_veh_passed,
+                                                             date_info=self._date_info)
+
+                    # Create a dict with the summary information
+                    summary_info = {'waiting_time': summary_waiting_time, 'veh_passed': summary_veh_passed}
+
+                    # Process summary information
+                    traffic_info_payload = process_payload(traffic_info=summary_info, date_info=self._date_info)
+
+                    # Publish data
+                    self._mqtt_client.publish(topic=TRAFFIC_INFO_TOPIC,
+                                              payload=parse_str_to_valid_schema(traffic_info_payload))
+
+                    # Reset counters
+                    summary_waiting_time, summary_veh_passed = 0, 0
 
             # Simulate a step
             self._traci.simulationStep()
 
             # Increase simulation step
-            cur_timestep += 1
+            self._cur_timestep += 1
 
         # Close TraCI simulation, the adapters connection and the MQTT client
         self._traci.close()
