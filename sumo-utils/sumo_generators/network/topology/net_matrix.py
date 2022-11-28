@@ -27,7 +27,7 @@ class NetMatrix(NetTopology):
 
         # Create the matrix
         self._network = np.full((len(self._nodes_names), len(self._nodes_names)), {})
-        np.diag(self._network, 0)
+        np.fill_diagonal(self._network, 0)
 
     def add_edges(self, source: str, destination: str, is_single_cross_grid: bool = False) -> None:
         """
