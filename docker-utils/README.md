@@ -52,5 +52,5 @@ All the available containers are:
 
 Additionally, it is also possible to specify different parameters per each container with the following schema:
 ```
-<container_name>:<param_name>#<param_value>
+<container_name>;<param_name>#<param_value>
 ```

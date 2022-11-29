@@ -406,6 +406,7 @@ def retrieve_turn_prob_by_edge(traci, turn_prob: pd.DataFrame) -> dict:
 
     return prob_by_edges
 
+
 def generate_simulation_flow_file(turn_pattern_file: str, sumo_config_file: str, time_pattern_file: str, dates: str,
                                   flows_file: str):
     """
@@ -479,14 +480,14 @@ def generate_simulation_flow_file(turn_pattern_file: str, sumo_config_file: str,
     net_topology = NetMatrix(num_rows=topology_rows, num_cols=topology_cols, valid_edges=edges, traci=traci)
     net_topology.generate_network()
 
-    # Initialize Traffic Lights with the static adaptation strategy
+    # Initialize Traffic Lights with no adaptation strategy
     traffic_lights = {traffic_light: TrafficLightAdapter(id=traffic_light, traci=traci, local=True,
-                                                               adaptation_strategy=None,
-                                                               net_topology=net_topology,
-                                                               mqtt_url=None, mqtt_port=None,
-                                                               rows=topology_rows,
-                                                               cols=topology_cols)
-                            for traffic_light in traci.trafficlight.getIDList()}
+                                                         adaptation_strategy=None,
+                                                         net_topology=net_topology,
+                                                         mqtt_url='', mqtt_port=0,
+                                                         rows=topology_rows,
+                                                         cols=topology_cols)
+                      for traffic_light in traci.trafficlight.getIDList()}
 
     # Traci simulation. Iterate until simulation is ended
     while cur_timestep < max_timesteps:
@@ -511,6 +512,12 @@ def generate_simulation_flow_file(turn_pattern_file: str, sumo_config_file: str,
     # Close TraCI simulation, the adapters connection and the MQTT client
     traci.close()
 
+    # Remove previous file in order to rename
+    if os.path.exists(flows_file + ".flows"):
+        os.remove(flows_file + ".flows")
+
+    # Append "flows" to flows file
+    os.rename(flows_file, flows_file + ".flows")
     # Rename output turn flows file
     os.rename(output_flows_file, flows_file)
 

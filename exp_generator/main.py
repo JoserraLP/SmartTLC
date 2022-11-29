@@ -1,12 +1,13 @@
 import argparse
 import os
 import stat
+from pathlib import Path
 
 from sumo_generators.static.constants import DEFAULT_NODES_FILENAME, DEFAULT_EDGES_FILENAME, DEFAULT_NET_FILENAME, \
     DEFAULT_DET_FILENAME, DEFAULT_TLL_FILENAME, DEFAULT_ROUTE_FILENAME, DEFAULT_CONFIG_FILENAME
 
-from argparse_types import check_file, check_dimension, check_valid_format
-from constants import ADAPTATION_FILE_SCHEMA, ADAPTATION_APPROACHES, DEFAULT_CONFIG_GENERATOR_SCRIPT
+from argparse_types import check_file, check_dimension, check_valid_format, check_os
+from constants import *
 
 
 def get_num_parent_folders(folder_name: str) -> int:
@@ -56,6 +57,9 @@ def get_options():
     arg_parser.add_argument("-o", "--output-dir", dest="output_directory", action='store',
                             help="output directory location.", required=True)
 
+    arg_parser.add_argument("--os", dest="os", action='store', default="ubuntu",
+                            help="operative system. Can be windows or ubuntu (default).", type=check_os)
+
     # Topology parameters
     topology_group = arg_parser.add_argument_group("Network topology parameters",
                                                    description="Define network related variables")
@@ -97,16 +101,14 @@ if __name__ == '__main__':
 
     # Output dir
     output_dir = exec_options.output_directory
-    config_dir = output_dir+'/config'
+    config_dir = output_dir + '/config'
 
-    # Check if directory does not exist, to create it
-    if output_dir and not os.path.exists(output_dir):
-        os.mkdir(output_dir)
-        # Store configuration files
-        os.mkdir(config_dir)
+    # Create the directories
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    Path(config_dir).mkdir(parents=True, exist_ok=True)
 
     # Get number of parent folders to "docker-utils" component:
-    num_parent_folders = get_num_parent_folders('docker-utils')
+    num_parent_folders = get_num_parent_folders('docker-utils') * '../'
 
     # Retrieve topology parameters values
     cols, rows, lanes = int(exec_options.cols), int(exec_options.rows), int(exec_options.lanes)
@@ -117,10 +119,10 @@ if __name__ == '__main__':
     turn_pattern_path = exec_options.turn_pattern_path
 
     # 1. Generate SUMO configuration files and flows with or without turns
-    command = f"python {DEFAULT_CONFIG_GENERATOR_SCRIPT} -n {config_dir+'/'+DEFAULT_NODES_FILENAME} " \
-              f"-e {config_dir+'/'+DEFAULT_EDGES_FILENAME} -d {config_dir+'/'+DEFAULT_DET_FILENAME} " \
-              f"-t {config_dir+'/'+DEFAULT_TLL_FILENAME} -o {config_dir+'/'+DEFAULT_NET_FILENAME} " \
-              f"-f {config_dir+'/'+DEFAULT_ROUTE_FILENAME} -s {config_dir+'/'+DEFAULT_CONFIG_FILENAME} " \
+    command = f"python {DEFAULT_CONFIG_GENERATOR_SCRIPT} -n {config_dir + '/' + DEFAULT_NODES_FILENAME} " \
+              f"-e {config_dir + '/' + DEFAULT_EDGES_FILENAME} -d {config_dir + '/' + DEFAULT_DET_FILENAME} " \
+              f"-t {config_dir + '/' + DEFAULT_TLL_FILENAME} -o {config_dir + '/' + DEFAULT_NET_FILENAME} " \
+              f"-f {config_dir + '/' + DEFAULT_ROUTE_FILENAME} -s {config_dir + '/' + DEFAULT_CONFIG_FILENAME} " \
               f"-r {rows} -c {cols} -l {lanes} -p --allow-turns "
 
     if dates:
@@ -134,10 +136,24 @@ if __name__ == '__main__':
     # Execute command
     os.system(command)
 
+    # Retrieve OS by parameter
+    os_experiment = exec_options.os
+
+    file_extension = '.bat' if os_experiment == 'windows' else '.sh'
+
     # 2. Create sh file per each adaptation
     for adaptation, tl_components in ADAPTATION_APPROACHES.items():
         # Retrieve file schema, set the adaptation name and initialize the TLC pattern
         file_str, adaptation_name, tlc_pattern = ADAPTATION_FILE_SCHEMA, 'example_' + adaptation, ''
+
+        # Windows
+        if os_experiment == "windows":
+            # Replace comments, cur directory variable, variable call and file beginning
+            file_str = file_str.replace(UBUNTU_START, WINDOWS_START).replace(UBUNTU_ECHO_NULL, WINDOWS_ECHO_NULL)\
+                .replace(UBUNTU_COMMENT, WINDOWS_COMMENT).replace(UBUNTU_CUR_DIR, WINDOWS_CUR_DIR)\
+                .replace(UBUNTU_VARIABLE, WINDOWS_VARIABLE)
+            # Remove "sudo"
+            file_str = file_str.replace("sudo ", "")
 
         # If date interval set pattern parameter
         if dates:
@@ -155,15 +171,26 @@ if __name__ == '__main__':
             tlc_pattern += ':allow-turns#'
 
         # Define output executable sh file
-        file_name = output_dir + '/' + adaptation_name + ".sh"
+        file_name = output_dir + '/' + adaptation_name + file_extension
+
+        # Store the file str with the values
+        file_str = file_str.format(num_parent_folders=num_parent_folders,
+                                   tlc_pattern=tlc_pattern, rows=rows, cols=cols, lanes=lanes,
+                                   tl_components=tl_components,
+                                   exp_file=f'grid_{rows}x{cols}_{adaptation_name}.xlsx',
+                                   add_components='')
+
+        # Change / to \ if os is windows
+        if os_experiment == 'windows':
+            file_str = file_str.replace(UBUNTU_SLASH, WINDOWS_SLASH)
+            num_parent_folders = num_parent_folders.replace(UBUNTU_SLASH, WINDOWS_SLASH)
+            tlc_pattern = tlc_pattern.replace(UBUNTU_SLASH, WINDOWS_SLASH)
+            tl_components = tl_components.replace(UBUNTU_SLASH, WINDOWS_SLASH)
 
         # Create each sh file
         with open(file_name, "w") as adaptation_file:
-            adaptation_file.write(file_str.format(num_parent_folders=num_parent_folders * '../',
-                                                  tlc_pattern=tlc_pattern, rows=rows, cols=cols, lanes=lanes,
-                                                  tl_components=tl_components,
-                                                  exp_file=f'grid_{rows}x{cols}_{adaptation_name}.xlsx',
-                                                  add_components=''))
+            adaptation_file.write(file_str)
+
         # Get sh file current permissions
         st = os.stat(file_name)
         # Update the permissions to be executable

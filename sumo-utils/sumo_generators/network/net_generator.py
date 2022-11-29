@@ -1,5 +1,6 @@
 from sumo_generators.network.node_matrix import NodeMatrix
 from sumo_generators.static.constants import *
+from pathlib import Path
 
 
 class NetGenerator:
@@ -81,6 +82,10 @@ class NetGenerator:
         all_nodes += "</nodes>"
 
         all_edges += "</edges>"
+
+        # Create folder path from parent folder
+        parent_path = '/'.join(self._nodes_path.split('/')[:-1])
+        Path(parent_path).mkdir(parents=True, exist_ok=True)
 
         # Store information on each file
         with open(self._nodes_path, "w") as nodes:

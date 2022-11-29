@@ -136,9 +136,9 @@ class DockerComposeGenerator:
         # Default params to None
         params = None
 
-        # Check if container has params (indicated by ':') retrieve them
-        if ':' in container_name:
-            params = container_name.split(':')
+        # Check if container has params (indicated by ';') retrieve them
+        if ';' in container_name:
+            params = container_name.split(';')
             # Retrieve container name and remove it from params
             container_name = params.pop(0)
 
@@ -152,8 +152,14 @@ class DockerComposeGenerator:
                 # Retrieve parameter type and value, split by #
                 param_type, param_value = value.split('#')
 
+                # Change from \ to / -> Docker process volumes as Linux
+                param_value = param_value.replace('\\', '/') if '\\' in param_value else param_value
+
                 # Retrieve time pattern from file or date range from calendar
                 if param_type in ['pattern', 'date']:
+
+                    param_value = param_value.replace('../', '/etc/') if '../' in param_value else param_value
+
                     # Store time pattern for TLC
                     pattern_str += DOCKER_EXECUTION_OPTIONS['traffic_light_controller'][param_type]. \
                         format(param_value)

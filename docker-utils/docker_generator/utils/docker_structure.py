@@ -15,7 +15,7 @@ ALL_CONTAINERS = {
         'restart': 'always',
         'ports': "8086:8086",
         'env_file': 'influxdb/env.influxdb',
-        'volumes': '/srv/docker/influxdb/data:/var/lib/influxdb',
+        'volumes': './influxdb/data:/var/lib/influxdb',
         'ipv4_address': '172.20.0.3'
     },
     'grafana': {
@@ -23,9 +23,9 @@ ALL_CONTAINERS = {
         'container_name': 'grafana',
         'restart': 'always',
         'ports': "3000:3000",
-        'env_file': 'grafana/env.grafana',
+        'env_file': './grafana/env.grafana',
         'links': "influxdb",
-        'volumes': '/srv/docker/grafana/data:/var/lib/grafana',
+        'volumes': './grafana/data:/var/lib/grafana',
         'ipv4_address': '172.20.0.4'
     },
     'telegraf': {
