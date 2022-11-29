@@ -4,6 +4,8 @@ import sys
 
 import tl_controller.static.constants as cnt
 from sumolib import checkBinary
+
+from sumo_generators.static.constants import MQTT_URL, MQTT_PORT
 from tl_controller.providers.traci_sim import TraCISimulator
 from tl_controller.static.argparse_types import check_file, check_valid_format, check_valid_predictor_value
 
@@ -32,6 +34,11 @@ def get_options():
     # Create the Argument Parser
     arg_parser = argparse.ArgumentParser(description='Script to deploy the TLC component, which is the Transportation'
                                                      'Digital Twin that will simulate the traffic experiment.')
+
+    arg_parser.add_argument("--middleware-host", dest="mqtt_url", action="store", type=str,
+                            help=f"middleware broker host. Default is {MQTT_URL}", default=MQTT_URL)
+    arg_parser.add_argument("--middleware-port", dest="mqtt_port", action="store", type=int,
+                            help=f"middleware broker port. Default is {MQTT_PORT}", default=MQTT_PORT)
 
     arg_parser.add_argument("--nogui", action="store_true",
                             default=cnt.DEFAULT_GUI_FLAG, help="run the commandline version of sumo")
@@ -95,10 +102,12 @@ if __name__ == "__main__":
     # Create the TraCI Traffic simulator based on time pattern or dates
     if exec_options.time_pattern:
         traci_sim = TraCISimulator(sumo_conf=sim_args, time_pattern_file=exec_options.time_pattern,
-                                   turn_pattern_file=exec_options.turn_pattern, local=exec_options.local)
+                                   turn_pattern_file=exec_options.turn_pattern, local=exec_options.local,
+                                   mqtt_url=exec_options.mqtt_url, mqtt_port=exec_options.mqtt_port)
     elif exec_options.dates:
         traci_sim = TraCISimulator(sumo_conf=sim_args, dates=exec_options.dates,
-                                   turn_pattern_file=exec_options.turn_pattern, local=exec_options.local)
+                                   turn_pattern_file=exec_options.turn_pattern, local=exec_options.local,
+                                   mqtt_url=exec_options.mqtt_url, mqtt_port=exec_options.mqtt_port)
 
     # Get simulation params
     simulation_params = traci_sim.retrieve_simulation_params(load_vehicles_dir=exec_options.load_vehicles_dir)

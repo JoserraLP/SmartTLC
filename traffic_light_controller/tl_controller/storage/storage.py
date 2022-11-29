@@ -30,6 +30,9 @@ class TrafficLightInfoStorage:
         # Initialize the historical dictionary and current temporal window
         self._historical_info, self._cur_temporal_window = {}, 0
 
+        # Initialize the first historical info
+        self.create_historical_traffic_info(self._cur_temporal_window)
+
     def create_historical_traffic_info(self, temporal_window: int, passing_veh_n_s: int = 0, passing_veh_e_w: int = 0,
                                        waiting_time_veh_n_s: int = 0, waiting_time_veh_e_w: int = 0,
                                        turning_forward: int = 0, turning_right: int = 0, turning_left: int = 0) -> None:

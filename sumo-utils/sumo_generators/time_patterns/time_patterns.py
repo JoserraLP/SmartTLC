@@ -62,7 +62,7 @@ class TimePattern:
         """
         if simulation_timestep < len(self._pattern):
             # First retrieve those columns that are not in the pattern, then retrieve those that are not in fields list
-            actual_fields = set(fields) - (set(fields) - set(self._pattern.columns))
+            actual_fields = list(set(fields) - (set(fields) - set(self._pattern.columns)))
             # Obtain those columns that are on the dataframe
             return self._pattern.iloc[simulation_timestep][actual_fields].to_dict()
 

@@ -137,11 +137,11 @@ class TraCISimulator:
             for traffic_light in component_traffic_lights:
                 if component_type == 'traffic_analyzer':
                     # Initialize empty to deploy locally
-                    traffic_light.enable_traffic_analyzer(traffic_analyzer=TrafficAnalyzer(mqtt_url='', mqtt_port=''))
+                    traffic_light.enable_traffic_analyzer(traffic_analyzer=TrafficAnalyzer(mqtt_url='', mqtt_port=0))
                 elif component_type == 'turn_predictor':
                     # Initialize empty to deploy locally
                     traffic_light.enable_turn_predictor(
-                        turn_predictor=TurnPredictor(mqtt_url='', mqtt_port='',
+                        turn_predictor=TurnPredictor(mqtt_url='', mqtt_port=0,
                                                      model_base_dir=TURN_PREDICTOR_MODEL_BASE_DIR,
                                                      parsed_values_file=TURN_PREDICTOR_PARSED_VALUES_FILE,
                                                      performance_file=TURN_PREDICTOR_PERFORMANCE_FILE))
@@ -153,7 +153,7 @@ class TraCISimulator:
 
                     # Initialize empty to deploy locally
                     traffic_light.enable_traffic_predictor(
-                        traffic_predictor=TrafficPredictor(date=date, mqtt_url='', mqtt_port='',
+                        traffic_predictor=TrafficPredictor(date=date, mqtt_url='', mqtt_port=0,
                                                            model_base_dir=TRAFFIC_PREDICTOR_MODEL_BASE_DIR.format(
                                                                traffic_predictor_type),
                                                            parsed_values_file=TRAFFIC_PREDICTOR_PARSED_VALUES_FILE,
@@ -216,18 +216,8 @@ class TraCISimulator:
 
         # Initialize date info on each traffic light
         for traffic_light_id, traffic_light in self._traffic_lights.items():
-            # Create new historical traffic info
-            traffic_light.create_historical_traffic_info(temporal_window=self._temporal_window)
-
             # Store date info and temporal window
             traffic_light.insert_date_info(temporal_window=self._temporal_window, date_info=self._date_info)
-
-        # TODO remove, it is only now for enabling strategies
-        for traffic_light_id, traffic_light in self._traffic_lights.items():
-            # Enable traffic analyzer from the beginning
-            # traffic_light.adaptation_strategy = AdjacentTrafficAnalyzerAS(traffic_light_id=traffic_light_id)
-            traffic_light.adaptation_strategy = SelfTrafficAnalyzerAS(traffic_light_id=traffic_light_id,
-                                                                      analyzer=traffic_light.traffic_analyzer)
 
     def monitor_adapt_traffic_lights(self) -> None:
         """
@@ -267,7 +257,8 @@ class TraCISimulator:
         if not load_vehicles_dir and self._turn_pattern:
             # Retrieve turn probabilities by edges
             turn_prob_by_edges = retrieve_turn_prob_by_edge(traci=traci,
-                                                            turn_prob=self._turn_pattern.retrieve_turn_prob(simulation_timestep=self._cur_timestep))
+                                                            turn_prob=self._turn_pattern.retrieve_turn_prob(
+                                                                simulation_timestep=self._cur_timestep))
 
             # Update current vehicles routes to enable turns, using the network topology
             # Insert the traffic info to store the number of turning vehicles
@@ -298,10 +289,9 @@ class TraCISimulator:
             traffic_light_info = traffic_light.get_traffic_info_by_temporal_window(self._temporal_window)
 
             # Store summary of waiting time and vehicles passed
-            summary_waiting_time += traffic_light_info['waiting_time_veh_n_s'] + \
-                                    traffic_light_info['waiting_time_veh_e_w']
-            summary_veh_passed += traffic_light_info['passing_veh_n_s'] + \
-                                  traffic_light_info['passing_veh_e_w']
+            summary_waiting_time += traffic_light_info['waiting_time_veh_n_s'] + traffic_light_info[
+                'waiting_time_veh_e_w']
+            summary_veh_passed += traffic_light_info['passing_veh_n_s'] + traffic_light_info['passing_veh_e_w']
 
             # Append date information
             traffic_light.insert_date_info(temporal_window=self._temporal_window, date_info=date_info)
@@ -347,23 +337,9 @@ class TraCISimulator:
 
             # Store info each time interval
             if self._cur_timestep % TIMESTEPS_TO_STORE_INFO == 0:
-                # Increase the temporal window
-                self._temporal_window += 1
-
-                # Calculate new date info
-                self._date_info = retrieve_date_info(timestep=self._cur_timestep, time_pattern=self._time_pattern)
-
-                # Update new date to the traffic lights and store new temporal window
-                for traffic_light_id, traffic_light in self._traffic_lights.items():
-                    # Create new historical traffic info
-                    traffic_light.create_historical_traffic_info(temporal_window=self._temporal_window)
-
-                    # Insert date info and temporal window
-                    traffic_light.insert_date_info(temporal_window=self._temporal_window, date_info=self._date_info)
 
                 # Publish the information
                 if not self._local:
-
                     # Gather all the traffic lights information and publish them
                     self.process_publish_traffic_information(summary_waiting_time=summary_waiting_time,
                                                              summary_veh_passed=summary_veh_passed,
@@ -381,6 +357,20 @@ class TraCISimulator:
 
                     # Reset counters
                     summary_waiting_time, summary_veh_passed = 0, 0
+
+                # Increase the temporal window
+                self._temporal_window += 1
+
+                # Calculate new date info
+                self._date_info = retrieve_date_info(timestep=self._cur_timestep, time_pattern=self._time_pattern)
+
+                # Update new date to the traffic lights and store new temporal window
+                for traffic_light_id, traffic_light in self._traffic_lights.items():
+                    # Create new historical traffic info
+                    traffic_light.create_historical_traffic_info(temporal_window=self._temporal_window)
+
+                    # Insert date info and temporal window
+                    traffic_light.insert_date_info(temporal_window=self._temporal_window, date_info=self._date_info)
 
             # Simulate a step
             self._traci.simulationStep()
