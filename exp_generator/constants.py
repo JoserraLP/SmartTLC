@@ -25,7 +25,7 @@ cd {num_parent_folders}docker-utils/docker_generator || exit \n\
 ## Create docker-compose file with the time pattern \n\
 python main.py -o  ../../docker-compose.yml -c mosquitto,influxdb,grafana,telegraf,\
 traffic_light_controller;{tlc_pattern};load#$cwd;rows#{rows};cols#{cols};lanes#{lanes}{tl_components},\
-exp_collector;exp_file#{exp_file};waiting#4500{add_components} \n\
+exp_collector;exp_file#{exp_file};waiting#{time}{db_url}{add_components} \n\
 \n\
 ## Waiting time is 25 minutes (1500 seconds) per day simulated \n\
 \n\

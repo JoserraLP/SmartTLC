@@ -149,8 +149,8 @@ if __name__ == '__main__':
         # Windows
         if os_experiment == "windows":
             # Replace comments, cur directory variable, variable call and file beginning
-            file_str = file_str.replace(UBUNTU_START, WINDOWS_START).replace(UBUNTU_ECHO_NULL, WINDOWS_ECHO_NULL)\
-                .replace(UBUNTU_COMMENT, WINDOWS_COMMENT).replace(UBUNTU_CUR_DIR, WINDOWS_CUR_DIR)\
+            file_str = file_str.replace(UBUNTU_START, WINDOWS_START).replace(UBUNTU_ECHO_NULL, WINDOWS_ECHO_NULL) \
+                .replace(UBUNTU_COMMENT, WINDOWS_COMMENT).replace(UBUNTU_CUR_DIR, WINDOWS_CUR_DIR) \
                 .replace(UBUNTU_VARIABLE, WINDOWS_VARIABLE)
             # Remove "sudo"
             file_str = file_str.replace("sudo ", "")
@@ -173,12 +173,15 @@ if __name__ == '__main__':
         # Define output executable sh file
         file_name = output_dir + '/' + adaptation_name + file_extension
 
+        # Next -> calculate time based on the days selected
+        time = 1500
+
         # Store the file str with the values
         file_str = file_str.format(num_parent_folders=num_parent_folders,
                                    tlc_pattern=tlc_pattern, rows=rows, cols=cols, lanes=lanes,
-                                   tl_components=tl_components,
-                                   exp_file=f'grid_{rows}x{cols}_{adaptation_name}.xlsx',
-                                   add_components='')
+                                   tl_components=tl_components, add_components='',
+                                   exp_file=f'grid_{rows}x{cols}_{adaptation_name}.xlsx', time=str(time),
+                                   db_url=';db-host#http://localhost' if os_experiment == 'windows' else '')
 
         # Change / to \ if os is windows
         if os_experiment == 'windows':

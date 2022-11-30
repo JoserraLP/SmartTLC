@@ -143,7 +143,7 @@ class DockerComposeGenerator:
             container_name = params.pop(0)
 
         # Define params str
-        pattern_str, pattern_file, date_range, exp_file, waiting_time = "", "", "", "", ""
+        pattern_str, pattern_file, date_range, exp_file, waiting_time, db_host = "", "", "", "", "", ""
         # Define configuration file for SUMO on pattern_str
         # pattern_str = ' -c /etc/config/simulation.sumocfg '
         if params:
@@ -180,6 +180,9 @@ class DockerComposeGenerator:
                 # Add number of seconds for the experiment collector to wait until it finishes
                 elif param_type == 'waiting':
                     waiting_time = param_value
+                # Add db host to experiment collector
+                elif param_type == 'db_host':
+                    db_host = param_value
 
         # Generate the volumes field
         volumes = parse_field_to_str(container['volumes'])
@@ -221,6 +224,8 @@ class DockerComposeGenerator:
                 # If there experiment is going to be collected
                 if exp_file and waiting_time:
                     container_str += "    command: {}\n".format(container['command'].format(exp_file, waiting_time))
+                    if db_host:
+                        container_str += " --db-host " + db_host
                 # Otherwise only add the SUMO generator and time pattern parameters
                 else:
                     container_str += "    command: {}\n".format(container['command'].format(pattern_str))

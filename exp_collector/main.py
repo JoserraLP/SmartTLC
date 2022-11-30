@@ -1,4 +1,5 @@
 import argparse
+import subprocess
 import time
 import warnings
 
@@ -13,8 +14,8 @@ DEFAULT_OUTPUT_FILE = "./data.xlsx"
 TOKEN = "my-super-secret-auth-token"
 ORG = "smarttlc"
 BUCKET = "smarttlc"
-DB_URL = "http://172.20.0.3:8086"
-
+DB_HOST = "http://172.20.0.3"
+DB_PORT = 8086
 
 def get_options():
     """
@@ -30,9 +31,18 @@ def get_options():
     arg_parser.add_argument("-o", "--output-file", dest="output_file", action='store', default=DEFAULT_OUTPUT_FILE,
                             help=f"define the output file location. Must be an XLSX file. "
                                  f"Default is {DEFAULT_OUTPUT_FILE}")
-    
+
+    arg_parser.add_argument("--db-host", dest="db_host", action="store", type=str,
+                            help=f"database host. Default is {DB_HOST}", default=DB_HOST)
+    arg_parser.add_argument("--db-port", dest="db_port", action="store", type=int,
+                            help=f"database port. Default is {DB_PORT}", default=DB_PORT)
+
     arg_parser.add_argument("-w", "--waiting-time", dest="waiting_time", action='store', default=0,
                             help="waiting seconds to deploy. Use only when deploying Docker container. Default to 0")
+
+    arg_parser.add_argument("--local", dest="local", action="store_true", default=False,
+                            help="run the component locally. It will not connect to middleware.")
+
     # Retrieve the arguments parsed
     args = arg_parser.parse_args()
     return args
@@ -48,8 +58,10 @@ if __name__ == '__main__':
     # Sleep process specified waiting time
     time.sleep(int(exec_options.waiting_time))
 
+    db_url = exec_options.db_host + ':' + str(exec_options.db_port)
+
     # Define connection to InfluxDB database
-    client = InfluxDBClient(url=DB_URL, token=TOKEN)
+    client = InfluxDBClient(url=db_url, token=TOKEN)
 
     # Retrieve the query InfluxDB API
     query_api = client.query_api()
@@ -167,4 +179,11 @@ if __name__ == '__main__':
         data['average_waiting_time'] = average_waiting_time['value'].mean()
 
         # Store the output file
-        data.to_excel(exec_options.output_file, index=None, header=True)
+        data.to_excel(exec_options.output_file, index=False, header=True)
+
+        if not exec_options.local:
+            # Create list of commands
+            commands = ['echo', 'root', '|', 'sudo', '-S', 'docker', 'cp',
+                        'exp_generator:/etc/exp_collector/' + exec_options.output_file, exec_options.output_file]
+            # Copy to the host OS
+            subprocess.run(commands)
