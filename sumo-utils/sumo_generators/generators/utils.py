@@ -9,8 +9,8 @@ import pandas as pd
 import traci
 from sumo_generators.generators.flows_generator import FlowsGenerator
 from sumo_generators.generators.sumo_config_generator import SumoConfigGenerator
-from sumo_generators.network.net_generator import NetGenerator
-from sumo_generators.network.topology.net_matrix import NetMatrix
+from sumo_generators.network.grid.grid_net_generator import GridNetGenerator
+from sumo_generators.network.grid.representation.grid_net_matrix import GridNetMatrix
 from sumo_generators.static.constants import *
 from sumo_generators.time_patterns.time_patterns import TimePattern
 from sumolib import checkBinary
@@ -200,8 +200,8 @@ def generate_network_file(rows: int = MIN_ROWS, cols: int = MIN_COLS, lanes: int
     :return: None
     """
     # Define the network generator
-    net_generator = NetGenerator(rows=rows, cols=cols, lanes=lanes, distance=distance, junction=junction,
-                                 tl_type=tl_type, tl_layout=tl_layout, nodes_path=nodes_path, edges_path=edges_path)
+    net_generator = GridNetGenerator(rows=rows, cols=cols, lanes=lanes, distance=distance, junction=junction,
+                                     tl_type=tl_type, tl_layout=tl_layout, nodes_path=nodes_path, edges_path=edges_path)
 
     # Generate the topology required files (nodes and edges)
     net_generator.generate_topology()
@@ -477,7 +477,7 @@ def generate_simulation_flow_file(turn_pattern_file: str, sumo_config_file: str,
     edges = [edge for edge in traci.edge.getIDList() if ':' not in edge]
 
     # Define and generate the network graph
-    net_topology = NetMatrix(num_rows=topology_rows, num_cols=topology_cols, valid_edges=edges, traci=traci)
+    net_topology = GridNetMatrix(num_rows=topology_rows, num_cols=topology_cols, valid_edges=edges, traci=traci)
     net_topology.generate_network()
 
     # Initialize Traffic Lights with no adaptation strategy

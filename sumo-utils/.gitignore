@@ -28,4 +28,4 @@ MANIFEST
 
 # Directory where the output files will be stored
 output
-config
+config*

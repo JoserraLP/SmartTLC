@@ -1,10 +1,10 @@
 from collections import defaultdict
 
-from sumo_generators.network.topology.net_topology import NetTopology, retrieve_edge_information
+from sumo_generators.network.grid.representation.grid_net_topology import GridNetTopology, retrieve_edge_information
 from sumo_generators.static.constants import *
 
 
-class NetGraph(NetTopology):
+class GridNetGraph(GridNetTopology):
     """
     Class representing the network graph
 

@@ -1,9 +1,9 @@
-from sumo_generators.network.node_matrix import NodeMatrix
+from sumo_generators.network.grid.grid_node_matrix import GridNodeMatrix
 from sumo_generators.static.constants import *
 from pathlib import Path
 
 
-class NetGenerator:
+class GridNetGenerator:
     """
     Class representing the network generator
 
@@ -41,7 +41,7 @@ class NetGenerator:
         self._tl_layout = tl_layout
 
         # Define network matrix
-        net_matrix = NodeMatrix(num_rows=rows, num_cols=cols)
+        net_matrix = GridNodeMatrix(num_rows=rows, num_cols=cols)
 
         # Generate connections matrix
         self._net_matrix = net_matrix.generate_connections_matrix()

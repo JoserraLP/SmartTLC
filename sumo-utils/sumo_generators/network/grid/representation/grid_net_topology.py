@@ -2,7 +2,7 @@ import math
 import random
 from abc import ABC, abstractmethod
 
-from sumo_generators.network.node_matrix import NodeMatrix
+from sumo_generators.network.grid.grid_node_matrix import GridNodeMatrix
 from sumo_generators.static.constants import *
 
 
@@ -58,7 +58,7 @@ def retrieve_edge_information(edge: str, turns: dict, cols: int) -> dict:
     return edge_info
 
 
-class NetTopology(ABC):
+class GridNetTopology(ABC):
     """
     Class representing the network (abstract)
 
@@ -75,7 +75,7 @@ class NetTopology(ABC):
 
         # Define the network matrix in order to generate the graph
         # Plus two due to the outer edges
-        node_matrix = NodeMatrix(num_rows=num_rows + 2, num_cols=num_cols + 2)
+        node_matrix = GridNodeMatrix(num_rows=num_rows + 2, num_cols=num_cols + 2)
         self._node_matrix = node_matrix.generate_connections_matrix()
 
         self._network = None
