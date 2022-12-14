@@ -76,7 +76,8 @@ ALL_CONTAINERS = {
                    'cd /etc/traffic_light_controller/tl_controller/ &&  dockerize -wait '
                    'tcp://172.20.0.3:8086 -timeout 120s -wait-retry-interval 20s python3 {}"',
         'ipv4_address': '172.20.0.7'
-    }, # Added {} to parametrize execution
+        # TODO add load topology into the database. Not delete the container even if the process has finished
+    },  # Added {} to parametrize execution
     'traffic_analyzer': {
         'image': 'python:3.8.12-slim',
         'container_name': 'traffic_analyzer',
@@ -86,6 +87,25 @@ ALL_CONTAINERS = {
         'command': 'bash -c "pip3 install -r /etc/traffic_analyzer/requirements.txt && '
                    'cd /etc/traffic_analyzer/t_analyzer/ && python3 main.py"',
         'ipv4_address': '172.20.0.8'
+    },
+    'neo4j': {
+        'image': 'neo4j',
+        'container_name': 'neo4j',
+        'env_file': './neo4j/env.neo4j',
+        'restart': 'always',
+        'ports': ["7474:7474", "7687:7687"],
+        'volumes': './neo4j:/etc/neo4j/',
+        'ipv4_address': '172.20.0.9'
+    },
+    'exp_collector': {
+        'image': 'python:3.8.12-slim',
+        'container_name': 'exp_collector',
+        'restart': 'on-failure',
+        'links': 'mosquitto',
+        'volumes': './exp_collector:/etc/exp_collector/',
+        'command': 'bash -c "pip3 install -r /etc/exp_collector/requirements.txt && '
+                   'cd /etc/exp_collector && python3 main.py -o {} -w {}"',
+        'ipv4_address': '172.20.0.11'
     },
     'turn_predictor': {
         'image': 'python:3.8.12-slim',
@@ -98,16 +118,6 @@ ALL_CONTAINERS = {
                    'tcp://172.20.0.3:8086 -timeout 120s -wait-retry-interval 40s python3 ml_trainer.py --component -n 1'
                    ' --middleware_host 172.20.0.2 --middleware_port 1883"',
         'ipv4_address': '172.20.0.12'
-    },
-    'exp_collector': {
-        'image': 'python:3.8.12-slim',
-        'container_name': 'exp_collector',
-        'restart': 'on-failure',
-        'links': 'mosquitto',
-        'volumes': './exp_collector:/etc/exp_collector/',
-        'command': 'bash -c "pip3 install -r /etc/exp_collector/requirements.txt && '
-                   'cd /etc/exp_collector && python3 main.py -o {} -w {}"',
-        'ipv4_address': '172.20.0.11'
     }
 }
 

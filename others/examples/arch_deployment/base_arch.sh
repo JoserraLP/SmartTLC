@@ -7,7 +7,7 @@ cd ../../../docker-utils/docker_generator || exit
 ../clean_up_containers.sh > /dev/null 2>&1
 
 # Create docker-compose file with the time pattern
-python main.py -o  ../../docker-compose.yml -c mosquitto,influxdb,telegraf
+python main.py -o  ../../docker-compose.yml -c mosquitto,influxdb,telegraf,neo4j
 
 # Deploy the architecture
 sudo docker-compose up
