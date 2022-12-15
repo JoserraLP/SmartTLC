@@ -5,7 +5,7 @@ import sys
 import tl_controller.static.constants as cnt
 from sumolib import checkBinary
 
-from sumo_generators.static.constants import MQTT_URL, MQTT_PORT
+from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, DB_USER, DB_PASSWORD, DB_IP_ADDRESS
 from tl_controller.providers.traci_sim import TraCISimulator
 from tl_controller.static.argparse_types import check_file, check_valid_format, check_valid_predictor_value
 
@@ -69,6 +69,14 @@ def get_options():
                             type=check_valid_predictor_value, default="date",
                             help="select the traffic predictor type. Possible values are 'date' and 'context'. "
                                  "Default to 'date'.")
+    arg_parser.add_argument("--topology-db-ip", action="store", dest="topology_db_ip",
+                            type=str, default=DB_IP_ADDRESS,
+                            help=f"topology database ip address with port. Default to {DB_IP_ADDRESS}")
+    arg_parser.add_argument("--topology-db-user", action="store", dest="topology_db_user",
+                            type=str, default=DB_USER, help=f"topology database user. Default to {DB_USER}")
+    arg_parser.add_argument("--topology-db-password", action="store", dest="topology_db_password",
+                            type=str, default=DB_PASSWORD,
+                            help=f"topology database user password. Default to {DB_PASSWORD}")
 
     # Retrieve the arguments parsed
     args = arg_parser.parse_args()
@@ -112,12 +120,18 @@ if __name__ == "__main__":
     # Get simulation params
     simulation_params = traci_sim.retrieve_simulation_params(load_vehicles_dir=exec_options.load_vehicles_dir)
 
+    # Create dict with topology database params
+    topology_database_params = {'ip_address': exec_options.topology_db_ip,
+                                'user': exec_options.topology_db_user,
+                                'password': exec_options.topology_db_password}
+
     # Initialize the simulation topology
     traci_sim.initialize_simulation_topology(traffic_analyzer=exec_options.traffic_analyzer,
                                              turn_predictor=exec_options.turn_predictor,
                                              traffic_predictor=exec_options.traffic_predictor,
                                              traffic_predictor_type=exec_options.traffic_predictor_type,
-                                             simulation_params=simulation_params)
+                                             simulation_params=simulation_params,
+                                             topology_database_params=topology_database_params)
 
     # Start the simulation process
     traci_sim.simulate(load_vehicles_dir=exec_options.load_vehicles_dir)

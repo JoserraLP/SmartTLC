@@ -1,10 +1,11 @@
 import ast
 
 import paho.mqtt.client as mqtt
-from sumo_generators.network.topology.net_topology import NetTopology
-from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, DEFAULT_QOS, TRAFFIC_INFO_TOPIC, \
+
+from sumo_generators.network.net_topology import NetworkTopology
+from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, TRAFFIC_INFO_TOPIC, \
     TRAFFIC_ANALYSIS_TOPIC, TURN_PREDICTION_TOPIC, TRAFFIC_PREDICTION_TOPIC
-from sumo_generators.utils.utils import parse_str_to_valid_schema
+from sumo_generators.utils.utils import parse_to_valid_schema
 from t_analyzer.providers.analyzer import TrafficAnalyzer
 from t_predictor.providers.predictor import TrafficPredictor
 from tl_controller.adaptation.strategy import AdaptationStrategy
@@ -17,27 +18,22 @@ class TrafficLightAdapter:
     The Traffic Light Adapter defines the interface of interest and stores other relevant information
     """
 
-    def __init__(self, adaptation_strategy: AdaptationStrategy, net_topology: NetTopology, traci, id: str,
-                 mqtt_url: str = MQTT_URL, mqtt_port: int = MQTT_PORT, rows: int = -1,
-                 cols: int = -1, local: bool = False) -> None:
+    def __init__(self, adaptation_strategy: AdaptationStrategy, net_topology: NetworkTopology, traci, tl_id: str,
+                 mqtt_url: str = MQTT_URL, mqtt_port: int = MQTT_PORT, local: bool = False) -> None:
         """
         Traffic Light Adapter initializer.
 
         :param adaptation_strategy: adaptation concrete strategy
         :type adaptation_strategy: AdaptationStrategy
         :param net_topology: network topology
-        :type net_topology: NetTopology
+        :type net_topology: NetworkTopology
         :param traci: TraCI instance
-        :param id: traffic light junction identifier
-        :type id: str
+        :param tl_id: traffic light junction identifier
+        :type tl_id: str
         :param mqtt_url: MQTT middleware broker url. Default to '172.20.0.2'.
         :type mqtt_url: str
         :param mqtt_port: MQTT middleware broker port. Default to 1883.
         :type mqtt_port: int
-        :param rows: topology rows. Default to -1.
-        :type rows: int
-        :param cols: topology cols. Default to -1.
-        :type cols: int
         :param local: flag to execute locally the component. It will not connect to the middleware.
         :type local: bool
         """
@@ -45,7 +41,7 @@ class TrafficLightAdapter:
         self._adaptation_strategy = adaptation_strategy
 
         # Store parameter values
-        self._rows, self._cols, self._local, self._id, self._traci = rows, cols, local, id, traci
+        self._local, self._tl_id, self._traci = local, tl_id, traci
 
         # Initialize traffic analyzer, turn predictor and traffic predictor to None
         self._traffic_analyzer, self._turn_predictor, self._traffic_predictor = None, None, None
@@ -53,40 +49,20 @@ class TrafficLightAdapter:
         # Initialize temporal window to 0
         self._cur_temporal_window = 0
 
-        # Retrieve connected roads
-        self._roads = list(set([self._traci.lane.getEdgeID(lane) for lane
-                                in set(self._traci.trafficlight.getControlledLanes(id))]))
+        # Retrieve connected roads from the database
+        self._outbound_roads, self._inbound_roads = net_topology.get_tl_roads(tl_name=self._tl_id)
 
-        # Define junction connections
-        self._turns_per_road = net_topology.retrieve_turns_edges(cols=cols)
+        # Roads used primarily are the inbound roads to calculate the required information.
 
-        # Retrieve all adjacent node identifiers
-        self._adjacent_nodes = net_topology.get_adjacent_nodes_by_source(id)
+        # Gather only local TL information
+        self._traffic_light_info = {self._tl_id: TrafficLightInfoStorage(tl_id=self._tl_id,
+                                                                         roads=self._inbound_roads)}
 
-        # Retrieve those node ids that are traffic lights (central ones)
-        self._adjacent_traffic_lights_ids = [junction_id for junction_id in list(self._adjacent_nodes.keys()) if
-                                             'c' in junction_id]
+        # Get the waiting time per inbound lane when the traffic light is created
+        self._prev_waiting_time = {lane.name: 0 for lane in self._inbound_roads}
 
-        # Gather all Traffic Light Information storage
-        # Firstly append adjacent info with no "roads" info
-        self._traffic_light_info = {adjacent_id: TrafficLightInfoStorage(roads=list(),
-                                                                         topology_info=self._adjacent_nodes[
-                                                                             adjacent_id])
-                                    for adjacent_id in self._adjacent_traffic_lights_ids}
-        # Append local info
-        self._traffic_light_info[self._id] = TrafficLightInfoStorage(roads=self._roads)
-
-        # Define topics to subscribe to
-        self._adjacent_traffic_info_topics = [(str(TRAFFIC_INFO_TOPIC + '/' + junction_id), DEFAULT_QOS)
-                                              for junction_id in self._adjacent_traffic_lights_ids]
-
-        # Get the waiting time per lane when the traffic light is created
-        self._prev_waiting_time = {lane: traci.lane.getWaitingTime(lane) for lane in
-                                   list(dict.fromkeys(traci.trafficlight.getControlledLanes(id)))}
-
-        # Store those detectors related to the traffic light
-        self._traffic_light_detectors = [detector for detector in self._traci.inductionloop.getIDList()
-                                         if traci.inductionloop.getLaneID(detector).split('_')[1] == id]
+        # Get traffic light related detectors
+        self._traffic_light_detectors = net_topology.get_junction_detectors(junction_name=self._tl_id)
 
         if self._local:
             self._mqtt_client = None
@@ -115,133 +91,55 @@ class TrafficLightAdapter:
                                                                       temporal_window=self._cur_temporal_window)
 
         # Check if the new program is valid and it is not the same as the actual one
-        if new_tl_program and new_tl_program != self._traffic_light_info[self._id].actual_program:
+        if new_tl_program and new_tl_program != self._traffic_light_info[self._tl_id].actual_program:
             # Update new program
-            self._traci.trafficlight.setProgram(self._id, new_tl_program)
+            self._traci.trafficlight.setProgram(self._tl_id, new_tl_program)
 
     """ VEHICLE UTILS """
 
     def count_passing_vehicles(self) -> None:
         """
-        Update the counters of vehicles passing on both directions (NS and EW), appending them to the list
+        Update the counters of vehicles passing on each queue, appending them to the list
         
         :return: None
         """
-        # Initialize dictionary
-        num_passing_vehicles = {'north': 0, 'east': 0, 'south': 0, 'west': 0}
 
         # Iterate over the traffic light detectors
         for detector in self._traffic_light_detectors:
-
-            # Get detector direction
-            detector_direction = detector.split('_')[0]
+            # Road where the detector is placed
+            lane = str(detector).replace('e1detector_', '')
 
             # Get the current passing vehicles
             cur_veh = set(self._traci.inductionloop.getLastStepVehicleIDs(detector))
 
             # Calculate the difference between the sets
-            not_counted_veh = cur_veh - self._traffic_light_info[self._id].vehicles_passed
+            not_counted_veh = cur_veh - self._traffic_light_info[self._tl_id].vehicles_passed
 
             # If there are no counted vehicles
             if not_counted_veh:
                 # Append the not counted vehicles
-                self._traffic_light_info[self._id].update_passing_vehicles(passing_veh=not_counted_veh)
+                self._traffic_light_info[self._tl_id].update_passing_vehicles(passing_veh=not_counted_veh)
 
-                # Add the number of not counted vehicles
-                num_passing_vehicles[detector_direction] += len(not_counted_veh)
+                # Add the number of non-counted vehicles
+                self._traffic_light_info[self._tl_id].increase_passing_vehicles(queue=lane,
+                                                                                num_veh=len(not_counted_veh))
 
-        # Update number of vehicles passing
-        self._traffic_light_info[self._id].increase_passing_vehicles(num_veh=num_passing_vehicles['north'] +
-                                                                             num_passing_vehicles['south'],
-                                                                     direction='n_s')
-
-        self._traffic_light_info[self._id].increase_passing_vehicles(num_veh=num_passing_vehicles['east'] +
-                                                                             num_passing_vehicles['west'],
-                                                                     direction='e_w')
-
-    def retrieve_edges_vehicles(self) -> dict:
-        """
-        Retrieve the vehicles that are on each one of the possible directions (North, East, South, West)
-
-        :return: vehicles per direction
-        :rtype: dict
-        """
-        # Dict with vehicles per direction
-        vehicles_per_direction = {'north': [], 'east': [], 'south': [], 'west': []}
-
-        # Iterate over the detectors
-        for detector in self._traffic_light_detectors:
-            # Get the current passing vehicles
-            cur_veh = set(self._traci.inductionloop.getLastStepVehicleIDs(detector))
-
-            # If there are vehicles
-            if cur_veh:
-
-                # North
-                if 'north' in detector:
-                    vehicles_per_direction['north'] += list(cur_veh)
-                # East
-                elif 'east' in detector:
-                    vehicles_per_direction['east'] += list(cur_veh)
-                # South
-                elif 'south' in detector:
-                    vehicles_per_direction['south'] += list(cur_veh)
-                # West
-                elif 'west' in detector:
-                    vehicles_per_direction['west'] += list(cur_veh)
-
-        return vehicles_per_direction
-
-    def calculate_waiting_time_per_lane(self, cols: int) -> None:
+    def calculate_waiting_time_per_lane(self) -> None:
         """
         Calculate and update the waiting time per lane.
 
-        :param cols: number of topology columns
-        :type cols: int
         :return: None
         """
         # Calculate current waiting time
-        current_waiting_time = {lane: self._traci.lane.getWaitingTime(lane) for lane in
-                                list(dict.fromkeys(self._traci.trafficlight.getControlledLanes(self._id)))}
+        current_waiting_time = {lane.name: self._traci.lane.getWaitingTime(lane.name) for lane in self._inbound_roads}
 
         # Iterate over the lanes
         for lane, waiting_time in current_waiting_time.items():
             # If the information is valid (there are no more vehicles waiting)
             if self._prev_waiting_time[lane] > waiting_time:
-                # Retrieve the origin and destination junctions
-                origin, destination, _ = lane.split('_')
-
-                # Append waiting time to NS on outer edges
-                if ('n' in destination or ('s' in origin and 'c' in destination)) or \
-                        ('s' in destination or ('n' in origin and 'c' in destination)):
-                    self._traffic_light_info[self._id].increase_waiting_time(waiting_time=self._prev_waiting_time[lane],
-                                                                             direction='n_s')
-                # Append waiting time to EW on outer edges
-                if ('e' in destination or ('w' in origin and 'c' in destination)) or \
-                        ('w' in destination or ('e' in origin and 'c' in destination)):
-                    self._traffic_light_info[self._id].increase_waiting_time(waiting_time=self._prev_waiting_time[lane],
-                                                                             direction='e_w')
-                # Inner edges
-                if 'c' in origin and 'c' in destination:
-                    # Get the junction identifiers
-                    prev_tl_id, next_tl_id = int(origin[1:]), int(destination[1:])
-
-                    # Define direction
-                    direction = ''
-
-                    # North-South - Append waiting time to NS
-                    if prev_tl_id + cols == next_tl_id or prev_tl_id - cols == next_tl_id:
-                        direction = 'n_s'
-
-                    # East-West - Append waiting time to EW
-                    elif prev_tl_id + 1 == next_tl_id or prev_tl_id - 1 == next_tl_id:
-                        direction = 'e_w'
-
-                    # Increase the waiting time on the given direction
-                    if direction:
-                        self._traffic_light_info[self._id].increase_waiting_time(
-                            waiting_time=self._prev_waiting_time[lane],
-                            direction=direction)
+                # Append to queue
+                self._traffic_light_info[self._tl_id].increase_waiting_time(queue=lane,
+                                                                            waiting_time=self._prev_waiting_time[lane])
 
         # Update the previous waiting time to the current waiting time
         self._prev_waiting_time = current_waiting_time
@@ -255,17 +153,17 @@ class TrafficLightAdapter:
         # Define a set to remove afterwards
         deleted_vehicles = set()
         # Iterate over the turning vehicles
-        for vehicle in self._traffic_light_info[self._id].turning_vehicles_passed:
+        for vehicle in self._traffic_light_info[self._tl_id].turning_vehicles_passed:
             # Get vehicle edge
             cur_edge = self._traci.vehicle.getRoadID(vehicle)
             # Check if the vehicle has passed and it is not in the junction edges
-            if self._traffic_light_info[self._id].is_vehicle_turning_counted(vehicle) and \
-                    cur_edge not in self._traffic_light_info[self._id].roads:
+            if self._traffic_light_info[self._tl_id].is_vehicle_turning_counted(vehicle) and \
+                    cur_edge not in self._traffic_light_info[self._tl_id].roads:
                 # Append to deleted vehicles list
                 deleted_vehicles.add(vehicle)
 
         # Delete vehicle from turning and passing vehicles
-        self._traffic_light_info[self._id].remove_passed_vehicles(vehicles=deleted_vehicles)
+        self._traffic_light_info[self._tl_id].remove_passed_vehicles(vehicles=deleted_vehicles)
 
     def is_vehicle_turning_counted(self, vehicle_id: str) -> bool:
         """
@@ -276,7 +174,7 @@ class TrafficLightAdapter:
         :return: True if it is counted, False otherwise
         :rtype: bool
         """
-        return self._traffic_light_info[self._id].is_vehicle_turning_counted(vehicle_id=vehicle_id)
+        return self._traffic_light_info[self._tl_id].is_vehicle_turning_counted(vehicle_id=vehicle_id)
 
     def increase_turning_vehicles(self, turn: str) -> None:
         """
@@ -286,7 +184,7 @@ class TrafficLightAdapter:
         :type turn: str
         :return: None
         """
-        self._traffic_light_info[self._id].increase_turning_vehicles(turn)
+        self._traffic_light_info[self._tl_id].increase_turning_vehicles(turn)
 
     def append_turning_vehicle(self, vehicle_id: str) -> None:
         """
@@ -296,7 +194,7 @@ class TrafficLightAdapter:
         :type vehicle_id: str
         :return: None
         """
-        self._traffic_light_info[self._id].append_turning_vehicle(vehicle_id=vehicle_id)
+        self._traffic_light_info[self._tl_id].append_turning_vehicle(vehicle_id=vehicle_id)
 
     """ EXTERNAL COMPONENTS """
 
@@ -317,9 +215,10 @@ class TrafficLightAdapter:
         :return: None
         """
         if self._traffic_analyzer:
-            self._mqtt_client.publish(topic=TRAFFIC_ANALYSIS_TOPIC + '/' + self._id,
-                                      payload=parse_str_to_valid_schema(
-                                          {self._id: self._traffic_analyzer.traffic_type}))
+            # Parsed dict to str to use the valid schema
+            self._mqtt_client.publish(topic=TRAFFIC_ANALYSIS_TOPIC + '/' + self._tl_id,
+                                      payload=parse_to_valid_schema(
+                                          str({self._tl_id: self._traffic_analyzer.traffic_type})))
 
     def enable_turn_predictor(self, turn_predictor: TurnPredictor) -> None:
         """
@@ -338,9 +237,10 @@ class TrafficLightAdapter:
         :return: None
         """
         if self._turn_predictor:
-            self._mqtt_client.publish(topic=TURN_PREDICTION_TOPIC + '/' + self._id,
-                                      payload=parse_str_to_valid_schema(
-                                          {self._id: self._turn_predictor.turn_probabilities}))
+            # Parsed dict to str to use the valid schema
+            self._mqtt_client.publish(topic=TURN_PREDICTION_TOPIC + '/' + self._tl_id,
+                                      payload=parse_to_valid_schema(
+                                          str({self._tl_id: self._turn_predictor.turn_probabilities})))
 
     def enable_traffic_predictor(self, traffic_predictor: TrafficPredictor) -> None:
         """
@@ -359,9 +259,10 @@ class TrafficLightAdapter:
         :return: None
         """
         if self._traffic_predictor:
-            self._mqtt_client.publish(topic=TRAFFIC_PREDICTION_TOPIC + '/' + self._id,
-                                      payload=parse_str_to_valid_schema(
-                                          {self._id: self._traffic_predictor.traffic_type}))
+            # Parsed dict to str to use the valid schema
+            self._mqtt_client.publish(topic=TRAFFIC_PREDICTION_TOPIC + '/' + self._tl_id,
+                                      payload=parse_to_valid_schema(
+                                          str({self._tl_id: self._traffic_predictor.traffic_type})))
 
     """ TRAFFIC INFO """
 
@@ -375,11 +276,12 @@ class TrafficLightAdapter:
         :type date_info: dict
         :return: None
         """
-        # Insert also the temporal window
-        self._cur_temporal_window = temporal_window
-
         # Insert the date info for the current traffic light at a given temporal window 
-        self._traffic_light_info[self._id].insert_date_info(temporal_window=temporal_window, date_info=date_info)
+        self._traffic_light_info[self._tl_id].insert_date_info(temporal_window=temporal_window, date_info=date_info)
+
+    def increase_temporal_window(self):
+        self._cur_temporal_window += 1
+        self._traffic_light_info[self._tl_id].increase_temporal_window()
 
     def publish_contextual_info(self) -> None:
         """
@@ -390,50 +292,32 @@ class TrafficLightAdapter:
         # If it is deployed
         if not self._local:
             # Get processed publish info
-            publish_info = self._traffic_light_info[self._id].get_publish_info(self._cur_temporal_window)
+            publish_info = self._traffic_light_info[self._tl_id].get_publish_info(self._cur_temporal_window)
+
             # Publish info
-            self._mqtt_client.publish(topic=TRAFFIC_INFO_TOPIC + '/' + self._id,
-                                      payload=parse_str_to_valid_schema(publish_info))
+            self._mqtt_client.publish(topic=TRAFFIC_INFO_TOPIC + '/' + self._tl_id,
+                                      payload=parse_to_valid_schema(publish_info))
 
     def get_traffic_info_by_temporal_window(self, temporal_window: int):
         """
         Get local traffic info by selected temporal window
         """
-        return self._traffic_light_info[self._id].get_traffic_info_by_temporal_window(temporal_window=temporal_window)
+        return self._traffic_light_info[self._tl_id].get_traffic_info_by_temporal_window(
+            temporal_window=temporal_window)
 
-    def create_historical_traffic_info(self, temporal_window: int, passing_veh_n_s: int = 0, passing_veh_e_w: int = 0,
-                                       waiting_time_veh_n_s: int = 0, waiting_time_veh_e_w: int = 0,
-                                       turning_forward: int = 0, turning_right: int = 0, turning_left: int = 0) -> None:
+    def create_historical_traffic_info(self, temporal_window: int, queue_info: dict = None) -> None:
         """
         Creates a new entry for the historical info for the timestep
 
         :param temporal_window: current info temporal window
         :type temporal_window: int
-        :param passing_veh_n_s: number of passing vehicles on NS direction. Default to 0.
-        :type passing_veh_n_s: int
-        :param passing_veh_e_w: number of passing vehicles on EW direction. Default to 0.
-        :type passing_veh_e_w: int
-        :param waiting_time_veh_n_s: waiting time on NS direction. Default to 0.
-        :type waiting_time_veh_n_s: int
-        :param waiting_time_veh_e_w: waiting time on EW direction. Default to 0.
-        :type waiting_time_veh_e_w: int
-        :param turning_forward: number of vehicles going forward. Default to 0.
-        :type turning_forward: int
-        :param turning_right: number of vehicles turning right. Default to 0.
-        :type turning_right: int
-        :param turning_left: number of vehicles turning left. Default to 0.
-        :type turning_left: int
+        :param queue_info: number of passing vehicles, waiting time and turning vehicles per queue.
+        :type queue_info: dict
 
         :return: None
         """
-        self._traffic_light_info[self._id].create_historical_traffic_info(temporal_window=temporal_window,
-                                                                          passing_veh_n_s=passing_veh_n_s,
-                                                                          passing_veh_e_w=passing_veh_e_w,
-                                                                          waiting_time_veh_n_s=waiting_time_veh_n_s,
-                                                                          waiting_time_veh_e_w=waiting_time_veh_e_w,
-                                                                          turning_forward=turning_forward,
-                                                                          turning_right=turning_right,
-                                                                          turning_left=turning_left)
+        self._traffic_light_info[self._tl_id].create_historical_traffic_info(temporal_window=temporal_window,
+                                                                             queue_info=queue_info)
 
     """ MIDDLEWARE """
 
@@ -448,8 +332,7 @@ class TrafficLightAdapter:
         :return: None
         """
         if rc == 0:  # Connection established
-            # Subscribe to the traffic information of adjacent neighbors
-            self._mqtt_client.subscribe(self._adjacent_traffic_info_topics)
+            pass
 
     def on_message(self, client, userdata, msg):
         """
@@ -459,23 +342,7 @@ class TrafficLightAdapter:
         :param msg: message received from the middleware
         :return: None
         """
-        # Retrieve junction id
-        junction_id = str(msg.topic).split('/')[1] if '/' in msg.topic else ''
-
-        if junction_id:
-            # Parse message to dict
-            traffic_info = ast.literal_eval(msg.payload.decode('utf-8'))
-
-            # Update the traffic light info data parsing to TrafficLightInfoStorage class
-            self._traffic_light_info[junction_id].create_historical_traffic_info(
-                temporal_window=self._cur_temporal_window,
-                passing_veh_n_s=traffic_info['passing_veh_n_s'], passing_veh_e_w=traffic_info['passing_veh_e_w'],
-                waiting_time_veh_n_s=traffic_info['waiting_time_veh_n_s'],
-                waiting_time_veh_e_w=traffic_info['waiting_time_veh_e_w'],
-                turning_forward=traffic_info['turning_vehicles']['forward'],
-                turning_right=traffic_info['turning_vehicles']['right'],
-                turning_left=traffic_info['turning_vehicles']['left']
-            )
+        pass
 
     def close_connection(self):
         """
@@ -493,7 +360,7 @@ class TrafficLightAdapter:
         :return: id
         :rtype: str
         """
-        return self._id
+        return self._tl_id
 
     @property
     def adaptation_strategy(self) -> AdaptationStrategy:

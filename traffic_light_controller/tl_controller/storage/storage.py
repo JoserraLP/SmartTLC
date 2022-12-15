@@ -1,31 +1,27 @@
-import copy
-
-
 class TrafficLightInfoStorage:
     """
     Traffic Light Info Storage  class to gather all the traffic related information 
     """
 
-    def __init__(self, actual_program: str = '', topology_info: dict = None, roads: list = None) -> None:
+    def __init__(self, tl_id: str, actual_program: str = '', roads: list = None) -> None:
         """
         TrafficInfoStorage initializer
 
+        :param tl_id: traffic light identifier
+        :type tl_id: str
         :param actual_program: actual traffic light program. Default to ''.
         :type actual_program: str
-        :param topology_info: additional topology info about the traffic light storage. Default is empty
-        :type topology_info: dict
         :param roads: roads names list
         :type roads: list
         :return: None
         """
         # Initialize non-default values
-        self._topology_info = {} if not topology_info else topology_info
-        self._roads = [] if not roads else roads
+        self._roads = [] if not roads else [road.name for road in roads]
 
         # Vehicles passed and turning vehicles passed on the traffic light
         self._vehicles_passed, self._turning_vehicles_passed = set(), set()
-        # Actual program
-        self._actual_program = actual_program
+        # Actual program and traffic light id
+        self._actual_program, self._tl_id = actual_program, tl_id
 
         # Initialize the historical dictionary and current temporal window
         self._historical_info, self._cur_temporal_window = {}, 0
@@ -33,42 +29,24 @@ class TrafficLightInfoStorage:
         # Initialize the first historical info
         self.create_historical_traffic_info(self._cur_temporal_window)
 
-    def create_historical_traffic_info(self, temporal_window: int, passing_veh_n_s: int = 0, passing_veh_e_w: int = 0,
-                                       waiting_time_veh_n_s: int = 0, waiting_time_veh_e_w: int = 0,
-                                       turning_forward: int = 0, turning_right: int = 0, turning_left: int = 0) -> None:
+    def create_historical_traffic_info(self, temporal_window: int, queue_info: dict = None) -> None:
         """
         Creates a new entry for the historical info for the timestep
 
         :param temporal_window: current info temporal window
         :type temporal_window: int
-        :param passing_veh_n_s: number of passing vehicles on NS direction. Default to 0.
-        :type passing_veh_n_s: int
-        :param passing_veh_e_w: number of passing vehicles on EW direction. Default to 0.
-        :type passing_veh_e_w: int
-        :param waiting_time_veh_n_s: waiting time on NS direction. Default to 0.
-        :type waiting_time_veh_n_s: int
-        :param waiting_time_veh_e_w: waiting time on EW direction. Default to 0.
-        :type waiting_time_veh_e_w: int
-        :param turning_forward: number of vehicles going forward. Default to 0.
-        :type turning_forward: int
-        :param turning_right: number of vehicles turning right. Default to 0.
-        :type turning_right: int
-        :param turning_left: number of vehicles turning left. Default to 0.
-        :type turning_left: int
+        :param queue_info: number of passing vehicles, waiting time and turning vehicles per queue.
+        :type queue_info: dict
 
         :return: None
         """
-        self._historical_info[temporal_window] = {'passing_veh_n_s': passing_veh_n_s,
-                                                  'passing_veh_e_w': passing_veh_e_w,
-                                                  'waiting_time_veh_n_s': waiting_time_veh_n_s,
-                                                  'waiting_time_veh_e_w': waiting_time_veh_e_w,
-                                                  'turning_vehicles':
-                                                      {'forward': turning_forward,
-                                                       'right': turning_right,
-                                                       'left': turning_left
-                                                       },
-                                                  'date_info': None
-                                                  }
+        # Initialize passing vehicles, waiting time and turning vehicles per queue
+        queue_info = {lane: {'num_passing_veh': 0, 'waiting_time_veh': 0.0} for lane in self._roads} if not queue_info \
+            else queue_info
+
+        self._historical_info[temporal_window] = {'contextual_info': queue_info,
+                                                  'date_info': None,
+                                                  'actual_program': self._actual_program}
 
     def increase_turning_vehicles(self, turn: str) -> None:
         """
@@ -114,10 +92,11 @@ class TrafficLightInfoStorage:
         :return: None
         """
 
-        self._cur_temporal_window = temporal_window
-
         # Update the date info for the current traffic light at a given temporal window
         self._historical_info[temporal_window]['date_info'] = date_info
+
+    def increase_temporal_window(self):
+        self._cur_temporal_window += 1
 
     """ EXTERNAL TRAFFIC COMPONENTS UTILS """
 
@@ -130,13 +109,15 @@ class TrafficLightInfoStorage:
         :return: dict with passing vehicles on NS and EW direction
         :rtype: dict
         """
-        # Copy the value from the historical info of the current timestep
-        traffic_info_dict = copy.deepcopy(self._historical_info[temporal_window])
 
-        # Add the actual program and the roads info
-        traffic_info_dict.update({'actual_program': self._actual_program, 'roads': self._roads})
+        # Create a list based on queue information
+        contextual_queue_info = [{'tl_id': self._tl_id, 'queue': queue_name,
+                                  'waiting_time_veh': queue_info['waiting_time_veh'],
+                                  'num_passing_veh': queue_info['num_passing_veh']}
+                                 for queue_name, queue_info in self._historical_info[temporal_window]
+                                 ['contextual_info'].items()]
 
-        return traffic_info_dict
+        return {'info': contextual_queue_info}
 
     def get_traffic_analyzer_info(self, temporal_window: int) -> dict:
         """
@@ -150,7 +131,7 @@ class TrafficLightInfoStorage:
         return {'passing_veh_n_s': self._historical_info[temporal_window]['passing_veh_n_s'],
                 'passing_veh_e_w': self._historical_info[temporal_window]['passing_veh_e_w']}
 
-    def get_traffic_predictor_info(self, temporal_window: int, date: bool = True) -> None:
+    def get_traffic_predictor_info(self, temporal_window: int, date: bool = True) -> dict:
         """
         Get the traffic predictor required information based on the type of traffic predictor
 
@@ -176,29 +157,29 @@ class TrafficLightInfoStorage:
 
     """ CLASS ATTRIBUTES UTILS """
 
-    def increase_passing_vehicles(self, direction: str, num_veh: int) -> None:
+    def increase_passing_vehicles(self, queue: str, num_veh: int) -> None:
         """
-        Increase the number of passing vehicles on the direction given at the current temporal window
+        Increase the number of passing vehicles on the queue given at the current temporal window
 
-        :param direction: direction. It can be "n_s" or "e_w"
-        :type direction: str
+        :param queue: input queue which is the name of the road.
+        :type queue: str
         :param num_veh: number of vehicles
         :type num_veh: int
         :return: None
         """
-        self._historical_info[self._cur_temporal_window]['passing_veh_' + direction] += num_veh
+        self._historical_info[self._cur_temporal_window]['contextual_info'][queue]['num_passing_veh'] += num_veh
 
-    def increase_waiting_time(self, direction: str, waiting_time: float) -> None:
+    def increase_waiting_time(self, queue: str, waiting_time: float) -> None:
         """
         Increase the waiting time on the given direction at the current temporal window
 
-        :param direction: direction. It can be "n_s" or "e_w"
-        :type direction: str
+        :param queue: input queue which is the name of the road.
+        :type queue: str
         :param waiting_time: waiting time
         :type waiting_time: float
         :return: None
         """
-        self._historical_info[self._cur_temporal_window]['waiting_time_veh_' + direction] += waiting_time
+        self._historical_info[self._cur_temporal_window]['contextual_info'][queue]['waiting_time_veh'] += waiting_time
 
     def update_passing_vehicles(self, passing_veh: set) -> None:
         """
@@ -226,28 +207,26 @@ class TrafficLightInfoStorage:
 
     """ SETTERS AND GETTERS """
 
-    '''
     @property
-    def temporal_window(self) -> int:
+    def cur_temporal_window(self) -> int:
         """
         Traffic Light Info Storage current temporal window getter
 
-        :return: temporal window
+        :return: current temporal window
         :rtype: int
         """
-        return self._temporal_window
+        return self._cur_temporal_window
 
-    @temporal_window.setter
-    def temporal_window(self, temporal_window: int) -> None:
+    @cur_temporal_window.setter
+    def cur_temporal_window(self, cur_temporal_window: int) -> None:
         """
         Traffic Light Info Storage current temporal window setter
 
-        :param temporal_window: new temporal window
-        :type temporal_window: int
+        :param cur_temporal_window: new temporal window
+        :type cur_temporal_window: int
         :return: None
         """
-        self._temporal_window = temporal_window
-    '''
+        self._cur_temporal_window = cur_temporal_window
 
     @property
     def historical_info(self) -> dict:
@@ -270,7 +249,7 @@ class TrafficLightInfoStorage:
         return self._vehicles_passed
 
     @property
-    def turning_vehicles_passed(self) -> dict:
+    def turning_vehicles_passed(self) -> set:
         """
         Traffic Light Info Storage turning vehicles passed getter
  
@@ -309,13 +288,3 @@ class TrafficLightInfoStorage:
         :rtype: str
         """
         return self._actual_program
-
-    @property
-    def topology_info(self) -> dict:
-        """
-        Traffic Light Info Storage topology info getter
-
-        :return: topology info
-        :rtype: dict
-        """
-        return self._topology_info
