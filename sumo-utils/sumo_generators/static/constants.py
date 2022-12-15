@@ -123,6 +123,19 @@ TURN_PREDICTION_TOPIC = 'turn_prediction'
 TRAFFIC_ANALYSIS_TOPIC = 'traffic_analysis'
 DEFAULT_QOS = 0
 
+# Topology database constants
+DB_IP_ADDRESS = '172.20.0.9:7687'
+DB_USER = 'neo4j'
+DB_PASSWORD = 'admin'
+
+# Eclipse SUMO default configuration file
+DEFAULT_CONFIG_FILE = '../config/simulation.sumocfg'
+
+# Default detector file
+DEFAULT_DETECTOR_FILE = 'detectors.add.xml'
+DEFAULT_DETECTOR_POS = 10.0
+DEFAULT_DETECTOR_FREQ = 1800
+
 # Monitoring temporal window in minutes
 DEFAULT_TEMPORAL_WINDOW = 5
 

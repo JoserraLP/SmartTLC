@@ -17,8 +17,10 @@ pip install -e .
 ```
 
 ## Usage
-The execution itself of the library utils is performed by executing the next command, in the "sumo_generators" folder:
+There are two main functionalities in this library: (1) generate the topology and (2) load the topology into the 
+database. Both are available on "sumo_generators" folder.
 
+### Grid Network generation 
 ```sh
 python config_generator.py <parameters>
 ```
@@ -77,3 +79,19 @@ Where the parameters defined are, grouped by its functionality:
 Note: in the script itself, all the parameters are grouped based on its functionality, but in this case
 it is not shown here in order to clarify its reading. If you want to see these groups execute the script 
 with the **-h** or **--help** argument.
+
+### Topology loader
+This execution process stores the topology network into the database specified. In this case it is Neo4j.
+
+Where the parameters defined are, grouped by its functionality:
+
+- **-h, --help**: show this help message and exit.
+- **--nogui**: flag to use either the SUMO GUI or not in the simulation process. By default, is set to *True*, which 
+  means that the GUI is not used.
+- **-c CONFIG_FILE, -–config CONFIG_FILE**: indicates the location of the SUMO configuration file. By default, is 
+  *“../config/simulation.sumocfg”*. 
+- ** Database parameters**:
+  - **--topology-db-ip TOPOLOGY_DB_IP**: topology database ip address with port. Default to "172.20.0.9:7687"
+  - **--topology-db-user TOPOLOGY_DB_USER**: topology database user. Default to "neo4j".
+  - **--topology-db-password TOPOLOGY_DB_PASSWORD**: topology database user password. Default to "admin"
+
