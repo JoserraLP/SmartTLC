@@ -3,7 +3,7 @@ import ast
 import paho.mqtt.client as mqtt
 from sumo_generators.static.constants import TRAFFIC_INFO_TOPIC, MQTT_PORT, MQTT_URL, TRAFFIC_ANALYSIS_TOPIC, \
     DEFAULT_TEMPORAL_WINDOW, FLOWS_VALUES
-from sumo_generators.utils.utils import parse_str_to_valid_schema
+from sumo_generators.utils.utils import parse_to_valid_schema
 
 
 def calculate_proportion_value(temporal_window: float) -> float:
@@ -116,7 +116,7 @@ class TrafficAnalyzer:
 
             # Publish the message
             self._mqtt_client.publish(topic=TRAFFIC_ANALYSIS_TOPIC + '/' + junction_id,
-                                      payload=parse_str_to_valid_schema(self._traffic_type))
+                                      payload=parse_to_valid_schema(self._traffic_type))
 
     def analyze_current_traffic_flow(self, passing_veh_n_s: int, passing_veh_e_w: int) -> int:
         """

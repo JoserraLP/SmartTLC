@@ -98,7 +98,7 @@ def generate_detectors(net_topology: NetworkTopology, detector_file: str) -> Non
             # Get lane length
             road_length = road.distance
             # Get valid pos as sometimes the road can be shorter than the distance specified
-            pos = str(road_length - 0.01) if DEFAULT_DETECTOR_POS > road_length else str(DEFAULT_DETECTOR_POS)
+            pos = str(road_length - 0.10) if DEFAULT_DETECTOR_POS > road_length else str(DEFAULT_DETECTOR_POS)
             # Created with default values
             detector = {'id': 'e1detector_' + road.name, 'lane': road.name, 'pos': pos,
                         'freq': str(DEFAULT_DETECTOR_FREQ),

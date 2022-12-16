@@ -4,7 +4,7 @@ import paho.mqtt.client as mqtt
 import pandas as pd
 from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, TRAFFIC_PREDICTION_TOPIC, TRAFFIC_INFO_TOPIC, \
     DEFAULT_TEMPORAL_WINDOW
-from sumo_generators.utils.utils import parse_str_to_valid_schema
+from sumo_generators.utils.utils import parse_to_valid_schema
 from t_predictor.ml.model_predictor import ModelPredictor
 from t_predictor.static.constants import DEFAULT_NUM_MODELS, MODEL_PARSED_VALUES_FILE, COLUMNS_DATE_PREDICTOR, \
     COLUMNS_CONTEXT_PREDICTOR
@@ -117,7 +117,7 @@ class TrafficPredictor:
 
             # Publish the message
             self._mqtt_client.publish(topic=TRAFFIC_PREDICTION_TOPIC + '/' + junction_id,
-                                      payload=parse_str_to_valid_schema(self._traffic_type))
+                                      payload=parse_to_valid_schema(self._traffic_type))
 
     def predict_traffic_type(self, traffic_info: dict) -> int:
         """

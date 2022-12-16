@@ -1,9 +1,8 @@
-def parse_str_to_valid_schema(input_info: str) -> str:
+def parse_to_valid_schema(input_info) -> str:
     """
-    Parse the input string to a valid middleware schema by replacing special characters
+    Parse the input to a valid middleware schema by replacing special characters
 
-    :param input_info: input string
-    :type input_info: str
+    :param input_info: input information
     :return: input string in valid format
     :rtype: str
     """
