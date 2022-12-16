@@ -1,3 +1,6 @@
+from statistics import mean
+
+
 class TrafficLightInfoStorage:
     """
     Traffic Light Info Storage  class to gather all the traffic related information 
@@ -41,8 +44,9 @@ class TrafficLightInfoStorage:
         :return: None
         """
         # Initialize passing vehicles, waiting time and turning vehicles per queue
-        queue_info = {lane: {'num_passing_veh': 0, 'waiting_time_veh': 0.0} for lane in self._roads} if not queue_info \
-            else queue_info
+        queue_info = {lane: {'num_passing_veh': 0, 'waiting_time_veh': 0.0, 'occupancy': [], 'CO2_emission': [],
+                             'CO_emission': [], 'HC_emission': [], 'PMx_emission': [], 'NOx_emission': [],
+                             'noise_emission': []} for lane in self._roads} if not queue_info else queue_info
 
         self._historical_info[temporal_window] = {'contextual_info': queue_info,
                                                   'date_info': None,
@@ -100,9 +104,9 @@ class TrafficLightInfoStorage:
 
     """ EXTERNAL TRAFFIC COMPONENTS UTILS """
 
-    def get_publish_info(self, temporal_window: int) -> dict:
+    def get_processed_contextual_info(self, temporal_window: int) -> dict:
         """
-        Process the traffic_info and date_info dictionaries to be formatted to a valid Telegraf schema
+        Process the values of contextual info calculating the average and sum values
 
         :param temporal_window: temporal window
         :type temporal_window: int
@@ -113,7 +117,14 @@ class TrafficLightInfoStorage:
         # Create a list based on queue information
         contextual_queue_info = [{'tl_id': self._tl_id, 'queue': queue_name,
                                   'waiting_time_veh': queue_info['waiting_time_veh'],
-                                  'num_passing_veh': queue_info['num_passing_veh']}
+                                  'num_passing_veh': queue_info['num_passing_veh'],
+                                  'avg_lane_occupancy': mean(queue_info['occupancy']),
+                                  'avg_CO2_emission': mean(queue_info['CO2_emission']),
+                                  'avg_CO_emission': mean(queue_info['CO_emission']),
+                                  'avg_HC_emission': mean(queue_info['HC_emission']),
+                                  'avg_PMx_emission': mean(queue_info['PMx_emission']),
+                                  'avg_NOx_emission': mean(queue_info['NOx_emission']),
+                                  'avg_noise_emission': mean(queue_info['noise_emission'])}
                                  for queue_name, queue_info in self._historical_info[temporal_window]
                                  ['contextual_info'].items()]
 
@@ -204,6 +215,20 @@ class TrafficLightInfoStorage:
 
     def get_traffic_info_by_temporal_window(self, temporal_window: int):
         return self._historical_info[temporal_window]
+
+    def append_item_on_list_queue(self, queue: str, name: str, value: float) -> None:
+        """
+        Append a new value into a list with the given name on the queue historical info
+
+        :param queue: queue name
+        :type queue: str
+        :param name: value name
+        :type name: str
+        :param value: item value
+        :type value: str
+        :return: None
+        """
+        self._historical_info[self._cur_temporal_window]['contextual_info'][queue][name].append(value)
 
     """ SETTERS AND GETTERS """
 

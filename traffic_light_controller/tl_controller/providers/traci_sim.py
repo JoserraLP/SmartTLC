@@ -244,6 +244,9 @@ class TraCISimulator:
             # Update waiting time per lane on each junction
             traffic_light.calculate_waiting_time_per_lane()
 
+            # Calculate emissions per lane on each junction
+            traffic_light.calculate_emissions_per_lane()
+
     def calculate_turns(self, load_vehicles_dir: str = '') -> None:
         """
         Calculate the turns if enabled based on the actual timestamp
@@ -301,8 +304,14 @@ class TraCISimulator:
             # Append date information
             traffic_light.insert_date_info(temporal_window=self._temporal_window, date_info=date_info)
 
+            # Retrieve contextual info
+            contextual_tl_info = traffic_light.get_processed_contextual_info()
+
             # Publish the contextual information
-            traffic_light.publish_contextual_info()
+            traffic_light.publish_contextual_info(contextual_tl_info=contextual_tl_info)
+
+            # Store traffic light contextual into the net topology
+            self._net_topology.update_lanes_info(traffic_light_id, contextual_queue_info=contextual_tl_info['info'])
 
             # Next components have the inner check if is available
 
@@ -369,7 +378,7 @@ class TraCISimulator:
                 # Calculate new date info
                 self._date_info = retrieve_date_info(timestep=self._cur_timestep, time_pattern=self._time_pattern)
 
-                # Update new date to the traffic lights and store new temporal window
+                # Update new date to the traffic lights, store new temporal window and road related info into the net db
                 for traffic_light_id, traffic_light in self._traffic_lights.items():
                     # Increase temporal window
                     traffic_light.increase_temporal_window()

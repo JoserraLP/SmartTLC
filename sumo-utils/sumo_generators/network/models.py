@@ -29,8 +29,15 @@ class LaneRelation(StructuredRel):
     slope = FloatProperty(default=0.0)
     # Maximum speed allowed
     max_speed = FloatProperty(default=50.0)
-    # Traffic density -> Only if there is a sensor associated to next junction
-    traffic_density = FloatProperty(default=-1.0)
+    # Average lane occupancy -> Only if there is a sensor associated to next junction
+    avg_lane_occupancy = FloatProperty(default=0.0)
+    # Average emission properties: CO2, CO, HCE, PMx, NOx, Noise
+    avg_CO2_emission = FloatProperty(default=-1.0)
+    avg_CO_emission = FloatProperty(default=-1.0)
+    avg_HC_emission = FloatProperty(default=-1.0)
+    avg_PMx_emission = FloatProperty(default=-1.0)
+    avg_NOx_emission = FloatProperty(default=-1.0)
+    avg_noise_emission = FloatProperty(default=-1.0)
 
 
 class SensorToJunctionRelation(StructuredRel):
@@ -68,6 +75,7 @@ class TrafficLight(Junction):
     # Relation to an adjacent TrafficLight using the AdjacentTLRelation relationship
     adjacent_to = RelationshipTo('TrafficLight', "ADJACENT_TO", model=AdjacentTLRelation)
 
+
 # There could be several detectors:
 # Store geolocation with a radius action (e.g. zenith cameras)
 # Type of sensor by its action area -> Single point (Passing detector), Rectangular (camera),
@@ -85,6 +93,3 @@ class E1Detector(StructuredNode):
     freq = FloatProperty(default=1.0)
     # Relation to a specific Junction using the SensorToJunctionRelation
     to_junction = RelationshipTo('Junction', "TO_JUNCTION", model=SensorToJunctionRelation)
-
-
-

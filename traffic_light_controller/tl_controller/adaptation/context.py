@@ -49,8 +49,11 @@ class TrafficLightAdapter:
         # Initialize temporal window to 0
         self._cur_temporal_window = 0
 
+        # Store network topology db connection
+        self._net_topology = net_topology
+
         # Retrieve connected roads from the database
-        self._outbound_roads, self._inbound_roads = net_topology.get_tl_roads(tl_name=self._tl_id)
+        self._outbound_roads, self._inbound_roads = self._net_topology.get_tl_roads(tl_name=self._tl_id)
 
         # Roads used primarily are the inbound roads to calculate the required information.
 
@@ -143,6 +146,28 @@ class TrafficLightAdapter:
 
         # Update the previous waiting time to the current waiting time
         self._prev_waiting_time = current_waiting_time
+
+    def calculate_emissions_per_lane(self) -> None:
+        """
+        Calculate the emissions per lane.
+
+        :return: dict
+        """
+        # Iterate over the lanes
+        for lane in self._inbound_roads:
+
+            # Store lane info dict
+            lane_dict = {'occupancy': self._traci.lane.getLastStepOccupancy(lane.name),
+                         'CO2_emission': self._traci.lane.getCO2Emission(lane.name),
+                         'CO_emission': self._traci.lane.getCOEmission(lane.name),
+                         'HC_emission': self._traci.lane.getHCEmission(lane.name),
+                         'PMx_emission': self._traci.lane.getPMxEmission(lane.name),
+                         'NOx_emission': self._traci.lane.getNOxEmission(lane.name),
+                         'noise_emission': self._traci.lane.getNoiseEmission(lane.name)}
+
+            # Insert into the historical info
+            for k, v in lane_dict.items():
+                self._traffic_light_info[self._tl_id].append_item_on_list_queue(queue=lane.name, name=k, value=v)
 
     def remove_passing_vehicles(self) -> None:
         """
@@ -283,20 +308,20 @@ class TrafficLightAdapter:
         self._cur_temporal_window += 1
         self._traffic_light_info[self._tl_id].increase_temporal_window()
 
-    def publish_contextual_info(self) -> None:
+    def publish_contextual_info(self, contextual_tl_info: dict) -> None:
         """
-        Publish the traffic light contextual information
+        Publish the traffic light contextual information into the middleware and store it into the db
 
+        :param contextual_tl_info: contextual traffic light info
+        :type contextual_tl_info: dict
         :return: None
         """
         # If it is deployed
         if not self._local:
-            # Get processed publish info
-            publish_info = self._traffic_light_info[self._tl_id].get_publish_info(self._cur_temporal_window)
 
-            # Publish info
+            # Publish info appending tag 'info' for Telegraf
             self._mqtt_client.publish(topic=TRAFFIC_INFO_TOPIC + '/' + self._tl_id,
-                                      payload=parse_to_valid_schema(publish_info))
+                                      payload=parse_to_valid_schema(contextual_tl_info))
 
     def get_traffic_info_by_temporal_window(self, temporal_window: int):
         """
@@ -304,6 +329,13 @@ class TrafficLightAdapter:
         """
         return self._traffic_light_info[self._tl_id].get_traffic_info_by_temporal_window(
             temporal_window=temporal_window)
+
+    def get_processed_contextual_info(self) -> None:
+        """
+        Get processed contextual info for current temporal window, with average values
+        """
+        return self._traffic_light_info[self._tl_id].get_processed_contextual_info(temporal_window=
+                                                                                   self._cur_temporal_window)
 
     def create_historical_traffic_info(self, temporal_window: int, queue_info: dict = None) -> None:
         """

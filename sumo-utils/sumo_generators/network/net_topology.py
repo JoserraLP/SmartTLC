@@ -299,3 +299,34 @@ class NetworkTopology:
 
         # Return roads as list
         return [outbound_roads, inbound_roads]
+
+    # UPDATE METHODS
+    def update_lanes_info(self, tl_id: str, contextual_queue_info: dict):
+        """
+        Update data related to the lanes connected to a traffic light
+        """
+
+        # Create the query for retrieving the lanes
+        query = "MATCH (n: TrafficLight {name: '" + tl_id + "'})<-[r:LANE_TO]-(m) RETURN r;"
+
+        # Perform query
+        results, _ = self._db.cypher_query(query)
+
+        # Process the result
+        lanes = [LaneRelation.inflate(lane[0]) for lane in results]
+
+        # Iterate over the contextual_queue_info
+        for queue_info in contextual_queue_info:
+            # Get lane info and store the values
+            lane = [lane for lane in lanes if lane.name == queue_info['queue']][0]
+
+            # Store properties
+            lane.avg_lane_occupancy = round(queue_info['avg_lane_occupancy'], 2)
+            lane.avg_CO2_emission = queue_info['avg_CO2_emission']
+            lane.avg_CO_emission = queue_info['avg_CO_emission']
+            lane.avg_HC_emission = queue_info['avg_HC_emission']
+            lane.avg_PMx_emission = queue_info['avg_PMx_emission']
+            lane.avg_NOx_emission = queue_info['avg_NOx_emission']
+            lane.avg_noise_emission = queue_info['avg_noise_emission']
+            # Save the data
+            lane.save()
