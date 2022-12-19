@@ -6,7 +6,7 @@ class TrafficLightInfoStorage:
     Traffic Light Info Storage  class to gather all the traffic related information 
     """
 
-    def __init__(self, tl_id: str, actual_program: str = '', roads: list = None) -> None:
+    def __init__(self, tl_id: str, actual_program: str = '', lanes: list = None) -> None:
         """
         TrafficInfoStorage initializer
 
@@ -14,12 +14,12 @@ class TrafficLightInfoStorage:
         :type tl_id: str
         :param actual_program: actual traffic light program. Default to ''.
         :type actual_program: str
-        :param roads: roads names list
-        :type roads: list
+        :param lanes: lanes names list
+        :type lanes: list
         :return: None
         """
         # Initialize non-default values
-        self._roads = [] if not roads else [road.name for road in roads]
+        self._lanes = [] if not lanes else lanes
 
         # Vehicles passed and turning vehicles passed on the traffic light
         self._vehicles_passed, self._turning_vehicles_passed = set(), set()
@@ -43,11 +43,14 @@ class TrafficLightInfoStorage:
 
         :return: None
         """
-        # Initialize passing vehicles, waiting time and turning vehicles per queue
-        queue_info = {lane: {'num_passing_veh': 0, 'waiting_time_veh': 0.0, 'occupancy': [], 'CO2_emission': [],
-                             'CO_emission': [], 'HC_emission': [], 'PMx_emission': [], 'NOx_emission': [],
-                             'noise_emission': []} for lane in self._roads} if not queue_info else queue_info
+        # If queue info does not have information
+        if not queue_info:
+            # Initialize passing vehicles, waiting time and turning vehicles per queue
+            queue_info = {lane: {'num_passing_veh': 0, 'waiting_time_veh': 0.0, 'occupancy': [], 'CO2_emission': [],
+                                 'CO_emission': [], 'HC_emission': [], 'PMx_emission': [], 'NOx_emission': [],
+                                 'noise_emission': []} for lane in self._lanes} if not queue_info else queue_info
 
+        # Store information into the dict
         self._historical_info[temporal_window] = {'contextual_info': queue_info,
                                                   'date_info': None,
                                                   'actual_program': self._actual_program}
@@ -213,7 +216,15 @@ class TrafficLightInfoStorage:
         self._vehicles_passed.difference_update(vehicles)
         self._turning_vehicles_passed.difference_update(vehicles)
 
-    def get_traffic_info_by_temporal_window(self, temporal_window: int):
+    def get_traffic_info_by_temporal_window(self, temporal_window: int) -> dict:
+        """
+        Get traffic info related to a given temporal window
+
+        :param temporal_window: temporal window to retrieve the information
+        :type temporal_window: int
+        :return: historical traffic information
+        :rtype: dict
+        """
         return self._historical_info[temporal_window]
 
     def append_item_on_list_queue(self, queue: str, name: str, value: float) -> None:
@@ -284,25 +295,25 @@ class TrafficLightInfoStorage:
         return self._turning_vehicles_passed
 
     @property
-    def roads(self) -> list:
+    def lanes(self) -> list:
         """
-        Traffic Light Info Storage roads getter
+        Traffic Light Info Storage lanes getter
 
-        :return: roads ids
+        :return: lanes ids
         :rtype: list
         """
-        return self._roads
+        return self._lanes
 
-    @roads.setter
-    def roads(self, roads: list) -> None:
+    @lanes.setter
+    def lanes(self, lanes: list) -> None:
         """
-        Traffic Light Info Storage roads setter
+        Traffic Light Info Storage lanes setter
 
-        :param roads: roads names list
-        :type roads: list
+        :param lanes: lanes names list
+        :type lanes: list
         :return: None
         """
-        self._roads = roads
+        self._lanes = lanes
 
     @property
     def actual_program(self) -> str:
