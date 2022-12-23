@@ -62,6 +62,8 @@ class Junction(StructuredNode):
     cartesian_point = PointProperty(crs='cartesian')
     # Geospatial -> Latitude and Longitude -> Relative to world coordinates
     geospatial_point = PointProperty(crs='wgs-84')
+    # Junction type
+    junction_type = StringProperty(default='')
     # Relation to another Junction using the LaneRelation relationship
     lane_to = RelationshipTo('Junction', "LANE_TO", model=LaneRelation)
 

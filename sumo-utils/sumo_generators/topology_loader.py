@@ -1,14 +1,9 @@
-import os
-
-import traci
-from sumolib import checkBinary
 import platform
-
 import xml.etree.cElementTree as ET
 
-from xml.dom import minidom
-
 import pandas as pd
+import traci
+from sumolib import checkBinary
 
 from sumo_generators.generators.detectors_generator import DetectorsGenerator
 from sumo_generators.network.models import TrafficLight
@@ -140,10 +135,12 @@ def process_topology_files(config_file: str) -> None:
     if 'osm' in config_file_name:
         # Guess TL
         os.system(f"netconvert --osm {base_dir}osm_bbox.osm.xml -o {base_dir}osm.net.xml --geometry.remove "
-                  f"--ramps.guess --junctions.join --tls.guess-signals --tls.discard-simple ")
+                  f"--ramps.guess --junctions.join --tls.guess-signals --tls.discard-simple --fringe.guess")
 
-        # Remove pedestrian areas. Execute afterwards as some TL are guessed based on pedestrian lanes
-        os.system(f"netconvert -s {base_dir}osm.net.xml -o {base_dir}osm.net.xml --remove-edges.by-vclass pedestrian")
+        # Execute afterwards as some TL are guessed based on pedestrian lanes.
+        # Remove pedestrian areas, bicycle, tram, rail_urban, rail, rail_electric, rail_fast, ship
+        os.system(f"netconvert -s {base_dir}osm.net.xml -o {base_dir}osm.net.xml "
+                  f"--remove-edges.by-vclass pedestrian,bicycle,tram,rail_urban,rail,rail_electric,rail_fast,ship")
 
     # Generate the topology edges on plain text
     os.system(f"netconvert -s {base_dir}{topology_file} --plain-output-prefix {base_dir}plain")

@@ -6,6 +6,24 @@ from sumo_generators.network.models import TrafficLight, Junction, LaneRelation,
     SensorToJunctionRelation
 
 
+def create_outer_junction_info(info: list) -> dict:
+    """
+    Create an outer junction info dict
+
+    :param info: junction information
+    :type info: list
+    :return: outer junction info and its edges
+    :rtype: dict
+    """
+    outer_junction_info = {'from': info[0], 'to': info[1]}
+    if len(info) == 4:
+        # On both edges, remove the lanes id "_X"
+        outer_junction_info['from_edge'] = '_'.join(info[2].split('_')[:-1])
+        outer_junction_info['to_edge'] = '_'.join(info[3].split('_')[:-1])
+
+    return outer_junction_info
+
+
 class NetworkTopology:
     """
     Network Topology class connection to Neo4J database
@@ -93,12 +111,16 @@ class NetworkTopology:
                                                           longitude=geographical_point_lon,
                                                           crs='wgs-84')).save()
         else:
+            # Create junction type based on it is outer fringe (dead end) or other type
+            junction_type = 'dead_end' if 'node_fringe' in junction and junction['node_fringe'] == 'outer' \
+                else junction['node_type']
+
             # Create junction
             Junction(name=name, cartesian_point=NeomodelPoint(x=cartesian_point_x, y=cartesian_point_y,
                                                               crs='cartesian'),
                      geographical_point=NeomodelPoint(latitude=geographical_point_lat,
                                                       longitude=geographical_point_lon,
-                                                      crs='wgs-84')).save()
+                                                      crs='wgs-84'), junction_type=junction_type).save()
 
     def create_edge(self, edge: pd.Series) -> None:
         """
@@ -299,6 +321,42 @@ class NetworkTopology:
 
         # Return roads as list
         return [outbound_roads, inbound_roads]
+
+    @staticmethod
+    def get_outer_junctions(bound: str, edges: bool = False) -> list:
+        """
+        Get outer outbound and inbound junctions
+
+        :param bound: type of bound. It can be 'inbound' or 'outbound'
+        :type bound: str
+        :param edges: flag to return related edges
+        :type edges: bool
+        :return: outer junctions
+        :rtype: list
+        """
+        if bound not in ['inbound', 'outbound']:
+            raise Exception("Bound parameter is not valid. It should be 'inbound' or 'outbound'")
+
+        # Retrieve type of bound and create the relation query
+        relation_query = "<-[r:LANE_TO]-" if bound == 'outbound' else "-[r:LANE_TO]->"
+        # Add edge fields to query
+        edges_query = "-[s:LANE_TO]->(:Junction)" if edges else ""
+        add_edges_info = ",r.name,s.name" if edges else ""
+
+        # Get all outer junctions
+        query = f"MATCH (n:Junction){relation_query}(m:Junction){edges_query} WHERE n.junction_type = 'dead_end' " \
+                f"RETURN DISTINCT n.name, m.name{add_edges_info};"
+
+        # Perform the query
+        results, meta = db.cypher_query(query)
+
+        # Get all inbound outer junctions
+        outer_junctions = [create_outer_junction_info(result) for result in [item for item in results]]
+
+        # Remove duplicate values and reset index
+        outer_junctions_pd = pd.DataFrame(outer_junctions).drop_duplicates().reset_index(drop=True)
+
+        return outer_junctions_pd.to_dict(orient='records')
 
     # UPDATE METHODS
     def update_lanes_info(self, tl_id: str, contextual_queue_info: dict):
