@@ -60,58 +60,48 @@ TIMESTEPS_PER_HALF_HOUR = 1800  # Half hour is 1800 seconds
 
 # Flows variables and its values
 FLOWS_VALUES = {
-    'high': {
-        'vehsPerHour': 500,
-        'vehs_range': 150
-    },
-    'med': {
-        'vehsPerHour': 150,
-        'vehs_range': 45
+    'very_low': {
+        'vehsPerHour': 3,
+        'vehs_range': 2
     },
     'low': {
         'vehsPerHour': 20,
         'vehs_range': 6
     },
-    'very_low': {
-        'vehsPerHour': 3,
-        'vehs_range': 2
+    'med': {
+        'vehsPerHour': 100,
+        'vehs_range': 40
+    },
+    'high': {
+        'vehsPerHour': 300,
+        'vehs_range': 100
+    },
+    'very_high': {
+        'vehsPerHour': 700,
+        'vehs_range': 250
     }
 }
-
-# Traffic type relation
-TRAFFIC_TYPE_RELATION = {
-    # (NS, EW)
-    0: ('very_low', 'very_low'),
-    1: ('very_low', 'low'),
-    2: ('low', 'very_low'),
-    3: ('low', 'low'),
-    4: ('low', 'med'),
-    5: ('low', 'high'),
-    6: ('med', 'low'),
-    7: ('med', 'med'),
-    8: ('med', 'high'),
-    9: ('high', 'low'),
-    10: ('high', 'med'),
-    11: ('high', 'high'),
-}
-
-
-# Number of traffic types
-NUM_TRAFFIC_TYPES = len(TRAFFIC_TYPE_RELATION)
 
 # Available traffic types
 TRAFFIC_TYPES = {
     'very_low': 0,
     'low': 1,
     'med': 2,
-    'high': 3
+    'high': 3,
+    'very_high': 4
 }
 
+# Number of traffic types
+NUM_TRAFFIC_TYPES = len(TRAFFIC_TYPES)
+
+TRAFFIC_TYPE_RELATION = {}
 
 # Grid network 1x1 parser
 GRID_1x1_DICT = {
-    'c1_c0': [('n1', 'right', 'c1_w1'), ('s1', 'left', 'c1_w1'), ('s1', 'forward', 'c1_n1'), ('e1', 'forward', 'c1_w1')],
-    'c1_c2': [('n1', 'forward', 'c1_s1'), ('w1', 'right', 'c1_s1'), ('w1', 'forward', 'c1_e1'), ('e1', 'left', 'c1_s1')],
+    'c1_c0': [('n1', 'right', 'c1_w1'), ('s1', 'left', 'c1_w1'), ('s1', 'forward', 'c1_n1'),
+              ('e1', 'forward', 'c1_w1')],
+    'c1_c2': [('n1', 'forward', 'c1_s1'), ('w1', 'right', 'c1_s1'), ('w1', 'forward', 'c1_e1'),
+              ('e1', 'left', 'c1_s1')],
 }
 
 # MQTT constants

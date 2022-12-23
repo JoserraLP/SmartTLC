@@ -35,10 +35,14 @@ class FlowsGenerator(BaseGenerator):
         # Iterate over the flows retrieving the identifier and the flow
         for flow_id, flow in enumerate(self._flows):
             # Add tags to each flow
+
             flow_tag = ET.SubElement(self._root, "flow", id=str(flow_id), begin=str(flow['begin']),
-                                     end=str(flow['end']), to=flow['to'], vehsPerHour=str(flow['vehsPerHour']))
+                                     end=str(flow['end']), vehsPerHour=str(flow['vehsPerHour']))
             # This attribute is set in this way because the keyword "from" is reserved on Python
             flow_tag.set('from', flow['from'])
+            # Check if the 'to' value is on the flow
+            if 'to' in flow:
+                flow_tag.set('to', flow['to'])
 
     def clean_flows(self) -> None:
         """

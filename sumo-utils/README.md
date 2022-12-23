@@ -17,8 +17,9 @@ pip install -e .
 ```
 
 ## Usage
-There are two main functionalities in this library: (1) generate the topology and (2) load the topology into the 
-database. Both are available on "sumo_generators" folder.
+There are three main functionalities in this library: (1) generate the topology; (2) load the topology into the 
+database. Both are available on "sumo_generators" folder; and (3) generate vehicles routes and flows based on turns 
+definitions.
 
 ### Grid Network generation 
 ```sh
@@ -31,7 +32,6 @@ This execution process generates the following files:
     - Network edges file.
     - Network nodes file.
 - SUMO simulation configuration file.
-- Vehicle flows file.
 - Traffic light algorithms file.
 
 Where the parameters defined are, grouped by its functionality:
@@ -70,12 +70,7 @@ Where the parameters defined are, grouped by its functionality:
   - **-i INTERVAL, --interval INTERVAL**: interval of seconds to be used in the traffic light generator. 
   - **-p, --proportion**: flag to use proportions in the traffic light generator. Default to *True*
   - **--allow-add-turn-phases**: flag allowing left turns in traffic light phases. Default to *False*.  
-    
-- **Flows generator**:
-  - **--time-pattern TIME_PATTERN_PATH**: define the path where the time pattern file is stored to create the flows.
-  - **--dates DATES**: indicates the range of dates, retrieved from the generated calendar, that will be simulated. 
-  The format is *dd/mm/yyyy-dd/mm/yyyy*, where the first date is the start, and the second one is the end, both included.
-  
+
 Note: in the script itself, all the parameters are grouped based on its functionality, but in this case
 it is not shown here in order to clarify its reading. If you want to see these groups execute the script 
 with the **-h** or **--help** argument.
@@ -90,8 +85,32 @@ Where the parameters defined are, grouped by its functionality:
   means that the GUI is not used.
 - **-c CONFIG_FILE, -–config CONFIG_FILE**: indicates the location of the SUMO configuration file. By default, is 
   *“../config/simulation.sumocfg”*. 
-- ** Database parameters**:
+- **Database parameters**:
   - **--topology-db-ip TOPOLOGY_DB_IP**: topology database ip address with port. Default to "172.20.0.9:7687"
   - **--topology-db-user TOPOLOGY_DB_USER**: topology database user. Default to "neo4j".
   - **--topology-db-password TOPOLOGY_DB_PASSWORD**: topology database user password. Default to "admin"
 
+
+### Routes generator
+This execution process generates the route file based on turn definitions for a given network topology and time 
+pattern.
+
+Generated files are:
+- **flows.rou.xml**: where the routes per vehicle are stored.
+- **flows.rou.xml.flows**: where the flows per interval are stored.
+- **output.turndefs.xml**: where the turn probabilities per edge are stored.
+
+Where the parameters defined are, grouped by its functionality:
+
+- **-h, --help**: show this help message and exit.
+- **-o OUTPUT_FOLDER, -–output-folder OUTPUT_FOLDER**: indicates the location of the output folder where the files will 
+be generated and the network topology is stored. By default, is  *“../config/”*.
+- **Database parameters**:
+  - **--topology-db-ip TOPOLOGY_DB_IP**: topology database ip address with port. Default to "172.20.0.9:7687"
+  - **--topology-db-user TOPOLOGY_DB_USER**: topology database user. Default to "neo4j".
+  - **--topology-db-password TOPOLOGY_DB_PASSWORD**: topology database user password. Default to "admin"
+- **Flows generator**:
+  - **--time-pattern TIME_PATTERN_PATH**: define the path where the time pattern file is stored to create the flows.
+  - **--dates DATES**: indicates the range of dates, retrieved from the generated calendar, that will be simulated. 
+  The format is *dd/mm/yyyy-dd/mm/yyyy*, where the first date is the start, and the second one is the end, both included.
+  

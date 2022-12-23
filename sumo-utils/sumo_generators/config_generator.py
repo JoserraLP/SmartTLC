@@ -1,5 +1,5 @@
 from sumo_generators.generators.utils import generate_detector_file, generate_tl_file, generate_network_file, \
-    generate_flow_file, generate_sumo_config_file, generate_simulation_flow_file
+    generate_sumo_config_file
 from sumo_generators.static.argparse_types import *
 from sumo_generators.static.constants import *
 
@@ -46,11 +46,6 @@ def get_options():
     output_files_group.add_argument("-o", "--output-network", dest="network_path", action="store",
                                     default=DEFAULT_NET_DIR, type=str,
                                     help=f"path where the network file is created. Default is {DEFAULT_NET_DIR}")
-
-    # Flows file path
-    output_files_group.add_argument("-f", "--flows-path", dest="flows_path", action="store",
-                                    default=DEFAULT_ROUTE_DIR, type=str,
-                                    help=f"path where the flows file is created. Default is {DEFAULT_ROUTE_DIR}")
 
     # SUMO config file path
     output_files_group.add_argument("-s", "--sumo-config-path", dest="sumo_config_path", action='store',
@@ -106,19 +101,6 @@ def get_options():
                                             help="flag to allow additional phases on turns "
                                                  f"in the traffic light generator. Default is {ALLOW_TURNS}")
 
-    # Flows Generator
-    flows_generator_group = arg_parser.add_argument_group("Flows generator",
-                                                          description="Parameters related to the flows generation")
-    flows_generator_group.add_argument("--time-pattern", dest="time_pattern_path", action='store',
-                                       type=str, help=f"time pattern to create the flows.")
-
-    flows_generator_group.add_argument("--dates", dest="dates", action="store", type=str,
-                                       help="calendar dates from start to end to simulate. Format is "
-                                            "dd/mm/yyyy-dd/mm/yyyy.")
-
-    flows_generator_group.add_argument("--turn-pattern", dest="turn_pattern_path", action="store", type=check_file,
-                                       help="turn pattern input file.")
-
     # Retrieve the arguments parsed
     args = arg_parser.parse_args()
     return args
@@ -149,18 +131,3 @@ if __name__ == '__main__':
     # Generate the SUMO config file
     generate_sumo_config_file(sumo_config_path=exec_options.sumo_config_path, network_path=exec_options.network_path,
                               tll_path=exec_options.tl_program_path, detector_path=exec_options.detector_path)
-
-    if exec_options.dates:
-        # Generate flow file based on date interval
-        generate_flow_file(dates=exec_options.dates, flows_path=exec_options.flows_path,
-                           rows=exec_options.rows, cols=exec_options.cols)
-    elif exec_options.time_pattern_path:
-        # Generate flow file based on time pattern
-        generate_flow_file(time_pattern_path=exec_options.time_pattern_path, flows_path=exec_options.flows_path,
-                           rows=exec_options.rows, cols=exec_options.cols)
-
-    # Start a simulation and update the flow file
-    generate_simulation_flow_file(turn_pattern_file=exec_options.turn_pattern_path,
-                                  sumo_config_file=exec_options.sumo_config_path,
-                                  time_pattern_file=exec_options.time_pattern_path, dates=exec_options.dates,
-                                  flows_file=exec_options.flows_path)
