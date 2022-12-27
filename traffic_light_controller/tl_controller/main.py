@@ -51,8 +51,6 @@ def get_options():
                             help="time pattern input file. Do not use it with the dates parameter.")
     arg_parser.add_argument("-d", "--dates", dest="dates", action="store", type=check_valid_format,
                             help="calendar dates from start to end to simulate. Format is dd/mm/yyyy-dd/mm/yyyy.")
-    arg_parser.add_argument("--turn-pattern", dest="turn_pattern", action="store", type=check_file,
-                            help="turn pattern input file.")
     arg_parser.add_argument("-l", "--load-vehicles", action="store", default=False, dest="load_vehicles_dir",
                             type=check_file,
                             help="directory from where the vehicles routes will be load. Default to False.")
@@ -110,11 +108,10 @@ if __name__ == "__main__":
     # Create the TraCI Traffic simulator based on time pattern or dates
     if exec_options.time_pattern:
         traci_sim = TraCISimulator(sumo_conf=sim_args, time_pattern_file=exec_options.time_pattern,
-                                   turn_pattern_file=exec_options.turn_pattern, local=exec_options.local,
-                                   mqtt_url=exec_options.mqtt_url, mqtt_port=exec_options.mqtt_port)
+                                   local=exec_options.local, mqtt_url=exec_options.mqtt_url,
+                                   mqtt_port=exec_options.mqtt_port)
     elif exec_options.dates:
-        traci_sim = TraCISimulator(sumo_conf=sim_args, dates=exec_options.dates,
-                                   turn_pattern_file=exec_options.turn_pattern, local=exec_options.local,
+        traci_sim = TraCISimulator(sumo_conf=sim_args, dates=exec_options.dates, local=exec_options.local,
                                    mqtt_url=exec_options.mqtt_url, mqtt_port=exec_options.mqtt_port)
 
     # Get simulation params

@@ -30,25 +30,6 @@ class TimePattern:
         if time_pattern_id < len(self._pattern):
             return self._pattern.loc[time_pattern_id]['traffic_type']
 
-    def retrieve_turn_prob(self, simulation_timestep: int) -> pd.DataFrame:
-        """
-        Retrieve the turn probabilities given a simulation time step.
-
-        :param simulation_timestep: current simulation time_pattern_id
-        :type simulation_timestep: int
-        :return: DataFrame with turn probabilities (right, left and forward)
-        :rtype: DataFrame
-        """
-        # Calculate the time pattern id
-        time_pattern_id = math.floor(simulation_timestep / TIMESTEPS_PER_HALF_HOUR)
-
-        # If index is valid
-        if time_pattern_id < len(self._pattern):
-            # Retrieve turn probabilities
-            if 'turn_right' or 'turn_left' or 'turn_forward' in self._pattern.columns:
-                # Index for relevant columns (from 4 to the last columns) -> Turns fields
-                return self._pattern.iloc[time_pattern_id, 4:]
-
     def get_pattern_info(self, simulation_timestep: int, fields: list) -> dict:
         """
         Retrieve the related date info given a simulation time step.

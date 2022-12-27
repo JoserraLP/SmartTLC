@@ -18,14 +18,12 @@ class TraCISimulator:
     Traffic Light Controller class
     """
 
-    def __init__(self, sumo_conf, turn_pattern_file: str, time_pattern_file: str = '', dates: str = '',
+    def __init__(self, sumo_conf, time_pattern_file: str = '', dates: str = '',
                  mqtt_url: str = MQTT_URL, mqtt_port: int = MQTT_PORT, local: bool = False):
         """
         TraCISimulator initializer.
 
         :param sumo_conf: SUMO configuration
-        :param turn_pattern_file: turn pattern input file.
-        :type turn_pattern_file: str
         :param time_pattern_file: time pattern input file. Default is ''.
         :type time_pattern_file: str
         :param dates: time pattern input file. Default is ''.
@@ -48,12 +46,6 @@ class TraCISimulator:
             self._time_pattern = TimePattern(file_dir=DEFAULT_TIME_PATTERN_FILE)
             start_date, end_date = dates.split('-')
             self._time_pattern.retrieve_pattern_days(start_date=start_date, end_date=end_date)
-
-        # Define the turn pattern
-        if turn_pattern_file:
-            self._turn_pattern = TimePattern(file_dir=turn_pattern_file)
-        else:
-            self._turn_pattern = None
 
         # SUMO configuration files
         self._config_file, self._sumo_binary = sumo_conf['config_file'], sumo_conf['sumo_binary']
@@ -247,31 +239,6 @@ class TraCISimulator:
             # Calculate emissions per lane on each junction
             traffic_light.calculate_emissions_per_lane()
 
-    def calculate_turns(self, load_vehicles_dir: str = '') -> None:
-        """
-        Calculate the turns if enabled based on the actual timestamp
-
-        :param load_vehicles_dir: directory to load the vehicles flows.
-        :type load_vehicles_dir: str
-        :return: None
-        """
-
-        # If vehicles are not loaded means that they need to calculate the new route based on the turn pattern
-        if not load_vehicles_dir and self._turn_pattern:
-            # Retrieve turn probabilities by edges
-            turn_prob_by_edges = retrieve_turn_prob_by_edge(traci=traci,
-                                                            turn_prob=self._turn_pattern.retrieve_turn_prob(
-                                                                simulation_timestep=self._cur_timestep))
-
-            # Update current vehicles routes to enable turns, using the network topology
-            # Insert the traffic info to store the number of turning vehicles
-            self._net_topology.update_route_with_turns(traffic_lights=self._traffic_lights,
-                                                       turn_prob_by_edges=turn_prob_by_edges)
-
-        else:
-            # Otherwise calculate the number of turning vehicles as they are loaded, using the network topology
-            self._net_topology.calculate_turning_vehicles(traffic_lights=self._traffic_lights)
-
     def process_publish_traffic_information(self, summary_waiting_time: int, summary_veh_passed: int,
                                             date_info: dict) -> None:
         """
@@ -324,12 +291,10 @@ class TraCISimulator:
             # Publish traffic type predictors information
             traffic_light.publish_traffic_type_prediction()
 
-    def simulate(self, load_vehicles_dir: str = ''):
+    def simulate(self):
         """
         Perform the simulations by a time pattern with TraCI.
 
-        :param load_vehicles_dir: directory to load the vehicles flows.
-        :type load_vehicles_dir: str
         :return: None
         """
 
@@ -346,7 +311,8 @@ class TraCISimulator:
             # Update and monitor the traffic light behavior
             self.monitor_adapt_traffic_lights()
 
-            # self.calculate_turns(load_vehicles_dir=load_vehicles_dir)
+            # Calculate the number of turning vehicles as they are loaded, using the network topology
+            self._net_topology.calculate_turning_vehicles(traffic_lights=self._traffic_lights)
 
             # Store info each time interval
             if self._cur_timestep % TIMESTEPS_TO_STORE_INFO == 0:
