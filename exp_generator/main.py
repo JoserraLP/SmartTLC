@@ -1,12 +1,13 @@
 import argparse
 import os
 import stat
+import platform
 from pathlib import Path
 
 from sumo_generators.static.constants import DEFAULT_NODES_FILENAME, DEFAULT_EDGES_FILENAME, DEFAULT_NET_FILENAME, \
     DEFAULT_DET_FILENAME, DEFAULT_TLL_FILENAME, DEFAULT_ROUTE_FILENAME, DEFAULT_CONFIG_FILENAME
 
-from argparse_types import check_file, check_dimension, check_valid_format, check_os
+from argparse_types import check_file, check_dimension, check_valid_format
 from constants import *
 
 
@@ -56,9 +57,6 @@ def get_options():
     # Define the arguments options
     arg_parser.add_argument("-o", "--output-dir", dest="output_directory", action='store',
                             help="output directory location.", required=True)
-
-    arg_parser.add_argument("--os", dest="os", action='store', default="ubuntu",
-                            help="operative system. Can be windows or ubuntu (default).", type=check_os)
 
     # Topology parameters
     topology_group = arg_parser.add_argument_group("Network topology parameters",
@@ -137,9 +135,9 @@ if __name__ == '__main__':
     os.system(command)
 
     # Retrieve OS by parameter
-    os_experiment = exec_options.os
+    os_experiment = platform.system()
 
-    file_extension = '.bat' if os_experiment == 'windows' else '.sh'
+    file_extension = '.bat' if os_experiment == 'Windows' else '.sh'
 
     # 2. Create sh file per each adaptation
     for adaptation, tl_components in ADAPTATION_APPROACHES.items():
@@ -147,7 +145,7 @@ if __name__ == '__main__':
         file_str, adaptation_name, tlc_pattern = ADAPTATION_FILE_SCHEMA, 'example_' + adaptation, ''
 
         # Windows
-        if os_experiment == "windows":
+        if os_experiment == "Windows":
             # Replace comments, cur directory variable, variable call and file beginning
             file_str = file_str.replace(UBUNTU_START, WINDOWS_START).replace(UBUNTU_ECHO_NULL, WINDOWS_ECHO_NULL) \
                 .replace(UBUNTU_COMMENT, WINDOWS_COMMENT).replace(UBUNTU_CUR_DIR, WINDOWS_CUR_DIR) \
@@ -181,10 +179,10 @@ if __name__ == '__main__':
                                    tlc_pattern=tlc_pattern, rows=rows, cols=cols, lanes=lanes,
                                    tl_components=tl_components, add_components='',
                                    exp_file=f'grid_{rows}x{cols}_{adaptation_name}.xlsx', time=str(time),
-                                   db_url=';db-host#http://localhost' if os_experiment == 'windows' else '')
+                                   db_url=';db-host#http://localhost' if os_experiment == 'Windows' else '')
 
-        # Change / to \ if os is windows
-        if os_experiment == 'windows':
+        # Change / to \ if os is Windows
+        if os_experiment == 'Windows':
             file_str = file_str.replace(UBUNTU_SLASH, WINDOWS_SLASH)
             num_parent_folders = num_parent_folders.replace(UBUNTU_SLASH, WINDOWS_SLASH)
             tlc_pattern = tlc_pattern.replace(UBUNTU_SLASH, WINDOWS_SLASH)

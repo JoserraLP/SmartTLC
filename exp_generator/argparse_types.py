@@ -3,25 +3,11 @@ import os
 import re
 
 
-def check_os(os_value: str) -> str:
-    """
-    Check if the OS selected is valid
-    :param os_value: operative system
-    :type os_value: str
-    :return: os
-    :rtype: str
-    """
-    os_value = os_value.lower()
-    if os_value not in ['windows', 'ubuntu']:
-        raise argparse.ArgumentTypeError('Invalid value. Possibles values are windows or ubuntu')
-    return os_value
-
-
-def check_dimension(dimension: int) -> int:
+def check_dimension(dimension: str) -> int:
     """
     Check if the dimension of the argument is valid
     :param dimension: matrix dimension
-    :type dimension: int
+    :type dimension: str
     :return: dimension
     :rtype: int
     """
