@@ -1,8 +1,9 @@
 import ast
 
 import paho.mqtt.client as mqtt
-from sumo_generators.static.constants import TRAFFIC_INFO_TOPIC, MQTT_PORT, MQTT_URL, TRAFFIC_ANALYSIS_TOPIC, \
-    DEFAULT_TEMPORAL_WINDOW, FLOWS_VALUES
+
+from sumo_generators.static.constants import MQTT_PORT, MQTT_URL, TRAFFIC_ANALYSIS_TOPIC, \
+    DEFAULT_TEMPORAL_WINDOW, FLOWS_VALUES, DEFAULT_TOPICS, DEFAULT_QOS, TRAFFIC_TYPES
 from sumo_generators.utils.utils import parse_to_valid_schema
 
 
@@ -37,10 +38,16 @@ class TrafficAnalyzer:
     """
 
     def __init__(self, mqtt_url: str = MQTT_URL, mqtt_port: int = MQTT_PORT,
-                 temporal_window: float = DEFAULT_TEMPORAL_WINDOW) -> None:
+                 temporal_window: float = DEFAULT_TEMPORAL_WINDOW, topics: list = DEFAULT_TOPICS) -> None:
         """
         Traffic analyzer class initializer.
         """
+        # Retrieve topics
+        self._topics = [(topic, DEFAULT_QOS) for topic in topics]
+
+        # Very High values
+        self.very_high_vehs_per_hour = FLOWS_VALUES['very_high']['vehsPerHour']
+        self.very_high_vehs_range = FLOWS_VALUES['very_high']['vehs_range']
         # High values
         self.high_vehs_per_hour = FLOWS_VALUES['high']['vehsPerHour']
         self.high_vehs_range = FLOWS_VALUES['high']['vehs_range']
@@ -63,6 +70,8 @@ class TrafficAnalyzer:
         self.low_upper_bound = round((self.low_vehs_per_hour + self.low_vehs_range) / window_proportion)
         self.med_upper_bound = round((self.med_vehs_per_hour + self.med_vehs_range) / window_proportion)
         self.high_upper_bound = round((self.high_vehs_per_hour + self.high_vehs_range) / window_proportion)
+        self.very_high_upper_bound = round((self.very_high_vehs_per_hour + self.very_high_vehs_range) /
+                                           window_proportion)
 
         # Define traffic type
         self._traffic_type = 0
@@ -89,8 +98,8 @@ class TrafficAnalyzer:
         :return: None
         """
         if rc == 0:  # Connection established
-            # Subscribe to the traffic info topic from all traffic lights -> Append #
-            self._mqtt_client.subscribe(TRAFFIC_INFO_TOPIC + '/#')
+            # Subscribe to specified topics
+            self._mqtt_client.subscribe(self._topics)
 
     def on_message(self, client, userdata, msg):
         """
@@ -102,74 +111,40 @@ class TrafficAnalyzer:
         :return: None
         """
         # Parse message to dict
-        traffic_info = ast.literal_eval(msg.payload.decode('utf-8'))
+        contextual_queues_info = ast.literal_eval(msg.payload.decode('utf-8'))['info']
 
-        # Retrieve junction id
-        junction_id = str(msg.topic).split('/')[1] if '/' in msg.topic else ''
+        # Iterate over the contextual queues info
+        for queue_info in contextual_queues_info:
+            # Create payload with the queue information and the traffic type analysis
+            payload = {queue_info['queue']: self.analyze_current_traffic_flow(passing_veh=queue_info['num_passing_veh'])}
+            # Publish the payload
+            self._mqtt_client.publish(topic=TRAFFIC_ANALYSIS_TOPIC+'/'+queue_info['tl_id'],
+                                      payload=parse_to_valid_schema(payload))
 
-        # Check valid value
-        if junction_id != '':
-            # Analyze the current traffic and get the traffic type
-            self._traffic_type = {junction_id: self.analyze_current_traffic_flow(
-                passing_veh_n_s=int(traffic_info['passing_veh_n_s']),
-                passing_veh_e_w=int(traffic_info['passing_veh_e_w']))}
-
-            # Publish the message
-            self._mqtt_client.publish(topic=TRAFFIC_ANALYSIS_TOPIC + '/' + junction_id,
-                                      payload=parse_to_valid_schema(self._traffic_type))
-
-    def analyze_current_traffic_flow(self, passing_veh_n_s: int, passing_veh_e_w: int) -> int:
+    def analyze_current_traffic_flow(self, passing_veh: int) -> int:
         """
-        Analyze the current traffic flow with the number of passing vehicles from both north-south and east-west.
+        Analyze the current traffic flow with the number of passing vehicles.
 
-        :param passing_veh_n_s: number of vehicles passing from north to south and vice versa.
-        :type passing_veh_n_s: int
-        :param passing_veh_e_w: number of vehicles passing from east to west and vice versa.
-        :type passing_veh_e_w: int
+        :param passing_veh: number of vehicles passing for a given queue
+        :type passing_veh: int
         :return: traffic type
         :rtype: int
         """
         # Initialize the traffic type
         self._traffic_type = -1
 
-        # Calculate the traffic type with the use of bounds (NS, EW).
+        # Calculate the traffic type.
         # Lower bound of a type is the highest bound of the previous one:
-        if self.very_low_lower_bound <= passing_veh_n_s <= self.very_low_upper_bound \
-                and self.very_low_lower_bound <= passing_veh_e_w <= self.very_low_upper_bound:
-            self._traffic_type = 0  # (very_low, very_low)
-        elif self.very_low_lower_bound <= passing_veh_n_s <= self.very_low_upper_bound <= passing_veh_e_w \
-                <= self.low_upper_bound:
-            self._traffic_type = 1  # (very_low, low)
-        elif self.low_upper_bound >= passing_veh_n_s >= self.very_low_upper_bound >= passing_veh_e_w \
-                >= self.very_low_lower_bound:
-            self._traffic_type = 2  # (low, very_low)
-        elif self.very_low_upper_bound <= passing_veh_n_s <= self.low_upper_bound \
-                and self.very_low_upper_bound <= passing_veh_e_w <= self.low_upper_bound:
-            self._traffic_type = 3  # (low, low)
-        elif self.very_low_upper_bound <= passing_veh_n_s <= self.low_upper_bound <= passing_veh_e_w <= \
-                self.med_upper_bound:
-            self._traffic_type = 4  # (low, med)
-        elif self.very_low_upper_bound <= passing_veh_n_s <= self.low_upper_bound and self.med_upper_bound <= \
-                passing_veh_e_w <= self.high_upper_bound:
-            self._traffic_type = 5  # (low, high)
-        elif self.med_upper_bound >= passing_veh_n_s >= self.low_upper_bound >= passing_veh_e_w >= \
-                self.very_low_upper_bound:
-            self._traffic_type = 6  # (med, low)
-        elif self.low_upper_bound <= passing_veh_n_s <= self.med_upper_bound and self.low_upper_bound <= \
-                passing_veh_e_w <= self.med_upper_bound:
-            self._traffic_type = 7  # (med, med)
-        elif self.low_upper_bound <= passing_veh_n_s <= self.med_upper_bound <= passing_veh_e_w <= \
-                self.high_upper_bound:
-            self._traffic_type = 8  # (med, high)
-        elif self.med_upper_bound <= passing_veh_n_s <= self.high_upper_bound and self.very_low_upper_bound <= \
-                passing_veh_e_w <= self.low_upper_bound:
-            self._traffic_type = 9  # (high, low)
-        elif self.high_upper_bound >= passing_veh_n_s >= self.med_upper_bound >= passing_veh_e_w >= \
-                self.low_upper_bound:
-            self._traffic_type = 10  # (high, med)
-        elif self.med_upper_bound <= passing_veh_n_s <= self.high_upper_bound and self.med_upper_bound <= \
-                passing_veh_e_w <= self.high_upper_bound:
-            self._traffic_type = 11  # (high, high)
+        if self.very_low_lower_bound <= passing_veh <= self.very_low_upper_bound:
+            self._traffic_type = TRAFFIC_TYPES['very_low']  # very_low
+        elif self.very_low_upper_bound <= passing_veh <= self.low_upper_bound:
+            self._traffic_type = TRAFFIC_TYPES['low']  # low
+        elif self.low_upper_bound <= passing_veh <= self.med_upper_bound:
+            self._traffic_type = TRAFFIC_TYPES['med']  # medium
+        elif self.med_upper_bound <= passing_veh <= self.high_upper_bound:
+            self._traffic_type = TRAFFIC_TYPES['high']  # high
+        elif self.med_upper_bound <= passing_veh <= self.high_upper_bound:
+            self._traffic_type = TRAFFIC_TYPES['very_high']  # very_high
 
         return self._traffic_type
 

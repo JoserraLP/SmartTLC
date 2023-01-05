@@ -135,15 +135,16 @@ class TrafficLightInfoStorage:
 
     def get_traffic_analyzer_info(self, temporal_window: int) -> dict:
         """
-        Get the traffic analyzer required information (only passing vehicles per direction)
+        Get the traffic analyzer required information (only passing vehicles)
 
         :param temporal_window: temporal window
         :type temporal_window: int
         :return: dict with passing vehicles on NS and EW direction
         :rtype: dict
         """
-        return {'passing_veh_n_s': self._historical_info[temporal_window]['passing_veh_n_s'],
-                'passing_veh_e_w': self._historical_info[temporal_window]['passing_veh_e_w']}
+        # Iterate over all the queues and retrieve its number of passing vehicles
+        return {queue_name: {'num_passing_veh': queue_info['num_passing_veh']}
+                for queue_name, queue_info in self._historical_info[temporal_window]['contextual_info'].items()}
 
     def get_traffic_predictor_info(self, temporal_window: int, date: bool = True) -> dict:
         """
