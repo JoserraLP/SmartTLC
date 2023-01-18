@@ -15,7 +15,7 @@ def retrieve_date_info(timestep: int, time_pattern) -> dict:
     :return: dictionary with the date information
     """
     # Calculate the time pattern id
-    simulation_timestep = math.floor(timestep / TIMESTEPS_PER_HALF_HOUR)
+    simulation_timestep = math.floor(timestep / TIMESTEPS_PER_HOUR)
 
     # Initialize variable
     simulation_date_info = dict()

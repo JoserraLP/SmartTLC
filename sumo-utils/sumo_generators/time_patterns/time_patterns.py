@@ -1,7 +1,6 @@
-import math
-
 import pandas as pd
-from sumo_generators.static.constants import TIMESTEPS_PER_HALF_HOUR, DEFAULT_TIME_PATTERN_FILE
+
+from sumo_generators.static.constants import DEFAULT_TIME_PATTERN_FILE
 
 
 class TimePattern:

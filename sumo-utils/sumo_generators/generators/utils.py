@@ -267,8 +267,8 @@ def generate_flow_file(flows_path: str, time_pattern_path: str = '', dates: str 
     # Iter over the time pattern rows
     for index, row in enumerate(time_pattern.pattern.itertuples(index=False)):
         # Calculate flows values such as begin and end timesteps and its related traffic type
-        begin = index * TIMESTEPS_PER_HALF_HOUR
-        end = TIMESTEPS_PER_HALF_HOUR * (index + 1)
+        begin = index * TIMESTEPS_PER_HOUR
+        end = TIMESTEPS_PER_HOUR * (index + 1)
         # Index 1 is the traffic type
         traffic_type_name = list(FLOWS_VALUES.keys())[row[1]]
 
@@ -277,8 +277,8 @@ def generate_flow_file(flows_path: str, time_pattern_path: str = '', dates: str 
         flows = []
 
         # Retrieve lower and upper bound
-        lower_bound = FLOWS_VALUES[traffic_type_name]['vehsPerHour'] - FLOWS_VALUES[traffic_type_name]['vehs_range']
-        upper_bound = FLOWS_VALUES[traffic_type_name]['vehsPerHour'] + FLOWS_VALUES[traffic_type_name]['vehs_range']
+        lower_bound = FLOWS_VALUES[traffic_type_name]['vehs_lower_limit']
+        upper_bound = FLOWS_VALUES[traffic_type_name]['vehs_upper_limit']
 
         # Create a flow from each junction until next junction
         for outer_junction in outer_junctions:

@@ -35,6 +35,8 @@ class TrafficAnalyzer:
     :type mqtt_port: int
     :param temporal_window: monitoring temporal window. Default to 5.
     :type temporal_window: float
+    :param topics: topics to subscribe to
+    :type topics: list
     """
 
     def __init__(self, mqtt_url: str = MQTT_URL, mqtt_port: int = MQTT_PORT,
@@ -45,33 +47,16 @@ class TrafficAnalyzer:
         # Retrieve topics
         self._topics = [(topic, DEFAULT_QOS) for topic in topics]
 
-        # Very High values
-        self.very_high_vehs_per_hour = FLOWS_VALUES['very_high']['vehsPerHour']
-        self.very_high_vehs_range = FLOWS_VALUES['very_high']['vehs_range']
-        # High values
-        self.high_vehs_per_hour = FLOWS_VALUES['high']['vehsPerHour']
-        self.high_vehs_range = FLOWS_VALUES['high']['vehs_range']
-        # Medium values
-        self.med_vehs_per_hour = FLOWS_VALUES['med']['vehsPerHour']
-        self.med_vehs_range = FLOWS_VALUES['med']['vehs_range']
-        # Low values
-        self.low_vehs_per_hour = FLOWS_VALUES['low']['vehsPerHour']
-        self.low_vehs_range = FLOWS_VALUES['low']['vehs_range']
-        # Very Low values
-        self.very_low_vehs_per_hour = FLOWS_VALUES['very_low']['vehsPerHour']
-        self.very_low_vehs_range = FLOWS_VALUES['very_low']['vehs_range']
-
         # Retrieve proportion value
         window_proportion = calculate_proportion_value(temporal_window=temporal_window)
 
         # Get traffic bounds
-        self.very_low_lower_bound = 0
-        self.very_low_upper_bound = round((self.very_low_vehs_per_hour + self.very_low_vehs_range) / window_proportion)
-        self.low_upper_bound = round((self.low_vehs_per_hour + self.low_vehs_range) / window_proportion)
-        self.med_upper_bound = round((self.med_vehs_per_hour + self.med_vehs_range) / window_proportion)
-        self.high_upper_bound = round((self.high_vehs_per_hour + self.high_vehs_range) / window_proportion)
-        self.very_high_upper_bound = round((self.very_high_vehs_per_hour + self.very_high_vehs_range) /
-                                           window_proportion)
+        self.very_low_lower_bound = FLOWS_VALUES['very_low']['vehs_lower_limit']
+        self.very_low_upper_bound = round(FLOWS_VALUES['very_low']['vehs_upper_limit'] / window_proportion)
+        self.low_upper_bound = round(FLOWS_VALUES['low']['vehs_upper_limit'] / window_proportion)
+        self.med_upper_bound = round(FLOWS_VALUES['med']['vehs_upper_limit'] / window_proportion)
+        self.high_upper_bound = round(FLOWS_VALUES['high']['vehs_upper_limit'] / window_proportion)
+        self.very_high_upper_bound = round(FLOWS_VALUES['very_high']['vehs_upper_limit'] / window_proportion)
 
         # Define traffic type
         self._traffic_type = 0

@@ -56,29 +56,34 @@ EDGE_SCHEMA = '  <edge id="{id}" from="{from_node}" to="{to_node}" priority="{pr
 NODE_SCHEMA = '  <node id="{id}" x="{x}" y="{y}" type="{type}" tlType="{tl_type}" tlLayout="{tl_layout}"/> \n'
 
 # Flows generation
-TIMESTEPS_PER_HALF_HOUR = 1800  # Half hour is 1800 seconds
+TIMESTEPS_PER_HOUR = 3600  # One hour is 3600 seconds
 
 # Flows variables and its values
 FLOWS_VALUES = {
     'very_low': {
-        'vehsPerHour': 3,
-        'vehs_range': 2
+        'vehs_lower_limit': 0,
+        'vehsPerHour': 38,
+        'vehs_upper_limit': 75
     },
     'low': {
-        'vehsPerHour': 20,
-        'vehs_range': 6
+        'vehs_lower_limit': 76,
+        'vehsPerHour': 113,
+        'vehs_upper_limit': 150
     },
     'med': {
-        'vehsPerHour': 100,
-        'vehs_range': 40
+        'vehs_lower_limit': 151,
+        'vehsPerHour': 201,
+        'vehs_upper_limit': 250
     },
     'high': {
-        'vehsPerHour': 300,
-        'vehs_range': 100
+        'vehs_lower_limit': 251,
+        'vehsPerHour': 351,
+        'vehs_upper_limit': 450
     },
     'very_high': {
-        'vehsPerHour': 700,
-        'vehs_range': 250
+        'vehs_lower_limit': 451,
+        'vehsPerHour': 726,
+        'vehs_upper_limit': 9999
     }
 }
 

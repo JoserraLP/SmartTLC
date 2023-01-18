@@ -5,7 +5,7 @@ import math
 import pandas as pd
 
 from sumo_generators.static.constants import DEFAULT_DATE_MONTH, DEFAULT_DATE_YEAR, DEFAULT_DATE_DAY, DEFAULT_DAY, \
-    DATE_FIELDS, TIMESTEPS_PER_HALF_HOUR
+    DATE_FIELDS, TIMESTEPS_PER_HOUR
 
 
 # Simulation related utils
@@ -45,7 +45,7 @@ def retrieve_date_info(timestep: int, time_pattern: pd.DataFrame) -> dict:
     :rtype: dict  
     """
     # Calculate the simulation timestep
-    simulation_timestep = math.floor(timestep / TIMESTEPS_PER_HALF_HOUR)
+    simulation_timestep = math.floor(timestep / TIMESTEPS_PER_HOUR)
     # Create the dict to store the information
     simulation_date_info = dict()
 
