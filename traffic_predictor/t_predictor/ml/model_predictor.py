@@ -3,8 +3,8 @@ import json
 import pandas as pd
 from t_predictor.ml.classification_algorithms import KNearestNeighbors
 from t_predictor.ml.utils import load_model
-from t_predictor.static.constants import MODEL_BASE_DIR_DATE, MODEL_BASE_DIR_CONTEXT, MODEL_PERFORMANCE_FILE_CONTEXT, \
-    MODEL_PERFORMANCE_FILE_DATE, MODEL_PARSED_VALUES_FILE, DEFAULT_NUM_MODELS
+from t_predictor.static.constants import MODEL_BASE_DIR, MODEL_PERFORMANCE_FILE, MODEL_PARSED_VALUES_FILE, \
+    DEFAULT_NUM_MODELS
 
 
 def sort_performances(performances: list) -> list:
@@ -25,18 +25,14 @@ class ModelPredictor:
 
     It stores the best ML models in order to perform the best traffic prediction.
 
-    :param date: if True train models based on date only, otherwise with contextual information too.
-        Default to True.
-    :type date: bool
-    :param model_base_dir: directory where the models are stored. Default to ''. If empty, use default values with
-        'date' flag.
+    :param model_base_dir: directory where the models are stored. Default to ''.
     :type model_base_dir: str
     :param parsed_values_file: directory where the dataset parsed values are stored.
         Default to '../output/parsed_values_dict.json'.
     :type parsed_values_file: str
     """
 
-    def __init__(self, date: bool = True, model_base_dir: str = '', parsed_values_file: str = MODEL_PARSED_VALUES_FILE) \
+    def __init__(self, model_base_dir: str = '', parsed_values_file: str = MODEL_PARSED_VALUES_FILE) \
             -> None:
         """
         ModelPredictor initializer.
@@ -46,16 +42,12 @@ class ModelPredictor:
         self._num_models = 0
         self._performances = dict()
         self._best_models = list()
-        self._date = date
 
         # Retrieve models loaded dir base on the parameters
         if model_base_dir != '':
             self._base_dir = model_base_dir
         else:
-            if date:
-                self._base_dir = MODEL_BASE_DIR_DATE
-            else:
-                self._base_dir = MODEL_BASE_DIR_CONTEXT
+            self._base_dir = MODEL_BASE_DIR
 
         # Store the parsed values dictionary
         with open(parsed_values_file) as f:
@@ -80,10 +72,7 @@ class ModelPredictor:
         if performance_file != '':
             performance_file = performance_file
         else:
-            if self._date:
-                performance_file = MODEL_PERFORMANCE_FILE_DATE
-            else:
-                performance_file = MODEL_PERFORMANCE_FILE_CONTEXT
+            performance_file = MODEL_PERFORMANCE_FILE
 
         # Load all the model performances and sort them
         with open(performance_file) as json_file:
@@ -109,7 +98,7 @@ class ModelPredictor:
 
     def predict(self, traffic_info: pd.DataFrame, num_models: int = DEFAULT_NUM_MODELS) -> list:
         """
-        Predict the traffic type of a given traffic information.
+        Predict the traffic type of given traffic information.
 
         :param traffic_info: information related to the current traffic status.
         :type traffic_info: pandas DataFrame

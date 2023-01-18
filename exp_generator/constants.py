@@ -4,12 +4,10 @@ ADAPTATION_APPROACHES = {
     'no_adaptation': '',
     'analyzer_no_turn_adaptation': ';traffic-analyzer#all',
     'analyzer_turn_adaptation': ';traffic-analyzer#all;turn-predictor#all',
-    'traffic_predictor_date_no_turn_adaptation': ';traffic-predictor#all;traffic-predictor-type#date',
-    'traffic_predictor_date_turn_adaptation': ';traffic-predictor#all;traffic-predictor-type#date;turn-predictor#all',
-    'traffic_predictor_date_analyzer_no_turn_adaptation': ';traffic-predictor#all;traffic-predictor-type#date;traffic'
-                                                          '-analyzer#all',
-    'traffic_predictor_date_analyzer_turn_adaptation': ';traffic-predictor#all;traffic-predictor-type#date;turn'
-                                                       '-predictor#all;traffic-analyzer#all',
+    'traffic_predictor_no_turn_adaptation': ';traffic-predictor#all',
+    'traffic_predictor_turn_adaptation': ';traffic-predictor#all;turn-predictor#all',
+    'traffic_predictor_analyzer_no_turn_adaptation': ';traffic-predictor#all;traffic-analyzer#all',
+    'traffic_predictor_analyzer_turn_adaptation': ';traffic-predictor#all;turn-predictor#all;traffic-analyzer#all',
 }
 
 ADAPTATION_FILE_SCHEMA = '#!/bin/sh \n\

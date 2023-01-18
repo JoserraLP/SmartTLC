@@ -56,7 +56,7 @@ TURN_PREDICTOR_PARSED_VALUES_FILE = '../../turn_predictor/output/parsed_values_d
 TURN_PREDICTOR_PERFORMANCE_FILE = '../../turn_predictor/regression_models/ml_performance.json'
 
 # Traffic Predictor
-TRAFFIC_PREDICTOR_MODEL_BASE_DIR = '../../traffic_predictor/classifier_models_{}/'
+TRAFFIC_PREDICTOR_MODEL_BASE_DIR = '../../traffic_predictor/classifier_models/'
 TRAFFIC_PREDICTOR_PARSED_VALUES_FILE = '../../traffic_predictor/output/parsed_values_dict.json'
-TRAFFIC_PREDICTOR_PERFORMANCE_FILE = '../../traffic_predictor/classifier_models_{}/ml_performance.json'
+TRAFFIC_PREDICTOR_PERFORMANCE_FILE = '../../traffic_predictor/classifier_models/ml_performance.json'
 

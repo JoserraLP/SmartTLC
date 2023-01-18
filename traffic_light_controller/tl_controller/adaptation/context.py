@@ -501,3 +501,12 @@ class TrafficLightAdapter:
         :type temporal_window: int
         """
         self._cur_temporal_window = temporal_window
+
+    @property
+    def tl_id(self):
+        """
+        Traffic Light id getter
+
+        :return: traffic light id
+        """
+        return self._tl_id

@@ -3,16 +3,17 @@ import json
 import os
 import shutil
 
+import numpy as np
 import pandas as pd
+
+from sumo_generators.static.constants import MQTT_URL, MQTT_PORT
 from t_predictor.ml.dataset import SimulationDataset
 from t_predictor.ml.model_predictor import ModelPredictor
 from t_predictor.ml.model_trainer import ModelTrainer
 from t_predictor.providers.predictor import TrafficPredictor
 from t_predictor.static.argparse_types import check_greater_zero, check_valid_prediction_info
-from t_predictor.static.constants import MODEL_BASE_DIR_DATE, MODEL_BASE_DIR_CONTEXT, \
-    MODEL_PARSED_VALUES_FILE, MODEL_PERFORMANCE_FILE_DATE, MODEL_PERFORMANCE_FILE_CONTEXT, \
+from t_predictor.static.constants import MODEL_BASE_DIR, MODEL_PARSED_VALUES_FILE, MODEL_PERFORMANCE_FILE, \
     MODEL_NUM_FOLDS, DEFAULT_NUM_MODELS
-from sumo_generators.static.constants import MQTT_URL, MQTT_PORT
 
 
 def get_options():
@@ -27,30 +28,21 @@ def get_options():
 
     # Define generator groups
 
-    # General option
-    arg_parser.add_argument("-d", "--date", dest="date", action="store_true", default=False,
-                            help="Train models based on date. "
-                                 "If not specified, train models based on context and date (default).")
-
     # Train group
     train_group = arg_parser.add_argument_group("Training options", description="Parameters related to the training "
                                                                                 "process of the ML models")
-    train_group.add_argument("-t", "--train", dest="input_file", metavar='FILE', action="store",
-                             help="input file")
+    train_group.add_argument("-t", "--train", dest="input_file", metavar='FILE', action="store", help=f"input file.")
     train_group.add_argument("-f" "--folds", dest="folds", type=check_greater_zero, default=MODEL_NUM_FOLDS,
-                             action="store",
-                             help=f"k-fold number of folds. Default is {MODEL_NUM_FOLDS}")
-    train_group.add_argument("-c", "--clean", dest="clean", action="store_true",
-                             default=False, help="clean the model files.")
+                             action="store", help=f"k-fold number of folds. Default is {MODEL_NUM_FOLDS}")
+    train_group.add_argument("-c", "--clean", dest="clean", action="store_true", default=False,
+                             help="clean the model files.")
 
-    # Predict value group
     # Predict value group
     predict_group = arg_parser.add_argument_group("Prediction Options", description="Parameters related to the "
                                                                                     "prediction process")
     predict_group.add_argument("-p", "--predict", dest="predict", action="store", type=check_valid_prediction_info,
-                               help="predict the given value: passing_veh_e_w, passing_veh_n_s, hour, day, date_day, "
-                                    "date_month, date_year. If 'date' flag active, the fields are: hour, day, date_day, "
-                                    "date_month, date_year")
+                               help="predict the given value where the fields are: hour, day, date_day, date_month, "
+                                    "date_year")
 
     # Full component group
     component_group = arg_parser.add_argument_group("Component Options", "Parameters related to the Docker component")
@@ -87,16 +79,11 @@ if __name__ == "__main__":
 
         # Remove the model files
         if exec_options.clean:
-            # Get kind of predictor selected
-            if exec_options.date:
-                model_base_dir = MODEL_BASE_DIR_DATE
-            else:
-                model_base_dir = MODEL_BASE_DIR_CONTEXT
 
             # If the directory is not empty clean it
-            if len(os.listdir(model_base_dir)) != 0:
-                for filename in os.listdir(model_base_dir):
-                    file_path = os.path.join(model_base_dir, filename)
+            if len(os.listdir(MODEL_BASE_DIR)) != 0:
+                for filename in os.listdir(MODEL_BASE_DIR):
+                    file_path = os.path.join(MODEL_BASE_DIR, filename)
                     try:
                         if os.path.isfile(file_path) or os.path.islink(file_path):
                             os.unlink(file_path)
@@ -106,34 +93,22 @@ if __name__ == "__main__":
                         print('Failed to delete %s. Reason: %s' % (file_path, e))
 
         # Create model trainer
-        model = ModelTrainer(dataset_dir=exec_options.input_file, date=exec_options.date)
+        model = ModelTrainer(dataset_dir=exec_options.input_file)
 
         # Perform the training process of all the models with a k-fold process
         performances = model.train(k=exec_options.folds)
 
-        # Set performance file
-        if exec_options.date:
-            performance_file = MODEL_PERFORMANCE_FILE_DATE
-        else:
-            performance_file = MODEL_PERFORMANCE_FILE_CONTEXT
-
         # Store the results
-        with open(performance_file, 'w', encoding='utf-8') as f:
+        with open(MODEL_PERFORMANCE_FILE, 'w', encoding='utf-8') as f:
             json.dump(performances, f, ensure_ascii=False, indent=4)
 
     # Prediction process
     elif exec_options.predict:
         # Parse data and store it as a DataFrame
-        data = exec_options.predict.replace(' ', '').split(',')
-        if exec_options.date:
-            data = pd.DataFrame(np.array([data]),
-                                columns=['hour', 'day', 'date_day', 'date_month', 'date_year'])
-        else:
-            data = pd.DataFrame(np.array([data]),
-                                columns=['passing_veh_e_w', 'passing_veh_n_s', 'hour', 'day', 'date_day',
-                                         'date_month', 'date_year'])
+        data = pd.DataFrame(np.array([exec_options.predict.replace(' ', '').split(',')]),
+                            columns=['hour', 'day', 'date_day', 'date_month', 'date_year'])
         # Create model predictor
-        model = ModelPredictor(exec_options.date)
+        model = ModelPredictor()
         # Load best models
         model.load_best_models(num_models=DEFAULT_NUM_MODELS)
 
@@ -148,11 +123,8 @@ if __name__ == "__main__":
         print(model.predict(data, num_models=DEFAULT_NUM_MODELS))
     # Component process
     elif exec_options.component:
-        # Define the directories
-        model_base_dir = MODEL_BASE_DIR_DATE if exec_options.date else MODEL_BASE_DIR_CONTEXT
-        performance_file = MODEL_PERFORMANCE_FILE_DATE if exec_options.date else MODEL_PERFORMANCE_FILE_CONTEXT
 
         # Start predictor process
-        predictor = TrafficPredictor(date=exec_options.date, mqtt_url=exec_options.mqtt_url,
+        predictor = TrafficPredictor(mqtt_url=exec_options.mqtt_url,
                                      mqtt_port=exec_options.mqtt_port, num_models=exec_options.num_models,
-                                     model_base_dir=model_base_dir, performance_file=performance_file)
+                                     model_base_dir=MODEL_BASE_DIR, performance_file=MODEL_PERFORMANCE_FILE)

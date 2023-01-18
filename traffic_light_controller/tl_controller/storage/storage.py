@@ -146,25 +146,21 @@ class TrafficLightInfoStorage:
         return {queue_name: {'num_passing_veh': queue_info['num_passing_veh']}
                 for queue_name, queue_info in self._historical_info[temporal_window]['contextual_info'].items()}
 
-    def get_traffic_predictor_info(self, temporal_window: int, date: bool = True) -> dict:
+    def get_traffic_predictor_info(self, temporal_window: int) -> dict:
         """
         Get the traffic predictor required information based on the type of traffic predictor
 
         :param temporal_window: temporal window
         :type temporal_window: int
-        :param date: flag enabling date-based traffic predictors
-        :type date: bool
-        :return: dict with passing vehicles on NS and EW direction
+        :return: dict with date info
         :rtype: dict
         """
+        # Get date info
+        date_info = self._historical_info[temporal_window]['date_info']
 
-        # Store the date information
-        traffic_predictor_info = dict(self._historical_info[temporal_window]['date_info'])
-
-        # If it is also contextual based
-        if not date:
-            traffic_predictor_info.update(self.get_traffic_analyzer_info(temporal_window))
-
+        # Get all roads names with the date info
+        traffic_predictor_info = {road: date_info for road in list(dict(self._historical_info[temporal_window]
+                                                                        ['contextual_info']).keys())}
         return traffic_predictor_info
 
     def get_turn_predictor_info(self) -> None:

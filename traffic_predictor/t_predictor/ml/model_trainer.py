@@ -4,8 +4,8 @@ import os
 from t_predictor.ml.classification_algorithms import KNearestNeighbors, NaiveBayes, SVM, RandomForest, DecisionTree
 from t_predictor.ml.dataset import SimulationDataset
 from t_predictor.ml.utils import save_model
-from t_predictor.static.constants import MODEL_BASE_DIR_CONTEXT, MODEL_BASE_DIR_DATE, MODEL_PARSED_VALUES_FILE, \
-    MODEL_PERFORMANCE_FILE_DATE, MODEL_PERFORMANCE_FILE_CONTEXT, DEFAULT_OUTPUT_FILE, KNN_MAX_NEIGHBORS, DT_MAX_DEPTH, \
+from t_predictor.static.constants import MODEL_BASE_DIR, MODEL_PARSED_VALUES_FILE, \
+    MODEL_PERFORMANCE_FILE, DEFAULT_OUTPUT_FILE, KNN_MAX_NEIGHBORS, DT_MAX_DEPTH, \
     RF_NUM_ESTIMATORS, RF_MAX_DEPTH, MODEL_NUM_FOLDS
 
 
@@ -15,22 +15,17 @@ class ModelTrainer:
 
     :param dataset_dir: directory where the input dataset is stored. Default to ../output/simulation_calendar.csv.
     :type dataset_dir: str
-    :param model_base_dir: directory where the models are stored. Default to ''. If empty, use default values with
-        'date' flag.
+    :param model_base_dir: directory where the models are stored. Default to ''.
     :type model_base_dir: str
     :param parsed_values_file: directory where the dataset parsed values are stored.
         Default to ../output/parsed_values_dict.json.
     :type parsed_values_file: str
     :param performance_file: File where the training performances have been stored. Default to ''.
-        If empty, use default values with 'date' flag.
     :type performance_file: str
-    :param date: if True train models based on date only, otherwise with contextual information too.
-        Default to True.
-    :type date: bool
     """
 
     def __init__(self, dataset_dir: str = DEFAULT_OUTPUT_FILE, model_base_dir: str = '',
-                 parsed_values_file: str = MODEL_PARSED_VALUES_FILE, performance_file: str = '', date: bool = True) \
+                 parsed_values_file: str = MODEL_PARSED_VALUES_FILE, performance_file: str = '') \
             -> None:
         """
         ModelTrainer initializer.
@@ -38,19 +33,15 @@ class ModelTrainer:
         # Initialize class variables
         self._performances = list()
         self._models = list()
-        self._date = date
         self._parsed_values_file = parsed_values_file
 
         # Retrieve models loaded dir base on the parameters
         if model_base_dir != '':
             self._base_dir = model_base_dir
         else:
-            if date:
-                self._base_dir = MODEL_BASE_DIR_DATE
-            else:
-                self._base_dir = MODEL_BASE_DIR_CONTEXT
+            self._base_dir = MODEL_BASE_DIR
 
-        # If the directory does not exists, create it
+        # If the directory does not exist, create it
         if not os.path.exists(self._base_dir):
             os.makedirs(self._base_dir)
 
@@ -58,13 +49,10 @@ class ModelTrainer:
         if performance_file != '':
             self._performance_file = performance_file
         else:
-            if date:
-                self._performance_file = MODEL_PERFORMANCE_FILE_DATE
-            else:
-                self._performance_file = MODEL_PERFORMANCE_FILE_CONTEXT
+            self._performance_file = MODEL_PERFORMANCE_FILE
 
         # Define the input dataset file
-        self._dataset = SimulationDataset(file_dir=dataset_dir, date=date)
+        self._dataset = SimulationDataset(file_dir=dataset_dir)
 
         # Clean up the dataset
         parsed_values = self._dataset.clean_up_dataset()
@@ -160,7 +148,7 @@ class ModelTrainer:
             model = None
             model_dir = ''
 
-        # If the model does not exists, train it
+        # If the model does not exist, train it
         if model_dir != '' and not os.path.exists(model_dir):
             # Perform training_process
             # KNN is special as it uses the values field for the X datasets

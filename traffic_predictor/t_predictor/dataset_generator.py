@@ -3,11 +3,7 @@ import os
 import sys
 
 import t_predictor.static.constants as cnt
-from sumolib import checkBinary
-from t_predictor.generators.dataset_generator_time_pattern import TimePatternGenerator
-from t_predictor.generators.dataset_generator_traffic_light import TrafficLightTypeGenerator
-from t_predictor.static.argparse_types import check_file, check_greater_zero
-from t_predictor.visualization.console_visualizer import ConsoleVisualizer
+from t_predictor.generators.time_pattern_generator import TimePatternGenerator
 
 
 def import_required_libs():
@@ -32,34 +28,17 @@ def get_options():
     :return: Arguments options
     """
     # Create the Argument Parser
-    arg_parser = argparse.ArgumentParser(description='Script for generating the traffic dataset based on a calendar or '
-                                                     'different traffic light types.')
+    arg_parser = argparse.ArgumentParser(description='Script for generating the traffic time pattern based on a working'
+                                                     ' calendar.')
 
-    # Dataset generation group
-    dataset_group = arg_parser.add_argument_group("Dataset generator",
-                                                  description="Parameters related to the dataset generation")
-    dataset_group.add_argument("--nogui", action="store_true", type=bool,
-                               default=cnt.DEFAULT_GUI_FLAG, help="run the commandline version of sumo. Default to "
-                                                                  f"{cnt.DEFAULT_GUI_FLAG}")
-    dataset_group.add_argument("-c", "--config", dest="config", action='store', type=check_file,
-                               default=cnt.DEFAULT_CONFIG_FILE,
-                               help=f"sumo configuration file location. Default to {cnt.DEFAULT_CONFIG_FILE}")
-    dataset_group.add_argument("-n", "--num-sim", dest="num_sim", type=check_greater_zero, action="store",
-                               help=f"number of simulations. Default to {cnt.DEFAULT_NUMBER_OF_SIMULATIONS}",
-                               default=cnt.DEFAULT_NUMBER_OF_SIMULATIONS)
-    dataset_group.add_argument("-t", "--time-pattern", dest="time_pattern", type=check_file, action="store",
-                               help="time pattern input file")
-    dataset_group.add_argument("-o", "--output-file", dest="output_file", type=check_file, action="store",
+    # Input working calendar
+    arg_parser.add_argument("-i", "--input-calendar", dest="input_calendar", action='store',
+                            help="input working calendar file")
+
+    # Output traffic time pattern file
+    arg_parser.add_argument("-o", "--output-file", dest="output_file", type=str, action="store",
                                default=cnt.DEFAULT_OUTPUT_FILE,
-                               help=f"output file. Default to {cnt.DEFAULT_OUTPUT_FILE}")
-
-    # Visualization group
-    visualization_group = arg_parser.add_argument_group("Visualization tools",
-                                                        description="Parameters related to the visualization tools")
-    visualization_group.add_argument("--cli-visualize", dest="cli_visualize", action="store_true", type=bool,
-                                     default=cnt.DEFAULT_CLI_VISUALIZE_FLAG,
-                                     help=f"visualize option by command line. Default to "
-                                          f"{cnt.DEFAULT_CLI_VISUALIZE_FLAG}")
+                               help=f"output traffic time pattern file. Default to {cnt.DEFAULT_OUTPUT_FILE}")
 
     # Retrieve the arguments parsed
     args = arg_parser.parse_args()
@@ -74,46 +53,14 @@ if __name__ == "__main__":
     # Retrieve execution options (parameters)
     exec_options = get_options()
 
-    # Visualize tool
-    if exec_options.cli_visualize:
-        console_visualizer = ConsoleVisualizer()
-        console_visualizer.execute()
+    # Create the time pattern generator
+    time_pattern_generator = TimePatternGenerator(input_file=exec_options.input_calendar)
 
-    else:  # Dataset generation tool
+    # Parse calendar to be valid
+    time_pattern_generator.parse_calendar()
 
-        if exec_options.num_sim and exec_options.time_pattern:
-            print("Error, the simulation number and the time pattern cannot be used together")
-            exit()
+    # Get pattern calendar
+    pattern_calendar = time_pattern_generator.get_pattern_calendar()
 
-        # this script has been called from the command line. It will start sumo as a
-        # server, then connect and run
-        if exec_options.nogui:
-            sumo_binary = checkBinary('sumo')
-        else:
-            sumo_binary = checkBinary('sumo-gui')
-
-        # Create a dict with the simulation arguments
-        sim_args = {
-            'config_file': exec_options.config_file,
-            'sumo_binary': sumo_binary
-        }
-
-        # Initialize TraCI sim to None in order to fill later on
-        traci_sim = None
-
-        if exec_options.num_sim != 0:
-            # Create the TraCI Traffic Light Type simulator
-            traci_sim = TrafficLightTypeGenerator(sumo_conf=sim_args, num_sim=exec_options.num_sim)
-
-        elif exec_options.time_pattern != '':
-            # Create the TraCI Time Pattern simulator
-            traci_sim = TimePatternGenerator(sumo_conf=sim_args, time_pattern_file=exec_options.time_pattern)
-        else:
-            print('Error in the arguments')
-            exit(-1)
-
-        # Perform simulations
-        traci_sim.simulate()
-
-        # Store the dataset into the output file
-        traci_sim.store_all_data(exec_options.output_file)
+    # Store all the pattern calendar
+    pattern_calendar.to_csv(exec_options.output_file, index=False)

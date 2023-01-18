@@ -44,16 +44,3 @@ def check_valid_format(date: str) -> str:
     if not re.fullmatch(r'\d{2}/\d{2}/\d{4}-\d{2}/\d{2}/\d{4}', date):
         raise argparse.ArgumentTypeError(f'Invalid format. Valid format is dd/mm/yyyy-dd/mm/yyyy.')
     return date
-
-
-def check_valid_predictor_value(value: str) -> str:
-    """
-    Check if the predictor type value is valid
-    :param value: predictor type value
-    :type value: str
-    :return: value
-    :rtype: str
-    """
-    if value not in ['date', 'context']:
-        raise argparse.ArgumentTypeError(f'Invalid value. Possible values are "date" or "context')
-    return value

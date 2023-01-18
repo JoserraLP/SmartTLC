@@ -6,27 +6,23 @@ from t_predictor.static.constants import DEFAULT_OUTPUT_FILE
 
 class SimulationDataset:
 
-    def __init__(self, file_dir: str = DEFAULT_OUTPUT_FILE, date: bool = False):
+    def __init__(self, file_dir: str = DEFAULT_OUTPUT_FILE):
         """
         SimulationDataset class initializer.
 
-        :param file_dir: directory where the time pattern is located. Default to simulation_month.csv
+        :param file_dir: directory where the time pattern is located.
         :type file_dir: str
-        :param date: if True train models based on date only, otherwise with contextual information too.
-            Default to True.
-        :type date: bool
         :return None
         """
         self._dataset = pd.read_csv(file_dir)
 
+        valid_target_values = [i for i in range(len(list(self._dataset.columns))) if i != 1]
+
         # Define input and target values
         # Relevant values
-        if date: # If date train, retrieve only those values
-            self._features_values = self._dataset.iloc[0:, 6:]
-        else: # Otherwise retrieve all the values
-            self._features_values = self._dataset.iloc[0:, 4:]
+        self._features_values = self._dataset.iloc[0:, valid_target_values]
         # Traffic type
-        self._target_values = self._dataset.iloc[0:, 3].to_frame()
+        self._target_values = self._dataset.iloc[0:, 1].to_frame()
 
     def get_dimensions(self):
         """
@@ -116,20 +112,20 @@ class SimulationDataset:
         :return: list of datasets split by the k-fold process
         :rtype list
         """
-        # Create a kfold instance
-        kfold = KFold(n_splits=k, shuffle=True, random_state=random_state)
+        # Create a k_fold instance
+        k_fold = KFold(n_splits=k, shuffle=True, random_state=random_state)
 
         # Create a dict to store the datasets
-        kfold_datasets = []
+        k_fold_datasets = []
 
-        # Iterate over kfold splits
-        for train_index, test_index in kfold.split(X=self._features_values):
+        # Iterate over k_fold splits
+        for train_index, test_index in k_fold.split(X=self._features_values):
 
             # Get the X and y datasets
-            X_train, X_test = self._features_values.iloc[train_index], self._features_values.iloc[test_index]
+            x_train, x_test = self._features_values.iloc[train_index], self._features_values.iloc[test_index]
             y_train, y_test = self._target_values.iloc[train_index], self._target_values.iloc[test_index]
 
             # Append the datasets to the list
-            kfold_datasets.append({'X_train': X_train, 'X_test': X_test, 'y_train': y_train, 'y_test': y_test})
+            k_fold_datasets.append({'X_train': x_train, 'X_test': x_test, 'y_train': y_train, 'y_test': y_test})
 
-        return kfold_datasets
+        return k_fold_datasets

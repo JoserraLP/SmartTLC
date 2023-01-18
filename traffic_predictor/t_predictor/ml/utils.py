@@ -1,6 +1,7 @@
 import os
 import pickle
 
+import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
@@ -163,7 +164,7 @@ def check_dataset_bias(dataset: pd.DataFrame, field: str, bias: float = 30.0) ->
 
     except Exception as e:
         print(e)
-        return None
+        return False
 
     # Return boolean indicating either the dataset is biased on the map feature or not. For example 30% of difference
     return np.max(np.abs(np.diff(percentages))) > bias

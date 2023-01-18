@@ -37,20 +37,7 @@ ALL_CONTAINERS = {
         'volumes': './telegraf/telegraf.conf:/etc/telegraf/telegraf.conf',
         'ipv4_address': '172.20.0.5'
     },
-    'traffic_predictor_date': {
-        'build': './traffic_predictor',
-        'container_name': 'traffic_predictor',
-        'env_file': 'traffic_predictor/eclipse-sumo-image/env.sumo',
-        'restart': 'on-failure',
-        'links': 'mosquitto',
-        'volumes': ['./traffic_predictor:/etc/traffic_predictor/', './sumo-utils:/etc/sumo-utils/'],
-        'command': 'bash -c "pip3 install -r /etc/traffic_predictor/requirements.txt && '
-                   'cd /etc/traffic_predictor/t_predictor/ && dockerize -wait '
-                   'tcp://172.20.0.3:8086 -timeout 120s -wait-retry-interval 40s python3 ml_trainer.py --component -n 1'
-                   ' --middleware_host 172.20.0.2 --middleware_port 1883 -d"',
-        'ipv4_address': '172.20.0.6'
-    },
-    'traffic_predictor_context': {
+    'traffic_predictor': {
         'build': './traffic_predictor',
         'container_name': 'traffic_predictor',
         'env_file': 'traffic_predictor/eclipse-sumo-image/env.sumo',
@@ -128,9 +115,7 @@ DOCKER_EXECUTION_OPTIONS = {
 
     },
     'traffic_predictor': {
-        'train_date': 'ml_trainer.py -t {} -c -d',
-        'train_context': 'ml_trainer.py -t {} -c',
-        'component_date': 'ml_trainer.py --component -n 1 --middleware_host 172.20.0.2 --middleware_port 1883 -d',
-        'component_context': 'ml_trainer.py --component -n 1 --middleware_host 172.20.0.2 --middleware_port 1883'
+        'train': 'ml_trainer.py -t {} -c',
+        'component': 'ml_trainer.py --component -n 1 --middleware_host 172.20.0.2 --middleware_port 1883'
     }
 }

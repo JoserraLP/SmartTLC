@@ -1,10 +1,10 @@
-import numpy as np
-
 from typing import Union
 
+import numpy as np
+
 from docker_generator.graph.dependencies_graph import DependenciesGraph
-from docker_generator.utils.docker_structure import ALL_CONTAINERS, DOCKER_EXECUTION_OPTIONS, DEFAULT_ROUTE_DIR
 from docker_generator.utils.decorators import check_containers
+from docker_generator.utils.docker_structure import ALL_CONTAINERS, DOCKER_EXECUTION_OPTIONS
 
 
 def retrieve_container_index_list(container_names) -> list:
