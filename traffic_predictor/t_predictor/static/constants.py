@@ -14,18 +14,14 @@ DEFAULT_GENERATED_CALENDAR_FILE = '../../sumo-utils/time_patterns/generated_cale
 NUM_ROWS_PER_DAY = 24
 
 # Random ranges for noise generation on calendar
-# Variance for vacation swap
-RANDOM_VACATION_SWAP_RANGE = 15  # 15 days
 # Variance for traffic type
-RANDOM_TRAFFIC_TYPE_LOWER_BOUND = -2
-RANDOM_TRAFFIC_TYPE_UPPER_BOUND = 2
-RANDOM_TRAFFIC_TYPE_RANGE = NUM_ROWS_PER_DAY * 3  # 48 rows per 3 days
-# Variance for vacations day swap to usual
-RANDOM_VACATION_TO_USUAL_DAY_RANGE = 15  # 15 days
-# Variance for usual day swap to vacation
-RANDOM_USUAL_TO_VACATION_DAY_RANGE = 50  # 50 days
-# Variance for usual day
-RANDOM_USUAL_REPLACE = 14  # 14 days
+RANDOM_TRAFFIC_TYPE_LOWER_BOUND = -1
+RANDOM_TRAFFIC_TYPE_UPPER_BOUND = 1
+RANDOM_TRAFFIC_TYPE_RANGE = NUM_ROWS_PER_DAY * 3  # 24 rows per 3 days
+# Variance of swapping from working to weekend days or bank-holidays
+RANDOM_WORKING_TO_OTHER_SWAP_RANGE = 50  # 50 days
+# Variance of swapping from weekend to working
+RANDOM_WEEKEND_TO_WORKING_SWAP_RANGE = 20  # 20 days
 
 # ML constants
 KNN_MAX_NEIGHBORS = 15

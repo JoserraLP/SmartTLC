@@ -33,7 +33,7 @@ def get_options():
 
     # Input working calendar
     arg_parser.add_argument("-i", "--input-calendar", dest="input_calendar", action='store',
-                            help="input working calendar file")
+                            help="input working calendar file", required=True)
 
     # Output traffic time pattern file
     arg_parser.add_argument("-o", "--output-file", dest="output_file", type=str, action="store",
@@ -59,8 +59,8 @@ if __name__ == "__main__":
     # Parse calendar to be valid
     time_pattern_generator.parse_calendar()
 
-    # Get pattern calendar
-    pattern_calendar = time_pattern_generator.get_pattern_calendar()
+    # Get random pattern calendar
+    pattern_calendar = time_pattern_generator.get_random_pattern_calendar()
 
     # Store all the pattern calendar
     pattern_calendar.to_csv(exec_options.output_file, index=False)

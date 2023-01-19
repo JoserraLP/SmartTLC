@@ -1,9 +1,11 @@
 from os import listdir
 from os.path import isfile, join
+import random
 
 import pandas as pd
 
 import t_predictor.static.constants as cnt
+from sumo_generators.static.constants import NUM_TRAFFIC_TYPES
 
 
 def append_dates_info(dataframe: pd.DataFrame, date: pd.Series) -> pd.DataFrame:
@@ -117,6 +119,81 @@ class TimePatternGenerator:
 
             # If the base pattern is not empty, append it
             if base_pattern is not None:
+                pattern_calendar = pd.concat([pattern_calendar, base_pattern], ignore_index=True)
+
+        return pattern_calendar
+
+    def get_random_pattern_calendar(self) -> pd.DataFrame:
+        """
+        Creates the calendar with the traffic type patterns adding some randomness.
+        :return: calendar pattern dataset
+        :rtype: pandas DataFrame
+        """
+        # Create pattern calendar
+        pattern_calendar = pd.DataFrame()
+
+        # Iterate over the calendar
+        for index, date in self._calendar.iterrows():
+            # First check specific dates such as first year day or Christmas.
+            if date['date_day'] == 1 and date['date_month'] == 1:
+                base_pattern = append_dates_info(self._base_patterns['first_year_day'], date)
+            elif date['date_day'] == 25 and date['date_month'] == 12:
+                base_pattern = append_dates_info(self._base_patterns['christmas_day'], date)
+            else:
+                # Check if bank holiday
+                if date['type'] == 1:
+                    base_pattern = append_dates_info(self._base_patterns['bank_holiday'], date)
+                else:
+                    # Check weekend days
+                    if date['day'] in ['saturday', 'sunday']:
+                        # Retrieve random value for swapping weekend day.
+                        # 1: swap to working day
+                        # Otherwise: do not swap
+                        swap_to_working_day = random.randint(0, cnt.RANDOM_WEEKEND_TO_WORKING_SWAP_RANGE)
+                        if swap_to_working_day == 1:
+                            base_pattern = append_dates_info(self._base_patterns['working_day'], date)
+                        else:
+                            base_pattern = append_dates_info(self._base_patterns['weekend_day'], date)
+                    # Other working days
+                    else:
+                        # Retrieve random value for swapping working day.
+                        # 1: swap to weekend day
+                        # 2: swap to bank holiday
+                        # Otherwise: do not swap
+                        swap_to_other_day = random.randint(0, cnt.RANDOM_WORKING_TO_OTHER_SWAP_RANGE)
+                        if swap_to_other_day == 1:
+                            base_pattern = append_dates_info(self._base_patterns['weekend_day'], date)
+                        elif swap_to_other_day == 2:
+                            base_pattern = append_dates_info(self._base_patterns['bank_holiday'], date)
+                        else:
+                            base_pattern = append_dates_info(self._base_patterns['working_day'], date)
+
+            # If the base pattern is not empty
+            if base_pattern is not None:
+                # Generate random variance on traffic type
+                # First getting a random hour
+                hour_index = random.randint(0, cnt.RANDOM_TRAFFIC_TYPE_RANGE)
+                # Valid hour random generation
+                if hour_index < cnt.NUM_ROWS_PER_DAY:
+                    # Generate the noise that will be applied to the traffic type field
+                    noise_traffic_type = random.randint(cnt.RANDOM_TRAFFIC_TYPE_LOWER_BOUND,
+                                                        cnt.RANDOM_TRAFFIC_TYPE_UPPER_BOUND)
+
+                    # Retrieve the current traffic type
+                    cur_traffic_type = base_pattern.loc[hour_index, 'traffic_type']
+
+                    # Check if the new traffic type is in a valid range
+                    if cur_traffic_type - abs(noise_traffic_type) < 0:
+                        cur_traffic_type = 0
+                    elif cur_traffic_type + abs(noise_traffic_type) > NUM_TRAFFIC_TYPES:
+                        cur_traffic_type = NUM_TRAFFIC_TYPES
+                    else:
+                        cur_traffic_type = cur_traffic_type + noise_traffic_type
+
+                    # Store the new traffic type
+                    base_pattern.loc[hour_index, 'traffic_type'] = cur_traffic_type
+
+                # Store it to the calendar
                 pattern_calendar = pd.concat([pattern_calendar, base_pattern], ignore_index=True)
 
         return pattern_calendar

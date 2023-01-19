@@ -31,7 +31,8 @@ def get_options():
     # Train group
     train_group = arg_parser.add_argument_group("Training options", description="Parameters related to the training "
                                                                                 "process of the ML models")
-    train_group.add_argument("-t", "--train", dest="input_file", metavar='FILE', action="store", help=f"input file.")
+    train_group.add_argument("-i", "--input-file", dest="input_file", metavar='FILE', action="store",
+                             help=f"input file.")
     train_group.add_argument("-f" "--folds", dest="folds", type=check_greater_zero, default=MODEL_NUM_FOLDS,
                              action="store", help=f"k-fold number of folds. Default is {MODEL_NUM_FOLDS}")
     train_group.add_argument("-c", "--clean", dest="clean", action="store_true", default=False,
