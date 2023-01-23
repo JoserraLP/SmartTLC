@@ -22,7 +22,7 @@ cd {num_parent_folders}docker-utils/docker_generator || exit \n\
 \n\
 ## Create docker-compose file with the time pattern \n\
 python main.py -o  ../../docker-compose.yml -c mosquitto,influxdb,grafana,telegraf,\
-traffic_light_controller;{tlc_pattern};load#$cwd;rows#{rows};cols#{cols};lanes#{lanes}{tl_components},\
+transportation_digital_twin;{tlc_pattern};load#$cwd;rows#{rows};cols#{cols};lanes#{lanes}{tl_components},\
 exp_collector;exp_file#{exp_file};waiting#{time}{db_url}{add_components} \n\
 \n\
 ## Waiting time is 25 minutes (1500 seconds) per day simulated \n\
@@ -30,7 +30,7 @@ exp_collector;exp_file#{exp_file};waiting#{time}{db_url}{add_components} \n\
 ## Deploy the architecture\n\
 sudo docker-compose up\n'
 
-DEFAULT_CONFIG_GENERATOR_SCRIPT = "../sumo-utils/sumo_generators/config_generator.py"
+DEFAULT_CONFIG_GENERATOR_SCRIPT = "../sumo-utils/sumo_generators/grid_topology_generator.py"
 
 # WINDOWS
 WINDOWS_START = "@echo off"

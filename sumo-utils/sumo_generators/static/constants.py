@@ -3,22 +3,10 @@ MIN_ROWS = 1
 MIN_COLS = 1
 MIN_LANES = 1
 DISTANCE = 500
-DET_DISTANCE = 25
-DET_FREQ = 1800
 JUNCTION_TYPE = "traffic_light"
 TL_TYPE = "static"
 TL_LAYOUT = "opposites"
 DEFAULT_TIME_PATTERN_FILE = '../time_patterns/generated_calendar.csv'
-ALLOW_TURNS = False
-
-# Traffic proportions
-TRAFFIC_PROPORTIONS = [0.25, 0.50, 1, 2, 4]
-
-# Bounds on phase time
-LOWER_BOUND_TIME_PHASE = 20
-UPPER_BOUND_TIME_PHASE = 70
-MAXIMUM_TIME_PHASE = 80
-MAXIMUM_TIME_BOUND_PHASE = UPPER_BOUND_TIME_PHASE - LOWER_BOUND_TIME_PHASE
 
 # File path constants
 DEFAULT_DIR = "../config/"
@@ -33,14 +21,14 @@ DEFAULT_ROUTE_FILENAME = "flows.rou.xml"
 DEFAULT_CONFIG_FILENAME = "simulation.sumocfg"
 
 # Define files paths
-DET_FILE = DEFAULT_DIR + './out.xml'
-DEFAULT_NODES_DIR = DEFAULT_DIR + "topology.nod.xml"
-DEFAULT_EDGES_DIR = DEFAULT_DIR + "topology.edg.xml"
-DEFAULT_NET_DIR = DEFAULT_DIR + "topology.net.xml"
-DEFAULT_DET_DIR = DEFAULT_DIR + "topology.det.xml"
-DEFAULT_TLL_DIR = DEFAULT_DIR + "topology.tll.xml"
-DEFAULT_ROUTE_DIR = DEFAULT_DIR + "flows.rou.xml"
-DEFAULT_CONFIG_DIR = DEFAULT_DIR + "simulation.sumocfg"
+DET_FILE = DEFAULT_DIR + DET_FILENAME
+DEFAULT_NODES_DIR = DEFAULT_DIR + DEFAULT_NODES_FILENAME
+DEFAULT_EDGES_DIR = DEFAULT_DIR + DEFAULT_EDGES_FILENAME
+DEFAULT_NET_DIR = DEFAULT_DIR + DEFAULT_NET_FILENAME
+DEFAULT_DET_DIR = DEFAULT_DIR + DEFAULT_DET_FILENAME
+DEFAULT_TLL_DIR = DEFAULT_DIR + DEFAULT_TLL_FILENAME
+DEFAULT_ROUTE_DIR = DEFAULT_DIR + DEFAULT_ROUTE_FILENAME
+DEFAULT_CONFIG_DIR = DEFAULT_DIR + DEFAULT_CONFIG_FILENAME
 
 # Default date values
 DEFAULT_DAY = "monday"
@@ -99,16 +87,6 @@ TRAFFIC_TYPES = {
 # Number of traffic types
 NUM_TRAFFIC_TYPES = len(TRAFFIC_TYPES)
 
-TRAFFIC_TYPE_RELATION = {}
-
-# Grid network 1x1 parser
-GRID_1x1_DICT = {
-    'c1_c0': [('n1', 'right', 'c1_w1'), ('s1', 'left', 'c1_w1'), ('s1', 'forward', 'c1_n1'),
-              ('e1', 'forward', 'c1_w1')],
-    'c1_c2': [('n1', 'forward', 'c1_s1'), ('w1', 'right', 'c1_s1'), ('w1', 'forward', 'c1_e1'),
-              ('e1', 'left', 'c1_s1')],
-}
-
 # MQTT constants
 MQTT_URL = '172.20.0.2'
 MQTT_PORT = 1883
@@ -122,9 +100,6 @@ DEFAULT_QOS = 0
 DB_IP_ADDRESS = '172.20.0.9:7687'
 DB_USER = 'neo4j'
 DB_PASSWORD = 'admin'
-
-# Eclipse SUMO default configuration file
-DEFAULT_CONFIG_FILE = '../config/simulation.sumocfg'
 
 # Default detector file
 DEFAULT_DETECTOR_FILE = 'detectors.add.xml'

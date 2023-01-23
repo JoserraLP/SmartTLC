@@ -4,12 +4,6 @@ DEFAULT_OUTPUT_FILE = '../../sumo-utils/time_patterns/calendar_time_pattern.csv'
 # Time patterns default folder
 DEFAULT_BASE_TIME_PATTERNS_FOLDER = '../../sumo-utils/time_patterns/base_patterns/'
 
-# Default calendar csv file
-DEFAULT_CALENDAR_FILE = '../../sumo-utils/time_patterns/calendar.csv'
-
-# Default output generated calendar csv file
-DEFAULT_GENERATED_CALENDAR_FILE = '../../sumo-utils/time_patterns/generated_calendar.csv'
-
 # Number of rows per day
 NUM_ROWS_PER_DAY = 24
 

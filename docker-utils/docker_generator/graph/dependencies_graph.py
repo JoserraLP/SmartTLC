@@ -15,10 +15,8 @@ class DependenciesGraph:
     """
 
     def __init__(self, num_containers: int):
-        # Initialize the maximum graph size
-        self._max_graph_size = num_containers
         # Create numpy array and initialize it to 0
-        self._graph = np.zeros((self._max_graph_size, self._max_graph_size))
+        self._graph = np.zeros((num_containers, num_containers))
         # Set diagonal to -1
         np.fill_diagonal(self._graph, -1)
 

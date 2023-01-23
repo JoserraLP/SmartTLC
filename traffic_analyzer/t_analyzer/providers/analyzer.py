@@ -96,14 +96,14 @@ class TrafficAnalyzer:
         :return: None
         """
         # Parse message to dict
-        contextual_queues_info = ast.literal_eval(msg.payload.decode('utf-8'))['info']
+        contextual_lanes_info = ast.literal_eval(msg.payload.decode('utf-8'))['info']
 
-        # Iterate over the contextual queues info
-        for queue_info in contextual_queues_info:
+        # Iterate over the contextual lanes info
+        for lane_info in contextual_lanes_info:
             # Create payload with the queue information and the traffic type analysis
-            payload = {queue_info['queue']: self.analyze_current_traffic_flow(passing_veh=queue_info['num_passing_veh'])}
+            payload = {lane_info['lane']: self.analyze_current_traffic_flow(passing_veh=lane_info['num_passing_veh'])}
             # Publish the payload
-            self._mqtt_client.publish(topic=TRAFFIC_ANALYSIS_TOPIC+'/'+queue_info['tl_id'],
+            self._mqtt_client.publish(topic=TRAFFIC_ANALYSIS_TOPIC+'/'+lane_info['tl_id'],
                                       payload=parse_to_valid_schema(payload))
 
     def analyze_current_traffic_flow(self, passing_veh: int) -> int:

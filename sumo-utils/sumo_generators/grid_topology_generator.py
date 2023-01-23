@@ -1,4 +1,4 @@
-from sumo_generators.generators.utils import generate_detector_file, generate_tl_file, generate_network_file, \
+from sumo_generators.generators.utils import generate_network_file, \
     generate_sumo_config_file
 from sumo_generators.static.argparse_types import *
 from sumo_generators.static.constants import *
@@ -29,18 +29,6 @@ def get_options():
     output_files_group.add_argument("-e", "--edges-path", dest="edges_path", action="store", default=DEFAULT_EDGES_DIR,
                                     type=str, help=f"path where the edges file is created. "
                                                    f"Default is {DEFAULT_EDGES_DIR}")
-
-    # Detector file path
-    output_files_group.add_argument("-d", "--detector-path", dest="detector_path", action='store',
-                                    default=DEFAULT_DET_DIR, type=str,
-                                    help=f"path where the detectors file is created. "
-                                         f"Default is {DEFAULT_DET_DIR}")
-
-    # TL programs file path
-    output_files_group.add_argument("-t", "--tl-program-path", dest="tl_program_path", action='store',
-                                    default=DEFAULT_TLL_DIR, type=str,
-                                    help=f"path where SUMO traffic lights programs is created. "
-                                         f"Default is {DEFAULT_TLL_DIR}")
 
     # Full network file path
     output_files_group.add_argument("-o", "--output-network", dest="network_path", action="store",
@@ -87,20 +75,6 @@ def get_options():
                                               "Possible types are: opposites, incoming, alternateOneWay. "
                                               f"Default is {TL_LAYOUT}.")
 
-    # Traffic Light Program Generator
-    tl_program_generator_group = arg_parser.add_argument_group("Traffic Light generator",
-                                                               description="Parameters related to the Traffic Lights "
-                                                                           "programs")
-
-    tl_program_generator_group.add_argument("-i", "--interval", dest="interval", action='store', type=int,
-                                            help="interval of seconds to be used in the traffic light generator")
-    tl_program_generator_group.add_argument("-p", "--proportion", dest="proportion", action='store_true',
-                                            default=True, help="flag to use proportions in the traffic light generator")
-    tl_program_generator_group.add_argument("--allow-turns", dest="allow_turns", action='store_true',
-                                            default=ALLOW_TURNS,
-                                            help="flag to allow additional phases on turns "
-                                                 f"in the traffic light generator. Default is {ALLOW_TURNS}")
-
     # Retrieve the arguments parsed
     args = arg_parser.parse_args()
     return args
@@ -110,7 +84,7 @@ if __name__ == '__main__':
     # Retrieve execution options (parameters)
     exec_options = get_options()
 
-    print(f"Executing network generator with parameters: {vars(exec_options)}")
+    print(f"Executing network grid generator with parameters: {vars(exec_options)}")
 
     # Generate the network file -> Added 2 to the network columns
     generate_network_file(rows=exec_options.rows + 2, cols=exec_options.cols + 2, lanes=exec_options.lanes,
@@ -119,15 +93,5 @@ if __name__ == '__main__':
                           nodes_path=exec_options.nodes_path, edges_path=exec_options.edges_path,
                           network_path=exec_options.network_path)
 
-    # Generate the detector file
-    generate_detector_file(network_path=exec_options.network_path, detector_path=exec_options.detector_path,
-                           cols=exec_options.cols)
-
-    # Generate the traffic light programs file
-    generate_tl_file(network_path=exec_options.network_path, tl_path=exec_options.tl_program_path,
-                     proportion=exec_options.proportion, interval=exec_options.interval,
-                     allow_turns=exec_options.allow_turns, lanes=exec_options.lanes)
-
     # Generate the SUMO config file
-    generate_sumo_config_file(sumo_config_path=exec_options.sumo_config_path, network_path=exec_options.network_path,
-                              tll_path=exec_options.tl_program_path, detector_path=exec_options.detector_path)
+    generate_sumo_config_file(sumo_config_path=exec_options.sumo_config_path, network_path=exec_options.network_path)

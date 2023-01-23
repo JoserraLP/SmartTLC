@@ -161,7 +161,7 @@ class DockerComposeGenerator:
                     param_value = param_value.replace('../', '/etc/') if '../' in param_value else param_value
 
                     # Store time pattern for TLC
-                    pattern_str += DOCKER_EXECUTION_OPTIONS['traffic_light_controller'][param_type]. \
+                    pattern_str += DOCKER_EXECUTION_OPTIONS['transportation_digital_twin'][param_type]. \
                         format(param_value)
                 # Add route files to TLC volume
                 elif param_type == 'load':
@@ -278,7 +278,7 @@ class DockerComposeGenerator:
 
                     # Iterate over connections
                     for index, connection in enumerate(connections):
-                        # If there is a connection and it has not been generated previously
+                        # If there is a connection, and it has not been generated previously
                         if connection == 1 and generated_containers[index] == 0:
                             # Retrieve connected container name and data
                             connection_name = keys[index]

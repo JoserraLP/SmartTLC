@@ -24,9 +24,9 @@ def get_options():
     arg_parser.add_argument("--nogui", action="store_true",
                             default=False, help="run the commandline version of sumo")
 
-    arg_parser.add_argument("-c", "--config", dest="config_file", action='store', default=DEFAULT_CONFIG_FILE,
+    arg_parser.add_argument("-c", "--config", dest="config_file", action='store', default=DEFAULT_CONFIG_FILENAME,
                             type=check_file, help=f"sumo configuration file location. Default is "
-                                                  f"{DEFAULT_CONFIG_FILE}")
+                                                  f"{DEFAULT_CONFIG_FILENAME}")
 
     # Database group
     database_group = arg_parser.add_argument_group("Database parameters",

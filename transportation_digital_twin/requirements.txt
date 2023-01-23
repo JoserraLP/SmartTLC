@@ -9,7 +9,7 @@ sklearn
 scikit-learn
 
 # Editable install with no version control
--e /etc/traffic_light_controller/
+-e /etc/transportation_digital_twin/
 -e /etc/traffic_analyzer/
 -e /etc/traffic_predictor/
 -e /etc/turn_predictor/

@@ -81,28 +81,28 @@ class TrafficPredictor:
         """
 
         # Parse message to dict
-        contextual_queues_info = ast.literal_eval(msg.payload.decode('utf-8'))['info']
+        contextual_lanes_info = ast.literal_eval(msg.payload.decode('utf-8'))['info']
 
-        # Iterate over the contextual queues info
-        for queue_info in contextual_queues_info:
-            # Create payload with the queue information and the traffic type analysis
+        # Iterate over the contextual lanes info
+        for lane_info in contextual_lanes_info:
+            # Create payload with the lane information and the traffic type analysis
             payload = {
-                queue_info['queue']: self.predict_traffic_type(queue_info=queue_info)}
+                lane_info['lane']: self.predict_traffic_type(lane_info=lane_info)}
             # Publish the payload
-            self._mqtt_client.publish(topic=TRAFFIC_PREDICTION_TOPIC + '/' + queue_info['tl_id'],
+            self._mqtt_client.publish(topic=TRAFFIC_PREDICTION_TOPIC + '/' + lane_info['tl_id'],
                                       payload=parse_to_valid_schema(payload))
 
-    def predict_traffic_type(self, queue_info: dict) -> int:
+    def predict_traffic_type(self, lane_info: dict) -> int:
         """
         Predict the traffic type for a given junction at a given instant
 
-        :param queue_info: information related to a given road and date
-        :type queue_info: dict
+        :param lane_info: information related to a given road and date
+        :type lane_info: dict
         :return: traffic type
         :rtype: int
         """
         # Convert the traffic information to dataframe by selecting valid columns
-        traffic_data = pd.DataFrame.from_dict(queue_info, orient='index', columns=COLUMNS_PREDICTOR)
+        traffic_data = pd.DataFrame.from_dict(lane_info, orient='index', columns=COLUMNS_PREDICTOR)
 
         # Add road column
         traffic_data = traffic_data.reset_index(names=['road'])

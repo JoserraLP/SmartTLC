@@ -32,26 +32,26 @@ class TrafficLightInfoStorage:
         # Initialize the first historical info
         self.create_historical_traffic_info(self._cur_temporal_window)
 
-    def create_historical_traffic_info(self, temporal_window: int, queue_info: dict = None) -> None:
+    def create_historical_traffic_info(self, temporal_window: int, lane_info: dict = None) -> None:
         """
         Creates a new entry for the historical info for the timestep
 
         :param temporal_window: current info temporal window
         :type temporal_window: int
-        :param queue_info: number of passing vehicles, waiting time and turning vehicles per queue.
-        :type queue_info: dict
+        :param lane_info: number of passing vehicles, waiting time and turning vehicles per lane.
+        :type lane_info: dict
 
         :return: None
         """
-        # If queue info does not have information
-        if not queue_info:
-            # Initialize passing vehicles, waiting time and turning vehicles per queue
-            queue_info = {lane: {'num_passing_veh': 0, 'waiting_time_veh': 0.0, 'occupancy': [], 'CO2_emission': [],
+        # If lane info does not have information
+        if not lane_info:
+            # Initialize passing vehicles, waiting time and turning vehicles per lane
+            lane_info = {lane: {'num_passing_veh': 0, 'waiting_time_veh': 0.0, 'occupancy': [], 'CO2_emission': [],
                                  'CO_emission': [], 'HC_emission': [], 'PMx_emission': [], 'NOx_emission': [],
-                                 'noise_emission': []} for lane in self._lanes} if not queue_info else queue_info
+                                 'noise_emission': []} for lane in self._lanes} if not lane_info else lane_info
 
         # Store information into the dict
-        self._historical_info[temporal_window] = {'contextual_info': queue_info,
+        self._historical_info[temporal_window] = {'contextual_info': lane_info,
                                                   'date_info': None,
                                                   'actual_program': self._actual_program}
 
@@ -117,21 +117,21 @@ class TrafficLightInfoStorage:
         :rtype: dict
         """
 
-        # Create a list based on queue information
-        contextual_queue_info = [{'tl_id': self._tl_id, 'queue': queue_name,
-                                  'waiting_time_veh': queue_info['waiting_time_veh'],
-                                  'num_passing_veh': queue_info['num_passing_veh'],
-                                  'avg_lane_occupancy': mean(queue_info['occupancy']),
-                                  'avg_CO2_emission': mean(queue_info['CO2_emission']),
-                                  'avg_CO_emission': mean(queue_info['CO_emission']),
-                                  'avg_HC_emission': mean(queue_info['HC_emission']),
-                                  'avg_PMx_emission': mean(queue_info['PMx_emission']),
-                                  'avg_NOx_emission': mean(queue_info['NOx_emission']),
-                                  'avg_noise_emission': mean(queue_info['noise_emission'])}
-                                 for queue_name, queue_info in self._historical_info[temporal_window]
+        # Create a list based on lane information
+        contextual_lane_info = [{'tl_id': self._tl_id, 'lane': lane_name,
+                                  'waiting_time_veh': lane_info['waiting_time_veh'],
+                                  'num_passing_veh': lane_info['num_passing_veh'],
+                                  'avg_lane_occupancy': mean(lane_info['occupancy']),
+                                  'avg_CO2_emission': mean(lane_info['CO2_emission']),
+                                  'avg_CO_emission': mean(lane_info['CO_emission']),
+                                  'avg_HC_emission': mean(lane_info['HC_emission']),
+                                  'avg_PMx_emission': mean(lane_info['PMx_emission']),
+                                  'avg_NOx_emission': mean(lane_info['NOx_emission']),
+                                  'avg_noise_emission': mean(lane_info['noise_emission'])}
+                                 for lane_name, lane_info in self._historical_info[temporal_window]
                                  ['contextual_info'].items()]
 
-        return {'info': contextual_queue_info}
+        return {'info': contextual_lane_info}
 
     def get_traffic_analyzer_info(self, temporal_window: int) -> dict:
         """
@@ -142,9 +142,9 @@ class TrafficLightInfoStorage:
         :return: dict with passing vehicles on NS and EW direction
         :rtype: dict
         """
-        # Iterate over all the queues and retrieve its number of passing vehicles
-        return {queue_name: {'num_passing_veh': queue_info['num_passing_veh']}
-                for queue_name, queue_info in self._historical_info[temporal_window]['contextual_info'].items()}
+        # Iterate over all the lanes and retrieve its number of passing vehicles
+        return {lane_name: {'num_passing_veh': lane_info['num_passing_veh']}
+                for lane_name, lane_info in self._historical_info[temporal_window]['contextual_info'].items()}
 
     def get_traffic_predictor_info(self, temporal_window: int) -> dict:
         """
@@ -168,29 +168,29 @@ class TrafficLightInfoStorage:
 
     """ CLASS ATTRIBUTES UTILS """
 
-    def increase_passing_vehicles(self, queue: str, num_veh: int) -> None:
+    def increase_passing_vehicles(self, lane: str, num_veh: int) -> None:
         """
-        Increase the number of passing vehicles on the queue given at the current temporal window
+        Increase the number of passing vehicles on the lane given at the current temporal window
 
-        :param queue: input queue which is the name of the road.
-        :type queue: str
+        :param lane: input lane which is the name of the road.
+        :type lane: str
         :param num_veh: number of vehicles
         :type num_veh: int
         :return: None
         """
-        self._historical_info[self._cur_temporal_window]['contextual_info'][queue]['num_passing_veh'] += num_veh
+        self._historical_info[self._cur_temporal_window]['contextual_info'][lane]['num_passing_veh'] += num_veh
 
-    def increase_waiting_time(self, queue: str, waiting_time: float) -> None:
+    def increase_waiting_time(self, lane: str, waiting_time: float) -> None:
         """
         Increase the waiting time on the given direction at the current temporal window
 
-        :param queue: input queue which is the name of the road.
-        :type queue: str
+        :param lane: input lane which is the name of the road.
+        :type lane: str
         :param waiting_time: waiting time
         :type waiting_time: float
         :return: None
         """
-        self._historical_info[self._cur_temporal_window]['contextual_info'][queue]['waiting_time_veh'] += waiting_time
+        self._historical_info[self._cur_temporal_window]['contextual_info'][lane]['waiting_time_veh'] += waiting_time
 
     def update_passing_vehicles(self, passing_veh: set) -> None:
         """
@@ -224,19 +224,19 @@ class TrafficLightInfoStorage:
         """
         return self._historical_info[temporal_window]
 
-    def append_item_on_list_queue(self, queue: str, name: str, value: float) -> None:
+    def append_item_on_list_lane(self, lane: str, name: str, value: float) -> None:
         """
-        Append a new value into a list with the given name on the queue historical info
+        Append a new value into a list with the given name on the lane historical info
 
-        :param queue: queue name
-        :type queue: str
+        :param lane: lane name
+        :type lane: str
         :param name: value name
         :type name: str
         :param value: item value
         :type value: str
         :return: None
         """
-        self._historical_info[self._cur_temporal_window]['contextual_info'][queue][name].append(value)
+        self._historical_info[self._cur_temporal_window]['contextual_info'][lane][name].append(value)
 
     """ SETTERS AND GETTERS """
 

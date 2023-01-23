@@ -6,10 +6,10 @@ from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, TRAFFIC_INFO_T
 from sumo_generators.time_patterns.time_patterns import TimePattern
 from sumo_generators.time_patterns.utils import retrieve_date_info
 from sumo_generators.utils.utils import parse_to_valid_schema
-from tl_controller.adaptation.context import TrafficLightAdapter
-from tl_controller.adaptation.strategy import *
-from tl_controller.providers.utils import *
-from tl_controller.static.constants import *
+from tdt.adaptation.context import TrafficLightAdapter
+from tdt.adaptation.strategy import *
+from tdt.providers.utils import *
+from tdt.static.constants import *
 from turns_predictor.providers.predictor import TurnPredictor
 
 
@@ -54,7 +54,9 @@ class TraCISimulator:
         self._traci, self._net_topology, self._traffic_lights = None, None, None
 
         # TL program to the middle one
-        self._tl_program = TL_PROGRAMS[int(len(TL_PROGRAMS) / 2)]
+        # self._tl_program = TL_PROGRAMS[int(len(TL_PROGRAMS) / 2)]
+        # TL program to '0'
+        self._tl_program = '0'
 
         # Store local flag
         self._local = local
@@ -225,11 +227,8 @@ class TraCISimulator:
         """
         # Global controller signalises the traffic lights to perform  its own adaptation process
         for traffic_light_id, traffic_light in self._traffic_lights.items():
-
-            # If the temporal window is finished
-            if self._cur_timestep % TIMESTEPS_TO_STORE_INFO == 0:
-                # Update the traffic light program based on the adapter
-                traffic_light.update_tl_program(timestep=self._cur_timestep)
+            # Update the traffic light program based on the adapter
+            traffic_light.update_tl_program(timestep=self._cur_timestep)
 
     def monitor_traffic_lights(self) -> None:
         """
@@ -279,7 +278,7 @@ class TraCISimulator:
             contextual_tl_info = traffic_light.get_processed_contextual_info()
 
             # Store traffic light contextual into the net topology database
-            self._net_topology.update_lanes_info(traffic_light_id, contextual_queue_info=contextual_tl_info['info'])
+            self._net_topology.update_lanes_info(traffic_light_id, contextual_lane_info=contextual_tl_info['info'])
 
             # Publish the contextual information
             traffic_light.publish_contextual_info(contextual_tl_info=contextual_tl_info)
@@ -335,14 +334,16 @@ class TraCISimulator:
         # Traci simulation. Iterate until simulation is ended
         while self._cur_timestep < max_timestep:
 
-            # Adapt traffic light programs
-            self.adapt_traffic_lights()
-
             # Monitor the traffic light contextual information
             self.monitor_traffic_lights()
 
             # Store info each time interval
             if self._cur_timestep % TIMESTEPS_TO_STORE_INFO == 0:
+
+                # TODO update adaptation strategies per TL
+
+                # Adapt traffic light programs
+                self.adapt_traffic_lights()
 
                 # Publish the information
                 if not self._local:

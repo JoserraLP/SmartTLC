@@ -8,8 +8,8 @@ from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, TRAFFIC_INFO_T
 from sumo_generators.utils.utils import parse_to_valid_schema
 from t_analyzer.providers.analyzer import TrafficAnalyzer
 from t_predictor.providers.predictor import TrafficPredictor
-from tl_controller.adaptation.strategy import AdaptationStrategy
-from tl_controller.storage.storage import TrafficLightInfoStorage
+from tdt.adaptation.strategy import AdaptationStrategy
+from tdt.storage.storage import TrafficLightInfoStorage
 from turns_predictor.providers.predictor import TurnPredictor
 
 
@@ -116,7 +116,7 @@ class TrafficLightAdapter:
 
     def count_passing_vehicles(self) -> None:
         """
-        Update the counters of vehicles passing on each queue, appending them to the list
+        Update the counters of vehicles passing on each lane, appending them to the list
         
         :return: None
         """
@@ -138,7 +138,7 @@ class TrafficLightAdapter:
                 self._traffic_light_info[self._tl_id].update_passing_vehicles(passing_veh=not_counted_veh)
 
                 # Add the number of non-counted vehicles
-                self._traffic_light_info[self._tl_id].increase_passing_vehicles(queue=lane,
+                self._traffic_light_info[self._tl_id].increase_passing_vehicles(lane=lane,
                                                                                 num_veh=len(not_counted_veh))
 
     def calculate_waiting_time_per_lane(self) -> None:
@@ -154,8 +154,8 @@ class TrafficLightAdapter:
         for lane, waiting_time in current_waiting_time.items():
             # If the information is valid (there are no more vehicles waiting)
             if self._prev_waiting_time[lane] > waiting_time:
-                # Append to queue
-                self._traffic_light_info[self._tl_id].increase_waiting_time(queue=lane,
+                # Append to lane
+                self._traffic_light_info[self._tl_id].increase_waiting_time(lane=lane,
                                                                             waiting_time=self._prev_waiting_time[lane])
 
         # Update the previous waiting time to the current waiting time
@@ -181,7 +181,7 @@ class TrafficLightAdapter:
 
             # Insert into the historical info
             for k, v in lane_dict.items():
-                self._traffic_light_info[self._tl_id].append_item_on_list_queue(queue=lane, name=k, value=v)
+                self._traffic_light_info[self._tl_id].append_item_on_list_lane(lane=lane, name=k, value=v)
 
     def remove_passing_vehicles(self) -> None:
         """
@@ -353,19 +353,19 @@ class TrafficLightAdapter:
         return self._traffic_light_info[self._tl_id].get_processed_contextual_info(temporal_window=
                                                                                    self._cur_temporal_window)
 
-    def create_historical_traffic_info(self, temporal_window: int, queue_info: dict = None) -> None:
+    def create_historical_traffic_info(self, temporal_window: int, lane_info: dict = None) -> None:
         """
         Creates a new entry for the historical info for the timestep
 
         :param temporal_window: current info temporal window
         :type temporal_window: int
-        :param queue_info: number of passing vehicles, waiting time and turning vehicles per queue.
-        :type queue_info: dict
+        :param lane_info: number of passing vehicles, waiting time and turning vehicles per lane.
+        :type lane_info: dict
 
         :return: None
         """
         self._traffic_light_info[self._tl_id].create_historical_traffic_info(temporal_window=temporal_window,
-                                                                             queue_info=queue_info)
+                                                                             lane_info=lane_info)
 
     """ MIDDLEWARE """
 
@@ -392,19 +392,19 @@ class TrafficLightAdapter:
         :return: None
         """
         # Parse message to dict
-        adjacent_contextual_queues_info = ast.literal_eval(msg.payload.decode('utf-8'))['info']
+        adjacent_contextual_lanes_info = ast.literal_eval(msg.payload.decode('utf-8'))['info']
 
         # Only retrieve those lanes that are connected to the TL
-        for adjacent_info in adjacent_contextual_queues_info:
+        for adjacent_info in adjacent_contextual_lanes_info:
             # Check from the outbound lanes
-            if adjacent_info['queue'] in self._outbound_lanes_names:
+            if adjacent_info['lane'] in self._outbound_lanes_names:
                 # Create a dict with the info: only store the number of vehicles passing and the related waiting time
-                queue_info = {adjacent_info['queue']: {'num_passing_veh': adjacent_info['num_passing_veh'],
+                lane_info = {adjacent_info['lane']: {'num_passing_veh': adjacent_info['num_passing_veh'],
                                                        'waiting_time_veh': adjacent_info['waiting_time_veh']}}
 
-                # Store the info on the given queue
+                # Store the info on the given lane
                 self._traffic_light_info[adjacent_info['tl_id']].create_historical_traffic_info(
-                    temporal_window=self._cur_temporal_window, queue_info=queue_info)
+                    temporal_window=self._cur_temporal_window, lane_info=lane_info)
 
     def close_connection(self):
         """

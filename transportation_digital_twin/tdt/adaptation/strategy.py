@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 
 from t_analyzer.providers.analyzer import TrafficAnalyzer
 from t_predictor.providers.predictor import TrafficPredictor
-from tl_controller.static.constants import TRAFFIC_TYPE_TL_ALGORITHMS
 
 
 class AdaptationStrategy(ABC):
@@ -54,8 +53,8 @@ class StaticAS(AdaptationStrategy):
         super().__init__(traffic_light_id)
 
     def get_new_tl_program(self, traffic_info: dict, timestep: int = None, temporal_window: int = None) -> str:
-        # Return equally distributed traffic light program
-        return TRAFFIC_TYPE_TL_ALGORITHMS[str(int(len(list(TRAFFIC_TYPE_TL_ALGORITHMS.values()))/2))]
+        # Always the same, default program
+        return '0'
 
 
 class SelfTrafficAnalyzerAS(AdaptationStrategy):
@@ -72,14 +71,11 @@ class SelfTrafficAnalyzerAS(AdaptationStrategy):
 
     def get_new_tl_program(self, traffic_info: dict, timestep: int = None, temporal_window: int = None) -> str:
         # Retrieve self traffic information
-        traffic_light_info = traffic_info[self._traffic_light_id].get_traffic_analyzer_info(temporal_window=temporal_window)
+        traffic_light_info = traffic_info[self._traffic_light_id].get_traffic_analyzer_info(temporal_window=
+                                                                                            temporal_window)
 
-        # There is only one junction, so retrieve its information
-        current_traffic_type = self._analyzer.analyze_current_traffic_flow(
-            passing_veh_n_s=traffic_light_info['passing_veh_n_s'],
-            passing_veh_e_w=traffic_light_info['passing_veh_e_w'])
-
-        return TRAFFIC_TYPE_TL_ALGORITHMS[str(int(current_traffic_type))]
+        # Always the same, default program
+        return '0'
 
 
 class SelfTrafficPredictorAS(AdaptationStrategy):
@@ -96,12 +92,11 @@ class SelfTrafficPredictorAS(AdaptationStrategy):
 
     def get_new_tl_program(self, traffic_info: dict, timestep: int = None, temporal_window: int = None) -> str:
         # Retrieve self traffic information
-        traffic_light_info = traffic_info[self._traffic_light_id].get_traffic_predictor_info(temporal_window=temporal_window)
+        traffic_light_info = traffic_info[self._traffic_light_id].get_traffic_predictor_info(temporal_window=
+                                                                                             temporal_window)
 
-        # Predict the current traffic type
-        current_traffic_type = self._traffic_predictor.predict_traffic_type(traffic_light_info)
-
-        return TRAFFIC_TYPE_TL_ALGORITHMS[str(int(current_traffic_type))]
+        # Always the same, default program
+        return '0'
 
 
 class SelfTrafficAnalyzerAndPredictorAS(AdaptationStrategy):

@@ -16,23 +16,6 @@ def check_file(file_dir: str) -> str:
     return file_dir
 
 
-def check_greater_zero(argument: str) -> int:
-    """
-    Check if the argument is greater than zero
-
-    :param argument: argument value
-    :type argument: str
-    :return: lanes if valid
-    :rtype: int
-    """
-    # Parse to int
-    argument = int(argument)
-
-    if argument <= 0:
-        raise argparse.ArgumentTypeError('Invalid value. Minimum value is 1')
-    return argument
-
-
 def check_valid_format(date: str) -> str:
     """
     Check if the date follows a valid pattern

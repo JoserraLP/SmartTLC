@@ -17,7 +17,7 @@ def create_outer_junction_info(info: list) -> dict:
     """
     outer_junction_info = {'from': info[0], 'to': info[1]}
     if len(info) == 4:
-        # On both edges, remove the lanes id "_X"
+        # On both edges, remove the lane id "_X"
         outer_junction_info['from_edge'] = '_'.join(info[2].split('_')[:-1])
         outer_junction_info['to_edge'] = '_'.join(info[3].split('_')[:-1])
 
@@ -273,19 +273,6 @@ class NetworkTopology:
         return [traffic_light.name for traffic_light in TrafficLight.nodes.all()]
 
     @staticmethod
-    def get_tl_db_id(tl_name: str) -> str:
-        """
-        Get traffic light id
-
-        :param tl_name: traffic light name
-        :type tl_name: str
-        :return: traffic light id
-        :rtype: str
-        """
-        # Get Traffic Light node and its id
-        return TrafficLight.nodes.get(name=tl_name).id
-
-    @staticmethod
     def get_tl_roads(tl_name: str) -> list:
         """
         Get outbound and inbound traffic lights connected roads from a given traffic light
@@ -359,7 +346,7 @@ class NetworkTopology:
         return outer_junctions_pd.to_dict(orient='records')
 
     # UPDATE METHODS
-    def update_lanes_info(self, tl_id: str, contextual_queue_info: dict):
+    def update_lanes_info(self, tl_id: str, contextual_lane_info: dict):
         """
         Update data related to the lanes connected to a traffic light
         """
@@ -373,18 +360,18 @@ class NetworkTopology:
         # Process the result
         lanes = [LaneRelation.inflate(lane[0]) for lane in results]
 
-        # Iterate over the contextual_queue_info
-        for queue_info in contextual_queue_info:
+        # Iterate over the contextual_lane_info
+        for lane_info in contextual_lane_info:
             # Get lane info and store the values
-            lane = [lane for lane in lanes if lane.name == queue_info['queue']][0]
+            lane = [lane for lane in lanes if lane.name == lane_info['lane']][0]
 
             # Store properties
-            lane.avg_lane_occupancy = round(queue_info['avg_lane_occupancy'], 2)
-            lane.avg_CO2_emission = queue_info['avg_CO2_emission']
-            lane.avg_CO_emission = queue_info['avg_CO_emission']
-            lane.avg_HC_emission = queue_info['avg_HC_emission']
-            lane.avg_PMx_emission = queue_info['avg_PMx_emission']
-            lane.avg_NOx_emission = queue_info['avg_NOx_emission']
-            lane.avg_noise_emission = queue_info['avg_noise_emission']
+            lane.avg_lane_occupancy = round(lane_info['avg_lane_occupancy'], 2)
+            lane.avg_CO2_emission = lane_info['avg_CO2_emission']
+            lane.avg_CO_emission = lane_info['avg_CO_emission']
+            lane.avg_HC_emission = lane_info['avg_HC_emission']
+            lane.avg_PMx_emission = lane_info['avg_PMx_emission']
+            lane.avg_NOx_emission = lane_info['avg_NOx_emission']
+            lane.avg_noise_emission = lane_info['avg_noise_emission']
             # Save the data
             lane.save()

@@ -50,17 +50,17 @@ ALL_CONTAINERS = {
                    ' --middleware_host 172.20.0.2 --middleware_port 1883"',
         'ipv4_address': '172.20.0.6'
     },
-    'traffic_light_controller': {
-        'build': './traffic_light_controller',
-        'container_name': 'traffic_light_controller',
-        'env_file': 'traffic_light_controller/eclipse-sumo-image/env.sumo',
+    'transportation_digital_twin': {
+        'build': './transportation_digital_twin',
+        'container_name': 'transportation_digital_twin',
+        'env_file': 'transportation_digital_twin/eclipse-sumo-image/env.sumo',
         'restart': 'on-failure',
         'links': 'mosquitto',
-        'volumes': ['./traffic_light_controller:/etc/traffic_light_controller/', './sumo-utils:/etc/sumo-utils/',
+        'volumes': ['./transportation_digital_twin:/etc/transportation_digital_twin/', './sumo-utils:/etc/sumo-utils/',
                     '{}:{}', './traffic_predictor:/etc/traffic_predictor/',
                     './turn_predictor:/etc/turn_predictor/', './traffic_analyzer:/etc/traffic_analyzer/'],
-        'command': 'bash -c "pip3 install -r /etc/traffic_light_controller/requirements.txt && '
-                   'cd /etc/traffic_light_controller/tl_controller/ &&  dockerize -wait '
+        'command': 'bash -c "pip3 install -r /etc/transportation_digital_twin/requirements.txt && '
+                   'cd /etc/transportation_digital_twin/tdt/ &&  dockerize -wait '
                    'tcp://172.20.0.3:8086 -timeout 120s -wait-retry-interval 20s python3 {}"',
         'ipv4_address': '172.20.0.7'
         # TODO add load topology into the database. Not delete the container even if the process has finished
@@ -109,7 +109,7 @@ ALL_CONTAINERS = {
 }
 
 DOCKER_EXECUTION_OPTIONS = {
-    'traffic_light_controller': {
+    'transportation_digital_twin': {
         'pattern': 'main.py -c /etc/config/simulation.sumocfg --nogui -t {}',
         'date': 'main.py -c /etc/config/simulation.sumocfg --nogui -d {}'
 
