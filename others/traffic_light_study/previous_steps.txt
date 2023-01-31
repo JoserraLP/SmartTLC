@@ -1,3 +1,0 @@
-1# Create a conda environment with the libraries from traffic_light_study requirements.txt file
-2# Activate conda environment
-3# Execute study

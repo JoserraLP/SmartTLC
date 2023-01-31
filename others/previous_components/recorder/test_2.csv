@@ -1,8 +1,0 @@
-"topic";"measurement_field";"tag";"timestamp"
-"sumo/context/traci/lane/:center0_0_0";"sumo,lane=:center0_0_0";"last_occupancy=0.0,last_mean_speed=35.0,waiting_time=0.0,num_halted=0";"2021-07-14 11:19:53.265"
-"sumo/context/traci/lane/:center0_0_0";"sumo,lane=:center0_0_0";"last_occupancy=5.0,last_mean_speed=30.0,waiting_time=5.0,num_halted=2";"2021-07-14 11:19:54.265"
-"sumo/context/traci/lane/:center0_0_0";"sumo,lane=:center0_0_0";"last_occupancy=0.0,last_mean_speed=10.0,waiting_time=0.0,num_halted=0";"2021-07-14 11:19:55.265"
-"sumo/context/traci/lane/:center0_0_0";"sumo,lane=:center0_0_0";"last_occupancy=7.0,last_mean_speed=25.0,waiting_time=7.0,num_halted=0";"2021-07-14 11:19:58.265"
-"sumo/context/traci/lane/:center0_0_0";"sumo,lane=:center0_0_0";"last_occupancy=0.0,last_mean_speed=35.0,waiting_time=0.0,num_halted=0";"2021-07-14 11:20:00.265"
-"sumo/observation/o1";"AAAAAAAAA";"AAAAAAAAAAAA"
-"sumo/qos/o1";"BBBBBBBBBBBB";"BBBBBBBBBBBBB"
