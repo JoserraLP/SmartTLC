@@ -1,16 +1,12 @@
-pandas
-sumolib==1.10.0
-traci==1.10.0
-paho-mqtt==1.6.1
-seaborn
-setuptools
-matplotlib
-sklearn
-scikit-learn
+paho_mqtt==1.6.1
+pandas==1.5.2
+setuptools==65.5.0
+sumolib==1.15.0
+traci==1.15.0
 
 # Editable install with no version control
--e /etc/transportation_digital_twin/
--e /etc/traffic_analyzer/
--e /etc/traffic_predictor/
--e /etc/turn_predictor/
--e /etc/sumo-utils/
+-e ../transportation_digital_twin/
+-e ../traffic_analyzer/
+-e ../traffic_predictor/
+-e ../turn_predictor/
+-e ../sumo-utils/

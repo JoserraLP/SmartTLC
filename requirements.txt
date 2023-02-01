@@ -1,26 +1,18 @@
-certifi==2021.10.8
-cycler==0.11.0
-joblib==1.1.0
-kiwisolver==1.3.2
-matplotlib==3.4.3
-numpy==1.21.4
-paho-mqtt==1.6.1
-pandas
-traci
-Pillow==8.4.0
-pyparsing==3.0.6
-python-dateutil==2.8.2
-pytz==2021.3
-scikit-learn==1.0.1
-scipy==1.7.3
-seaborn==0.11.2
-six==1.16.0
-sklearn==0.0
-sumolib==1.10.0
-neo4j
-neomodel
--e git+https://github.com/JoserraLP/SmartTLC.git@f9dfc2b24c3307a402206e7113e4a3d0a271a0b3#egg=t_analyzer&subdirectory=traffic_analyzer
--e git+https://github.com/JoserraLP/SmartTLC.git@f9dfc2b24c3307a402206e7113e4a3d0a271a0b3#egg=t_predictor&subdirectory=traffic_predictor
-threadpoolctl==3.0.0
--e git+https://github.com/JoserraLP/SmartTLC.git@f9dfc2b24c3307a402206e7113e4a3d0a271a0b3#egg=tdt&subdirectory=transportation_digital_twin
--e git+https://github.com/JoserraLP/SmartTLC.git@f9dfc2b24c3307a402206e7113e4a3d0a271a0b3#egg=tl_study&subdirectory=traffic_light_study
+influxdb_client==1.34.0
+neomodel==4.0.8
+numpy==1.23.5
+paho_mqtt==1.6.1
+pandas==1.5.2
+scikit_learn==1.2.1
+setuptools==65.5.0
+sumolib==1.15.0
+traci==1.15.0
+
+
+# Editable install with no version control
+-e transportation_digital_twin/
+-e traffic_analyzer/
+-e traffic_predictor/
+-e turn_predictor/
+-e sumo-utils/
+-e docker-utils/

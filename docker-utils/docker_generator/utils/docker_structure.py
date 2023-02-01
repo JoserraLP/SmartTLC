@@ -44,9 +44,9 @@ ALL_CONTAINERS = {
         'restart': 'on-failure',
         'links': 'mosquitto',
         'volumes': ['./traffic_predictor:/etc/traffic_predictor/', './sumo-utils:/etc/sumo-utils/'],
-        'command': 'bash -c "pip3 install -r /etc/traffic_predictor/requirements.txt && '
-                   'cd /etc/traffic_predictor/t_predictor/ && dockerize -wait '
-                   'tcp://172.20.0.3:8086 -timeout 120s -wait-retry-interval 40s python3 ml_trainer.py --component -n 1'
+        'command': 'bash -c "cd /etc/traffic_predictor && pip3 install -r requirements.txt && '
+                   'cd t_predictor/ && dockerize -wait tcp://172.20.0.3:8086 -timeout 120s'
+                   ' -wait-retry-interval 40s python3 ml_trainer.py --component -n 1'
                    ' --middleware_host 172.20.0.2 --middleware_port 1883"',
         'ipv4_address': '172.20.0.6'
     },
@@ -59,9 +59,9 @@ ALL_CONTAINERS = {
         'volumes': ['./transportation_digital_twin:/etc/transportation_digital_twin/', './sumo-utils:/etc/sumo-utils/',
                     '{}:{}', './traffic_predictor:/etc/traffic_predictor/',
                     './turn_predictor:/etc/turn_predictor/', './traffic_analyzer:/etc/traffic_analyzer/'],
-        'command': 'bash -c "pip3 install -r /etc/transportation_digital_twin/requirements.txt && '
-                   'cd /etc/transportation_digital_twin/tdt/ &&  dockerize -wait '
-                   'tcp://172.20.0.3:8086 -timeout 120s -wait-retry-interval 20s python3 {}"',
+        'command': 'bash -c "cd /etc/transportation_digital_twin && pip3 install -r requirements.txt && '
+                   'cd tdt/ &&  dockerize -wait tcp://172.20.0.3:8086 -timeout 120s'
+                   ' -wait-retry-interval 20s python3 {}"',
         'ipv4_address': '172.20.0.7'
         # TODO add load topology into the database. Not delete the container even if the process has finished
     },  # Added {} to parametrize execution
@@ -71,8 +71,8 @@ ALL_CONTAINERS = {
         'restart': 'on-failure',
         'links': 'mosquitto',
         'volumes': ['./traffic_analyzer:/etc/traffic_analyzer/', './sumo-utils:/etc/sumo-utils/'],
-        'command': 'bash -c "pip3 install -r /etc/traffic_analyzer/requirements.txt && '
-                   'cd /etc/traffic_analyzer/t_analyzer/ && python3 main.py"',
+        'command': 'bash -c "cd /etc/traffic_analyzer && pip3 install -r requirements.txt && '
+                   'cd t_analyzer/ && python3 main.py"',
         'ipv4_address': '172.20.0.8'
     },
     'neo4j': {
@@ -90,8 +90,7 @@ ALL_CONTAINERS = {
         'restart': 'on-failure',
         'links': 'mosquitto',
         'volumes': './exp_collector:/etc/exp_collector/',
-        'command': 'bash -c "pip3 install -r /etc/exp_collector/requirements.txt && '
-                   'cd /etc/exp_collector && python3 main.py -o {} -w {}"',
+        'command': 'bash -c "cd /etc/exp_collector && pip3 install -r requirements.txt && python3 main.py -o {} -w {}"',
         'ipv4_address': '172.20.0.11'
     },
     'turn_predictor': {
@@ -100,10 +99,9 @@ ALL_CONTAINERS = {
         'restart': 'on-failure',
         'links': 'mosquitto',
         'volumes': ['./turn_predictor:/etc/turn_predictor/'],
-        'command': 'bash -c "pip3 install -r /etc/turn_predictor/requirements.txt && '
-                   'cd /etc/turn_predictor/turns_predictor/ && dockerize -wait '
-                   'tcp://172.20.0.3:8086 -timeout 120s -wait-retry-interval 40s python3 ml_trainer.py --component -n 1'
-                   ' --middleware_host 172.20.0.2 --middleware_port 1883"',
+        'command': 'bash -c "cd /etc/turn_predictor && pip3 install -r requirements.txt && '
+                   'cd turns_predictor/ && dockerize -wait tcp://172.20.0.3:8086 -timeout 120s -wait-retry-interval '
+                   '40s python3 ml_trainer.py --component -n 1 --middleware_host 172.20.0.2 --middleware_port 1883"',
         'ipv4_address': '172.20.0.12'
     }
 }
