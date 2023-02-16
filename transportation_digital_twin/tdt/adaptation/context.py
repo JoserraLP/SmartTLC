@@ -1,11 +1,13 @@
 import ast
 
 import paho.mqtt.client as mqtt
+import traci
+from traci._trafficlight import Logic
 
 from sumo_generators.network.net_topology import NetworkTopology
 from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, TRAFFIC_INFO_TOPIC, \
     TRAFFIC_ANALYSIS_TOPIC, TURN_PREDICTION_TOPIC, TRAFFIC_PREDICTION_TOPIC, DEFAULT_QOS
-from sumo_generators.utils.utils import parse_to_valid_schema
+from sumo_generators.utils.utils import parse_to_valid_schema, parse_traffic_light_logic_to_str
 from t_analyzer.providers.analyzer import TrafficAnalyzer
 from t_predictor.providers.predictor import TrafficPredictor
 from tdt.adaptation.strategy import AdaptationStrategy
@@ -94,6 +96,21 @@ class TrafficLightAdapter:
 
     """ TRAFFIC LIGHT UTILS """
 
+    def get_tl_program(self) -> Logic:
+        """
+        Get actual traffic light program from TraCI
+
+        :return: actual traffic light program logic
+        :rtype: Logic
+        """
+        # Retrieve Traffic Light program from TraCI, first retrieving the current program ID and then the
+        # program information
+        tl_program_id = self._traci.trafficlight.getProgram(self._tl_id)
+        # Get the first and unique TL Logic
+        tl_program = [program for program in traci.trafficlight.getAllProgramLogics(self._tl_id)
+                      if program.getSubID() == tl_program_id][0]
+        return tl_program
+
     def update_tl_program(self, timestep: int) -> None:
         """
         Traffic Light Adapter delegates on the adaptation strategy the retrieval of the new traffic light
@@ -108,9 +125,9 @@ class TrafficLightAdapter:
                                                                       temporal_window=self._cur_temporal_window)
 
         # Check if the new program is valid and it is not the same as the actual one
-        if new_tl_program and new_tl_program != self._traffic_light_info[self._tl_id].actual_program:
+        if new_tl_program and new_tl_program != self._traffic_light_info[self._tl_id].get_traffic_light_program():
             # Update new program
-            self._traci.trafficlight.setProgram(self._tl_id, new_tl_program)
+            self._traci.trafficlight.setProgramLogic(self._tl_id, new_tl_program)
 
     """ VEHICLE UTILS """
 
@@ -353,7 +370,8 @@ class TrafficLightAdapter:
         return self._traffic_light_info[self._tl_id].get_processed_contextual_info(temporal_window=
                                                                                    self._cur_temporal_window)
 
-    def create_historical_traffic_info(self, temporal_window: int, lane_info: dict = None) -> None:
+    def create_historical_traffic_info(self, temporal_window: int, lane_info: dict = None,
+                                       actual_program: Logic = None) -> None:
         """
         Creates a new entry for the historical info for the timestep
 
@@ -361,11 +379,14 @@ class TrafficLightAdapter:
         :type temporal_window: int
         :param lane_info: number of passing vehicles, waiting time and turning vehicles per lane.
         :type lane_info: dict
+        :param actual_program: actual traffic light program
+        :type actual_program: None
 
         :return: None
         """
         self._traffic_light_info[self._tl_id].create_historical_traffic_info(temporal_window=temporal_window,
-                                                                             lane_info=lane_info)
+                                                                             lane_info=lane_info,
+                                                                             actual_program=actual_program)
 
     """ MIDDLEWARE """
 
@@ -400,7 +421,7 @@ class TrafficLightAdapter:
             if adjacent_info['lane'] in self._outbound_lanes_names:
                 # Create a dict with the info: only store the number of vehicles passing and the related waiting time
                 lane_info = {adjacent_info['lane']: {'num_passing_veh': adjacent_info['num_passing_veh'],
-                                                       'waiting_time_veh': adjacent_info['waiting_time_veh']}}
+                                                     'waiting_time_veh': adjacent_info['waiting_time_veh']}}
 
                 # Store the info on the given lane
                 self._traffic_light_info[adjacent_info['tl_id']].create_historical_traffic_info(

@@ -1,6 +1,9 @@
+import numpy as np
 import pandas as pd
+import traci
 from neomodel import db, clear_neo4j_database, config
 from neomodel.contrib.spatial_properties import NeomodelPoint
+from traci._trafficlight import Logic
 
 from sumo_generators.network.models import TrafficLight, Junction, LaneRelation, AdjacentTLRelation, E1Detector, \
     SensorToJunctionRelation
@@ -99,18 +102,27 @@ class NetworkTopology:
         cartesian_point_x, cartesian_point_y = junction['node_x'], junction['node_y']
 
         # Store the latitude and longitude if available
-        geographical_point_lon = junction['node_lon'] if 'node_lon' in junction else -1.0
-        geographical_point_lat = junction['node_lat'] if 'node_lat' in junction else -1.0
+        if 'node_lon' in junction or 'node_lat' in junction:
+            geospatial_point_lon = junction['node_lon'] if not np.isnan(junction['node_lon']) else -1.0
+            geospatial_point_lat = junction['node_lat'] if not np.isnan(junction['node_lat']) else -1.0
+        else:
+            geospatial_point_lon, geospatial_point_lat = -1.0, -1.0
 
         # Create traffic light if its type
         if 'traffic_light' in junction['node_type']:
+            traffic_light_name = name
+            # Get actual traffic light program
+            actual_program = str(traci.trafficlight.getAllProgramLogics(traffic_light_name))
+
             # Create a Traffic Light with same info
             TrafficLight(name=name, cartesian_point=NeomodelPoint(x=cartesian_point_x, y=cartesian_point_y,
                                                                   crs='cartesian'),
-                         geographical_point=NeomodelPoint(latitude=geographical_point_lat,
-                                                          longitude=geographical_point_lon,
-                                                          crs='wgs-84')).save()
+                         geospatial_point=NeomodelPoint(latitude=geospatial_point_lat,
+                                                          longitude=geospatial_point_lon,
+                                                          crs='wgs-84'), actual_program=actual_program,
+                         junction_type=junction['node_type']).save()
         else:
+
             # Create junction type based on it is outer fringe (dead end) or other type
             junction_type = 'dead_end' if 'node_fringe' in junction and junction['node_fringe'] == 'outer' \
                 else junction['node_type']
@@ -118,8 +130,8 @@ class NetworkTopology:
             # Create junction
             Junction(name=name, cartesian_point=NeomodelPoint(x=cartesian_point_x, y=cartesian_point_y,
                                                               crs='cartesian'),
-                     geographical_point=NeomodelPoint(latitude=geographical_point_lat,
-                                                      longitude=geographical_point_lon,
+                     geospatial_point=NeomodelPoint(latitude=geospatial_point_lat,
+                                                      longitude=geospatial_point_lon,
                                                       crs='wgs-84'), junction_type=junction_type).save()
 
     def create_edge(self, edge: pd.Series) -> None:
@@ -360,8 +372,8 @@ class NetworkTopology:
         # Process the result
         lanes = [LaneRelation.inflate(lane[0]) for lane in results]
 
-        # Iterate over the contextual_lane_info
-        for lane_info in contextual_lane_info:
+        # Iterate over the contextual_lane_info -> Until last item as it is related to the TL itself
+        for lane_info in contextual_lane_info[:-1]:
             # Get lane info and store the values
             lane = [lane for lane in lanes if lane.name == lane_info['lane']][0]
 
@@ -375,3 +387,18 @@ class NetworkTopology:
             lane.avg_noise_emission = lane_info['avg_noise_emission']
             # Save the data
             lane.save()
+
+    def update_traffic_light_program(self, tl_id: str, tl_program: Logic):
+        # Create the query for retrieving the traffic light
+        query = "MATCH (n: TrafficLight {name: '" + tl_id + "'}) RETURN n;"
+
+        # Perform query
+        results, _ = self._db.cypher_query(query)
+
+        # Process the result
+        tl = [TrafficLight.inflate(traffic_light[0]) for traffic_light in results][0]
+
+        # Update the traffic light actual program
+        tl.actual_program = str(tl_program)
+        # Save the tl info
+        tl.save()

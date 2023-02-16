@@ -106,11 +106,10 @@ DEFAULT_DETECTOR_FILE = 'detectors.add.xml'
 DEFAULT_DETECTOR_POS = 10.0
 DEFAULT_DETECTOR_FREQ = 1800
 
-# Monitoring temporal window in minutes
+# Monitoring temporal window in number of TL cycles
 DEFAULT_TEMPORAL_WINDOW = 5
-
-# Simulation steps monitoring temporal windows in seconds
-TIMESTEPS_TO_STORE_INFO = 300  # 5 Cycles = 300 seconds
+# Define traffic light cycle length
+POSSIBLE_CYCLES = {'urban': 90, 'non-urban': 120}
 
 # Default list of topics
 DEFAULT_TOPICS = ['#']

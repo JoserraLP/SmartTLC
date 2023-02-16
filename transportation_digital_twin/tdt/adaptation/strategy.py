@@ -1,7 +1,21 @@
 from abc import ABC, abstractmethod
 
+from traci._trafficlight import Logic
+
 from t_analyzer.providers.analyzer import TrafficAnalyzer
 from t_predictor.providers.predictor import TrafficPredictor
+
+
+def calculate_traffic_light_program(lanes_info: dict) -> str:
+    """
+    Calculate the new traffic light program based on the lanes traffic flows types
+
+    :param lanes_info: lanes info related to a given traffic light
+    :type lanes_info: dict
+    :return: Traffic Light program
+    :rtype: str
+    """
+    pass
 
 
 class AdaptationStrategy(ABC):
@@ -21,7 +35,7 @@ class AdaptationStrategy(ABC):
         self._traffic_light_id = traffic_light_id
 
     @abstractmethod
-    def get_new_tl_program(self, traffic_info: dict, timestep: int = None, temporal_window: int = None) -> str:
+    def get_new_tl_program(self, traffic_info: dict, timestep: int = None, temporal_window: int = None) -> Logic:
         """
         Get new traffic light program based on traffic info
 
@@ -32,7 +46,7 @@ class AdaptationStrategy(ABC):
         :param temporal_window: temporal window identifier. Default to None
         :type temporal_window: int
         :return: new traffic light program
-        :rtype: str
+        :rtype: Logic
         """
         raise NotImplementedError
 
@@ -52,9 +66,9 @@ class StaticAS(AdaptationStrategy):
         """
         super().__init__(traffic_light_id)
 
-    def get_new_tl_program(self, traffic_info: dict, timestep: int = None, temporal_window: int = None) -> str:
-        # Always the same, default program
-        return '0'
+    def get_new_tl_program(self, traffic_info: dict, timestep: int = None, temporal_window: int = None) -> Logic:
+        # Return default traffic light program
+        return traffic_info[self._traffic_light_id].get_traffic_light_program()
 
 
 class SelfTrafficAnalyzerAS(AdaptationStrategy):
@@ -70,12 +84,7 @@ class SelfTrafficAnalyzerAS(AdaptationStrategy):
         self._analyzer = analyzer
 
     def get_new_tl_program(self, traffic_info: dict, timestep: int = None, temporal_window: int = None) -> str:
-        # Retrieve self traffic information
-        traffic_light_info = traffic_info[self._traffic_light_id].get_traffic_analyzer_info(temporal_window=
-                                                                                            temporal_window)
-
-        # Always the same, default program
-        return '0'
+        pass
 
 
 class SelfTrafficPredictorAS(AdaptationStrategy):
@@ -91,12 +100,7 @@ class SelfTrafficPredictorAS(AdaptationStrategy):
         self._traffic_predictor = traffic_predictor
 
     def get_new_tl_program(self, traffic_info: dict, timestep: int = None, temporal_window: int = None) -> str:
-        # Retrieve self traffic information
-        traffic_light_info = traffic_info[self._traffic_light_id].get_traffic_predictor_info(temporal_window=
-                                                                                             temporal_window)
-
-        # Always the same, default program
-        return '0'
+        pass
 
 
 class SelfTrafficAnalyzerAndPredictorAS(AdaptationStrategy):

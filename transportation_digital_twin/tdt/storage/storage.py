@@ -1,19 +1,21 @@
 from statistics import mean
 
+from traci._trafficlight import Logic
+
+from sumo_generators.utils.utils import parse_traffic_light_logic_to_str
+
 
 class TrafficLightInfoStorage:
     """
     Traffic Light Info Storage  class to gather all the traffic related information 
     """
 
-    def __init__(self, tl_id: str, actual_program: str = '', lanes: list = None) -> None:
+    def __init__(self, tl_id: str, lanes: list = None) -> None:
         """
         TrafficInfoStorage initializer
 
         :param tl_id: traffic light identifier
         :type tl_id: str
-        :param actual_program: actual traffic light program. Default to ''.
-        :type actual_program: str
         :param lanes: lanes names list
         :type lanes: list
         :return: None
@@ -23,8 +25,8 @@ class TrafficLightInfoStorage:
 
         # Vehicles passed and turning vehicles passed on the traffic light
         self._vehicles_passed, self._turning_vehicles_passed = set(), set()
-        # Actual program and traffic light id
-        self._actual_program, self._tl_id = actual_program, tl_id
+        # Traffic light id
+        self._tl_id = tl_id
 
         # Initialize the historical dictionary and current temporal window
         self._historical_info, self._cur_temporal_window = {}, 0
@@ -32,7 +34,8 @@ class TrafficLightInfoStorage:
         # Initialize the first historical info
         self.create_historical_traffic_info(self._cur_temporal_window)
 
-    def create_historical_traffic_info(self, temporal_window: int, lane_info: dict = None) -> None:
+    def create_historical_traffic_info(self, temporal_window: int, lane_info: dict = None,
+                                       actual_program: Logic = None) -> None:
         """
         Creates a new entry for the historical info for the timestep
 
@@ -40,6 +43,8 @@ class TrafficLightInfoStorage:
         :type temporal_window: int
         :param lane_info: number of passing vehicles, waiting time and turning vehicles per lane.
         :type lane_info: dict
+        :param actual_program: actual traffic light program
+        :type actual_program: Logic
 
         :return: None
         """
@@ -47,13 +52,13 @@ class TrafficLightInfoStorage:
         if not lane_info:
             # Initialize passing vehicles, waiting time and turning vehicles per lane
             lane_info = {lane: {'num_passing_veh': 0, 'waiting_time_veh': 0.0, 'occupancy': [], 'CO2_emission': [],
-                                 'CO_emission': [], 'HC_emission': [], 'PMx_emission': [], 'NOx_emission': [],
-                                 'noise_emission': []} for lane in self._lanes} if not lane_info else lane_info
+                                'CO_emission': [], 'HC_emission': [], 'PMx_emission': [], 'NOx_emission': [],
+                                'noise_emission': []} for lane in self._lanes} if not lane_info else lane_info
 
         # Store information into the dict
         self._historical_info[temporal_window] = {'contextual_info': lane_info,
                                                   'date_info': None,
-                                                  'actual_program': self._actual_program}
+                                                  'actual_program': actual_program}
 
     def increase_turning_vehicles(self, turn: str) -> None:
         """
@@ -85,6 +90,15 @@ class TrafficLightInfoStorage:
         :rtype: bool
         """
         return vehicle_id in self._turning_vehicles_passed
+
+    def get_traffic_light_program(self) -> Logic:
+        """
+        Get traffic light actual program
+
+        :return: Traffic light logic
+        :rtype: Logic
+        """
+        return self._historical_info[self._cur_temporal_window]['actual_program']
 
     """ UTILS """
 
@@ -119,17 +133,22 @@ class TrafficLightInfoStorage:
 
         # Create a list based on lane information
         contextual_lane_info = [{'tl_id': self._tl_id, 'lane': lane_name,
-                                  'waiting_time_veh': lane_info['waiting_time_veh'],
-                                  'num_passing_veh': lane_info['num_passing_veh'],
-                                  'avg_lane_occupancy': mean(lane_info['occupancy']),
-                                  'avg_CO2_emission': mean(lane_info['CO2_emission']),
-                                  'avg_CO_emission': mean(lane_info['CO_emission']),
-                                  'avg_HC_emission': mean(lane_info['HC_emission']),
-                                  'avg_PMx_emission': mean(lane_info['PMx_emission']),
-                                  'avg_NOx_emission': mean(lane_info['NOx_emission']),
-                                  'avg_noise_emission': mean(lane_info['noise_emission'])}
-                                 for lane_name, lane_info in self._historical_info[temporal_window]
-                                 ['contextual_info'].items()]
+                                 'waiting_time_veh': lane_info['waiting_time_veh'],
+                                 'num_passing_veh': lane_info['num_passing_veh'],
+                                 'avg_lane_occupancy': mean(lane_info['occupancy']),
+                                 'avg_CO2_emission': mean(lane_info['CO2_emission']),
+                                 'avg_CO_emission': mean(lane_info['CO_emission']),
+                                 'avg_HC_emission': mean(lane_info['HC_emission']),
+                                 'avg_PMx_emission': mean(lane_info['PMx_emission']),
+                                 'avg_NOx_emission': mean(lane_info['NOx_emission']),
+                                 'avg_noise_emission': mean(lane_info['noise_emission'])}
+                                for lane_name, lane_info in self._historical_info[temporal_window]
+                                ['contextual_info'].items()]
+
+        # Append to contextual info the actual program with empty lane field as it is required on the simulation
+        contextual_lane_info.append({'tl_id': self._tl_id, 'lane': '',
+                                     'actual_program':
+                                         parse_traffic_light_logic_to_str(self.get_traffic_light_program())})
 
         return {'info': contextual_lane_info}
 
@@ -311,13 +330,3 @@ class TrafficLightInfoStorage:
         :return: None
         """
         self._lanes = lanes
-
-    @property
-    def actual_program(self) -> str:
-        """
-        Traffic Light Info Storage  actual program getter
-
-        :return: actual program
-        :rtype: str
-        """
-        return self._actual_program

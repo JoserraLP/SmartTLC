@@ -5,7 +5,8 @@ import sys
 import tdt.static.constants as cnt
 from sumolib import checkBinary
 
-from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, DB_USER, DB_PASSWORD, DB_IP_ADDRESS
+from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, DB_USER, DB_PASSWORD, DB_IP_ADDRESS, \
+    DEFAULT_TEMPORAL_WINDOW
 from tdt.providers.traci_sim import TraCISimulator
 from tdt.static.argparse_types import check_file, check_valid_format
 
@@ -50,6 +51,11 @@ def get_options():
     simulation_group.add_argument("-l", "--load-vehicles", action="store", default=False, dest="load_vehicles_dir",
                                   type=check_file,
                                   help="directory from where the vehicles routes will be load. Default to False.")
+    simulation_group.add_argument("--temporal-window", action="store", default=DEFAULT_TEMPORAL_WINDOW,
+                                  dest="temporal_window", help="temporal window used to gather contextual information"
+                                                               "and adaptation process. It is represented as number of "
+                                                               "traffic lights cycles. Default to "
+                                                               f"{DEFAULT_TEMPORAL_WINDOW}")
 
     # Middleware group params
     middleware_group = arg_parser.add_argument_group("Middleware options", description="Parameters related to the "

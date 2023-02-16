@@ -2,7 +2,8 @@ import paho.mqtt.client as mqtt
 import traci
 
 from sumo_generators.network.net_topology import NetworkTopology
-from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, TRAFFIC_INFO_TOPIC, TIMESTEPS_TO_STORE_INFO
+from sumo_generators.static.constants import MQTT_URL, MQTT_PORT, TRAFFIC_INFO_TOPIC, DEFAULT_TEMPORAL_WINDOW, \
+    POSSIBLE_CYCLES
 from sumo_generators.time_patterns.time_patterns import TimePattern
 from sumo_generators.time_patterns.utils import retrieve_date_info
 from sumo_generators.utils.utils import parse_to_valid_schema
@@ -19,7 +20,8 @@ class TraCISimulator:
     """
 
     def __init__(self, sumo_conf, time_pattern_file: str = '', dates: str = '',
-                 mqtt_url: str = MQTT_URL, mqtt_port: int = MQTT_PORT, local: bool = False):
+                 mqtt_url: str = MQTT_URL, mqtt_port: int = MQTT_PORT, local: bool = False,
+                 temporal_window: int = DEFAULT_TEMPORAL_WINDOW):
         """
         TraCISimulator initializer.
 
@@ -34,6 +36,8 @@ class TraCISimulator:
         :type mqtt_port: int
         :param local: flag to execute locally the component. It will not connect to the middleware.
         :type local: bool
+        :param temporal_window: number of TL cycles to gather information.
+        :type temporal_window: int
         """
 
         # Define time pattern
@@ -49,6 +53,9 @@ class TraCISimulator:
 
         # SUMO configuration files
         self._config_file, self._sumo_binary = sumo_conf['config_file'], sumo_conf['sumo_binary']
+
+        # Define temporal window based on number of cycles, currently all the TLs has a cycle of 90 seconds (urban)
+        self._timesteps_monitor_info = POSSIBLE_CYCLES['urban'] * temporal_window
 
         # Initialize TraCI simulation, topology info, traffic lights and date info to None
         self._traci, self._net_topology, self._traffic_lights = None, None, None
@@ -192,7 +199,7 @@ class TraCISimulator:
                                              user=topology_database_params['user'], traci=self._traci)
 
         # Get traffic light names from database
-        traffic_lights_names = self._net_topology.get_tl_names()
+        traffic_lights_names = traci.trafficlight.getIDList()
 
         # Load TL programs
         for traffic_light in traffic_lights_names:
@@ -213,8 +220,12 @@ class TraCISimulator:
 
         # Initialize date info on each traffic light
         for traffic_light_id, traffic_light in self._traffic_lights.items():
+            # Get actual program
+            actual_program = traffic_light.get_tl_program()
+
             # Create new historical traffic info
-            traffic_light.create_historical_traffic_info(temporal_window=self._temporal_window)
+            traffic_light.create_historical_traffic_info(temporal_window=self._temporal_window,
+                                                         actual_program=actual_program)
 
             # Store date info and temporal window
             traffic_light.insert_date_info(temporal_window=self._temporal_window, date_info=self._date_info)
@@ -277,8 +288,12 @@ class TraCISimulator:
             # Retrieve contextual info
             contextual_tl_info = traffic_light.get_processed_contextual_info()
 
-            # Store traffic light contextual into the net topology database
+            # Store traffic light lanes contextual into the net topology database
             self._net_topology.update_lanes_info(traffic_light_id, contextual_lane_info=contextual_tl_info['info'])
+
+            # Store traffic light program info
+            self._net_topology.update_traffic_light_program(tl_id=traffic_light_id,
+                                                            tl_program=traffic_light.get_tl_program())
 
             # Publish the contextual information
             traffic_light.publish_contextual_info(contextual_tl_info=contextual_tl_info)
@@ -314,8 +329,12 @@ class TraCISimulator:
             # Increase temporal window
             traffic_light.increase_temporal_window()
 
+            # Get actual program
+            actual_program = traffic_light.get_tl_program()
+
             # Create new historical traffic info
-            traffic_light.create_historical_traffic_info(temporal_window=self._temporal_window)
+            traffic_light.create_historical_traffic_info(temporal_window=self._temporal_window,
+                                                         actual_program=actual_program)
 
             # Insert date info and temporal window
             traffic_light.insert_date_info(temporal_window=self._temporal_window, date_info=self._date_info)
@@ -338,9 +357,7 @@ class TraCISimulator:
             self.monitor_traffic_lights()
 
             # Store info each time interval
-            if self._cur_timestep % TIMESTEPS_TO_STORE_INFO == 0:
-
-                # TODO update adaptation strategies per TL
+            if self._cur_timestep % self._timesteps_monitor_info == 0:
 
                 # Adapt traffic light programs
                 self.adapt_traffic_lights()
