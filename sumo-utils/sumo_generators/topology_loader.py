@@ -1,6 +1,7 @@
 import platform
 import xml.etree.cElementTree as ET
 
+import neomodel
 import pandas as pd
 import traci
 from sumolib import checkBinary
@@ -40,6 +41,13 @@ def get_options():
                                 type=str, default=DB_PASSWORD,
                                 help=f"topology database user password. Default to {DB_PASSWORD}")
 
+    # Detectors group
+    detectors_group = arg_parser.add_argument_group("Detectors parameters",
+                                                    description="Parameters related to the detectors")
+    detectors_group.add_argument("--tl-detectors", action="store", dest="tl_detectors", type=str, default='all',
+                                 help="traffic lights that will have detectors related. "
+                                      "Can be 'all' or the names of the traffic lights split by ','. By default, 'all'")
+
     # Retrieve the arguments parsed
     args = arg_parser.parse_args()
     return args
@@ -64,7 +72,7 @@ def merge_junctions_df(nodes_df: pd.DataFrame, osm_df: pd.DataFrame):
     return df
 
 
-def generate_detectors(net_topology: NetworkTopology, detector_file: str) -> None:
+def generate_detectors(net_topology: NetworkTopology, detector_file: str, tl_detectors: str = 'all') -> None:
     """
     Generate detectors on database and store them into an output file
 
@@ -72,13 +80,25 @@ def generate_detectors(net_topology: NetworkTopology, detector_file: str) -> Non
     :type net_topology: NetworkTopology
     :param detector_file: e1 detector file
     :type detector_file: str
+    :param tl_detectors: traffic light names with detectors related. By default, 'all'
+    :type tl_detectors: str
     :return: None
     """
     # Create detector generator instance
     detector_generator = DetectorsGenerator()
 
-    # Retrieve all the traffic lights
-    traffic_lights = TrafficLight.nodes.all()
+    if tl_detectors == 'all':
+        # Retrieve all the traffic lights
+        traffic_lights = TrafficLight.nodes.all()
+    else:
+        # Get all traffic lights with specified names
+        query = f"MATCH (n:TrafficLight) WHERE n.name IN {exec_options.tl_detectors.split(',')} RETURN n"
+
+        # Perform the query
+        results, _ = neomodel.db.cypher_query(query)
+
+        # Retrieve the traffic lights nodes
+        traffic_lights = [TrafficLight.inflate(node) for result in results for node in result]
 
     # Create list with all detectors
     all_detectors = []
@@ -113,6 +133,73 @@ def generate_detectors(net_topology: NetworkTopology, detector_file: str) -> Non
     detector_generator.write_output_file(detector_file)
 
 
+def replace_unwanted_chars(item: ET.Element, fields: list) -> None:
+    """
+    Replace unwanted characters such as # on the given field
+
+    :param item: item to replace the characters
+    :type item: ET.Element
+    :param fields: fields of the element
+    :type fields: list
+    :return: None
+    """
+    for field in fields:
+        if field in item.attrib:
+            item.set(field, item.get(field).replace('#', '-'))
+
+
+def parse_to_valid_junctions(filename: str) -> None:
+    """
+    Parse junction names to a valid format removing 'GS_' prefix and # characters
+
+    :param filename: input and output filename
+    :type filename: str
+
+    :return: None
+    """
+    # Get tree
+    tree = ET.parse(filename)
+    # Get root
+    root = tree.getroot()
+    # Iterate over all the tlLogic items
+    tl_logic_items = root.findall('tlLogic')
+    for tl_logic in tl_logic_items:
+        # Check if it has 'GS_' in the name and remove it
+        if 'GS_' in tl_logic.get('id'):
+            tl_logic.set('id', tl_logic.get('id').replace('GS_', ''))
+
+    # Iterate also over the connections to rename the 'tl' attribute
+    connections_items = root.findall('connection')
+    for connection in connections_items:
+        # Check if it has 'GS_' in the tl attribute and remove it
+        if 'tl' in connection.attrib.keys() and 'GS_' in connection.get('tl'):
+            connection.set('tl', connection.get('tl').replace('GS_', ''))
+
+    # Iterate over all the items, check id or name with # character and replace the character with '-'
+    for item in root:
+        # Based on type, the name tag varies
+        if item.tag == 'edge':
+            replace_unwanted_chars(item, ['id', 'from', 'to'])
+            # Edge has its id and the related lanes
+            for lane in item:
+                replace_unwanted_chars(lane, ['id'])
+
+        if item.tag == 'tlLogic':
+            replace_unwanted_chars(item, ['id'])
+
+        if item.tag == 'junction':
+            replace_unwanted_chars(item, ['incLanes', 'intLanes', 'id'])
+
+        if item.tag == 'connection':
+            replace_unwanted_chars(item, ['from', 'to', 'via', 'tl'])
+
+        if item.tag == 'roundabout':
+            replace_unwanted_chars(item, ['edges'])
+
+    # Store updated file
+    tree.write(filename)
+
+
 def process_topology_files(config_file: str) -> None:
     """
     Process from XML to CSV topology files
@@ -141,6 +228,9 @@ def process_topology_files(config_file: str) -> None:
         # Remove pedestrian areas, bicycle, tram, rail_urban, rail, rail_electric, rail_fast, ship
         os.system(f"netconvert -s {base_dir}osm.net.xml -o {base_dir}osm.net.xml "
                   f"--remove-edges.by-vclass pedestrian,bicycle,tram,rail_urban,rail,rail_electric,rail_fast,ship")
+
+        # Remove TL 'GS_' prefix and parse to valid format (without # as it fails with the middleware)
+        parse_to_valid_junctions(filename=f'{base_dir}osm.net.xml')
 
     # Generate the topology edges on plain text
     os.system(f"netconvert -s {base_dir}{topology_file} --plain-output-prefix {base_dir}plain")
@@ -240,7 +330,7 @@ def load_topology(config_file: str, database_params: dict):
     detector_file = '/'.join(config_file.split('/')[:-1]) + '/' + DEFAULT_DETECTOR_FILE
 
     # Generate detectors
-    generate_detectors(net_topology=net_topology, detector_file=detector_file)
+    generate_detectors(net_topology=net_topology, detector_file=detector_file, tl_detectors=exec_options.tl_detectors)
 
     # Update the sumocfg file with the detectors
     update_config_file(config_file=config_file)

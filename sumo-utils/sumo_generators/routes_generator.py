@@ -28,7 +28,7 @@ def process_turn_definition_file(file_dir: str) -> None:
         # Iterate over the edge relations
         for edge_relation in interval.findall('edgeRelation'):
             # Remove those with probability = 100
-            if int(edge_relation.attrib['probability']) == 100:
+            if float(edge_relation.attrib['probability']) == 100:
                 interval.remove(edge_relation)
 
     # Write on output file
@@ -50,6 +50,9 @@ def get_options():
     arg_parser.add_argument("-o", "--output-folder", dest="output_folder", action='store', default=DEFAULT_DIR,
                             type=str, help=f"output folder where the related files will be generated. Default is "
                                            f"{DEFAULT_DIR}")
+
+    arg_parser.add_argument("--osm-net", dest="osm_net", action='store_true', default=False,
+                            help=f"Flag for enabling osm-type networks. Default to False")
 
     # Database group
     database_group = arg_parser.add_argument_group("Database parameters",
@@ -109,8 +112,11 @@ if __name__ == '__main__':
     # Process invalid data in turn definition file
     process_turn_definition_file(file_dir=turn_definitions_file)
 
+    # Define topology name based on if the topology is loaded from OSM or not
+    topology_file_name = 'osm.net.xml' if exec_options.osm_net else 'topology.net.xml'
+
     # Execute jtrrouter to generate the routes files based on flows, turns and net file
     os.system(f'jtrrouter --route-files={flows_file}.flows '
               f'--turn-ratio-files={output_folder}output.turndefs.xml '
-              f'--net-file={output_folder}topology.net.xml '
+              f'--net-file={output_folder}{topology_file_name} '
               f'--output-file={flows_file} --accept-all-destinations')
