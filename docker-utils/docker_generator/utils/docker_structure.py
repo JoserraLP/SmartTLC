@@ -38,9 +38,8 @@ ALL_CONTAINERS = {
         'ipv4_address': '172.20.0.5'
     },
     'traffic_predictor': {
-        'build': './traffic_predictor',
+        'image': 'python:3.8.12-slim',
         'container_name': 'traffic_predictor',
-        'env_file': 'traffic_predictor/eclipse-sumo-image/env.sumo',
         'restart': 'on-failure',
         'links': 'mosquitto',
         'volumes': ['./traffic_predictor:/etc/traffic_predictor/', './sumo-utils:/etc/sumo-utils/'],
