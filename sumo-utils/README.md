@@ -17,22 +17,20 @@ pip install -e .
 ```
 
 ## Usage
-There are three main functionalities in this library: (1) generate the topology; (2) load the topology into the 
+There are three main functionalities in this library: (1) generate the grid topology; (2) load the topology into the 
 database. Both are available on "sumo_generators" folder; and (3) generate vehicles routes and flows based on turns 
 definitions.
 
 ### Grid Network generation 
 ```sh
-python config_generator.py <parameters>
+python grid_topology_generator.py <parameters>
 ```
 
 This execution process generates the following files:
-- Detectors file.
 - Full network file.
     - Network edges file.
     - Network nodes file.
 - SUMO simulation configuration file.
-- Traffic light algorithms file.
 
 Where the parameters defined are, grouped by its functionality:
 
@@ -40,19 +38,13 @@ Where the parameters defined are, grouped by its functionality:
 
 - **Output configuration files generator**:
     - **-n NODES_PATH, --nodes-path NODES_PATH**: define the path where the nodes file is created. Default is 
-      *../output/topology.nod.xml*. 
+      *../config/topology.nod.xml*. 
     - **-e EDGES_PATH, --edges-path EDGES_PATH**: define the path where the edges file is created. Default is 
-      *../output/topology.edg.xml*.
-    - **-d DETECTOR_PATH, --detector-path DETECTOR_PATH**: detectors file location. Default is 
-      *../output/topology.det.xml*.
-    - **-t TL_PROGRAM_PATH, --tl-program-path TL_PROGRAM_PATH**: SUMO traffic lights programs file location. Default is 
-      *../output/topology.tll.xml*.
+      *../config/topology.edg.xml*.
     - **-o NETWORK_PATH, --output-network NETWORK_PATH**: define the path where the network file is created. Default is 
-      *../output/topology.net.xml*.
-    - **-f FLOWS_PATH, --flows-path FLOWS_PATH**: define the path where the flows file is created. Default is 
-      *../output/flows.rou.xml*.
+      *../config/topology.net.xml*.
     - **-s SUMO_CONFIG_PATH, --sumo-config-path SUMO_CONFIG_PATH**: SUMO configuration file location. Default is
-      *../output/simulation.sumocfg*.
+      *../config/simulation.sumocfg*.
 - **Network generator**:
     - **-r ROWS, --rows ROWS**: define the number of rows of the network. Default is *1*.
     - **-c COLS, --cols COLS**: define the number of cols of the network. Default is *1*.
@@ -65,18 +57,14 @@ Where the parameters defined are, grouped by its functionality:
       Possible types are: *static*, *actuated*, *delay_based*. Default is *static*. 
     - **--tl-layout TL_LAYOUT**: define the tl layout, only if the 'junction' value is 'traffic_light'. Possible types 
       are: *opposites*, *incoming*, *alternateOneWay*. Default is *opposites*.
-
-- **Traffic Light generator**:
-  - **-i INTERVAL, --interval INTERVAL**: interval of seconds to be used in the traffic light generator. 
-  - **-p, --proportion**: flag to use proportions in the traffic light generator. Default to *True*
-  - **--allow-add-turn-phases**: flag allowing left turns in traffic light phases. Default to *False*.  
-
+    - 
 Note: in the script itself, all the parameters are grouped based on its functionality, but in this case
 it is not shown here in order to clarify its reading. If you want to see these groups execute the script 
 with the **-h** or **--help** argument.
 
 ### Topology loader
-This execution process stores the topology network into the database specified. In this case it is Neo4j.
+This execution process stores the topology network into the database specified and generates the detector file related
+to the topology. In this case the database is Neo4j.
 
 Where the parameters defined are, grouped by its functionality:
 
@@ -89,7 +77,9 @@ Where the parameters defined are, grouped by its functionality:
   - **--topology-db-ip TOPOLOGY_DB_IP**: topology database ip address with port. Default to "172.20.0.9:7687"
   - **--topology-db-user TOPOLOGY_DB_USER**: topology database user. Default to "neo4j".
   - **--topology-db-password TOPOLOGY_DB_PASSWORD**: topology database user password. Default to "admin"
-
+- **Detectors parameters**:
+  - **--tl-detectors**: traffic lights that will have detectors related. Can be 'all' or the names of the traffic 
+  lights split by ','. By default, 'all'.
 
 ### Routes generator
 This execution process generates the route file based on turn definitions for a given network topology and time 

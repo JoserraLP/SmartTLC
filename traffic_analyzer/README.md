@@ -1,14 +1,9 @@
 # Traffic Analyzer
 
-It analyzes the number of passing vehicles in each possible direction, and selects the traffic type that fits better the
-current situation. It is important to mention that it analyzes the traffic of single traffic light individually.
-
-
-In order to analyze those traffic values, there have been defined several bounds, related directly to the different 
-traffic types passing per each direction.
-- **Lower bound**: it is the upper bound of the previous type, except for the lowest type that is 0.
-- **Upper bound**: it is calculated by adding the number of vehicles per hour and the maximum possible value in its range, 
-  and dividing this sum by proportion value based on the temporal window selected. 
+It analyzes the number of passing vehicles on a single lane, and selects the traffic type that fits better the
+current situation. In order to analyze those traffic values, there have been defined several bounds, related directly to the different 
+traffic types passing on the lane, based directly on the lower and upper bound of the defined traffic types, 
+divided by the proportion value based on the temporal window selected.
 
 ## Usage
 
@@ -26,9 +21,10 @@ Where the parameters defined are:
 - **--middleware_port MQTT_PORT**: middleware broker port. Default is *1883*.
 
 ## Data model
-The followed schema to publish the analyzed information into the middleware is:
-- **traffic_analysis**: traffic flow type analysis previously defined. It represents only one type of traffic flow. 
-  Possible values are from 0 to 11.
+The followed schema to publish the analyzed information into the middleware is a dictionary with the following info:
+- **lane name**: as the key.
+- **analyzed traffic type**: as the value where it can be on the interval [0, 4], representing all possible traffic 
+types currently.  
   
 Besides, the topic used to publish this information is "traffic_analysis/<traffic_light_id>", where the 
-*<traffic_light_id>* is the traffic light identifier. 
+*<traffic_light_id>* is the traffic light identifier that is connected to the given lane. 
