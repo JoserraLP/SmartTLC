@@ -116,3 +116,7 @@ DEFAULT_TOPICS = ['#']
 
 # Default turn dictionary
 DEFAULT_TURN_DICT = {'turn_prob_right': 0.20, 'turn_prob_left': 0.20, 'turn_prob_forward': 0.60}
+
+# Edge relation properties
+LANE_ATTRIBUTES = ['distance', 'slope', 'max_speed', 'avg_lane_occupancy', 'avg_CO2_emission', 'avg_CO_emission',
+                   'avg_HC_emission', 'avg_PMx_emission', 'avg_NOx_emission', 'avg_noise_emission']

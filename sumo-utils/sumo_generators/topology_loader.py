@@ -342,6 +342,21 @@ def load_topology(config_file: str, database_params: dict):
     traci.close()
 
 
+def create_graph_projection(attributes: list) -> None:
+    # Firstly remove previous existent graph projections
+    query = "CALL gds.graph.drop('roads_graph', false)"
+
+    # Perform the query
+    results, _ = neomodel.db.cypher_query(query)
+
+    # Get all traffic lights with specified names
+    query = "CALL gds.graph.project('roads_graph', 'Junction', 'LANE_TO', {relationshipProperties: " + str(attributes) \
+            + " })"
+
+    # Perform the query
+    results, _ = neomodel.db.cypher_query(query)
+
+
 if __name__ == '__main__':
     # Retrieve execution options (parameters)
     exec_options = get_options()
@@ -363,3 +378,6 @@ if __name__ == '__main__':
 
     # Load topology
     load_topology(config_file=exec_options.config_file, database_params=topology_database_params)
+
+    # Create graph projection
+    create_graph_projection(attributes=LANE_ATTRIBUTES)
