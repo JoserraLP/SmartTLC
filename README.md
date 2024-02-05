@@ -150,9 +150,6 @@ In order to execute each one of the examples, execute the next command:
 If you have any suggestion to improve the SmartTLC framework, do not hesitate and open an issue or even email me
 at [joserralp@unex.es](mailto:joserralp@unex.es?subject=[GitHub]%20SmartTLC%20Suggestion).
 
-## About 
-This framework was developed for my Master's Thesis in Computer Science at Universidad de Extremadura in Cáceres. 
-
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
 
